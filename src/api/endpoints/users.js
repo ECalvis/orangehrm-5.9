@@ -1,19 +1,7 @@
-const { createRouteGroup } = require('../resource');
-
-const route = (method, path) => ({ method, path });
+const { createAdminApi } = require('./admin');
 
 function createUsersApi(client) {
-  const routes = createRouteGroup(client, {
-    users: {
-      list: route('GET', '/admin/users'),
-      get: route('GET', '/admin/users/{id}'),
-      create: route('POST', '/admin/users'),
-      update: route('PUT', '/admin/users/{id}'),
-      delete: route('DELETE', '/admin/users'),
-    },
-  });
-
-  return routes.users;
+  return createAdminApi(client).users;
 }
 
 module.exports = { createUsersApi, UsersApi: createUsersApi };
