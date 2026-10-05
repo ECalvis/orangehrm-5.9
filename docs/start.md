@@ -52,6 +52,8 @@ authorize({ authorizationUrl, expectedState }) → { code, state }
 { getAccessToken() → string, clear() }
 The single most important rule: access_token, refresh_token, expires_in are wire format. They are translated once, inside oauth-client.js. Nowhere else in the framework should ever see snake_case.
 
+Auth unit tests live in `tests/auth.spec.js` and run with `npm test`. They cover PKCE, OAuth token requests and normalization, callback state validation, token refresh/caching, and file-store behavior without requiring live credentials or opening a browser. The full browser login and OrangeHRM exchange still require an integration environment.
+
 Part 4 — What Your Current Code Gets Wrong (Concretely)
 Violation	Location	Fix
 Protocol layer imports chromium from @playwright/test	oauth-client.js	Move browser code to oauth-authorizer.js; import playwright (not @playwright/test)

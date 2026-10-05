@@ -38,10 +38,19 @@ class FileTokenStore {
 
     fs.mkdirSync(directory, { recursive: true });
 
-    fs.writeFileSync(this.filePath, JSON.stringify(token, null, 2), {
-      encoding: 'utf8',
-      mode: 0o600,
-    });
+    const fileDescriptor = fs.openSync(this.filePath, 'w', 0o600);
+
+    try {
+      if (process.platform !== 'win32') {
+        fs.fchmodSync(fileDescriptor, 0o600);
+      }
+
+      fs.writeFileSync(fileDescriptor, JSON.stringify(token, null, 2), {
+        encoding: 'utf8',
+      });
+    } finally {
+      fs.closeSync(fileDescriptor);
+    }
   }
 
   clear() {

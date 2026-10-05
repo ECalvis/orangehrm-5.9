@@ -206,8 +206,13 @@ class OAuthAuthorizer {
           const error = requestUrl.searchParams.get('error');
           const errorDescription = requestUrl.searchParams.get('error_description');
 
-          // State validation happens HERE, once, so the caller never sees
-          // a mismatched-state payload.
+          if (state !== expectedState) {
+            res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
+            res.end('<h2>State mismatch. You can close this window.</h2>');
+            rejectResult(new AuthenticationError('OAuth state mismatch.'));
+            return;
+          }
+
           if (error) {
             res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
             res.end('<h2>Authorization failed. You can close this window.</h2>');
@@ -225,13 +230,6 @@ class OAuthAuthorizer {
             res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
             res.end('<h2>Authorization failed. You can close this window.</h2>');
             rejectResult(new AuthenticationError('OAuth callback did not contain a code.'));
-            return;
-          }
-
-          if (state !== expectedState) {
-            res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
-            res.end('<h2>State mismatch. You can close this window.</h2>');
-            rejectResult(new AuthenticationError('OAuth state mismatch.'));
             return;
           }
 

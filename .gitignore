@@ -5,3 +5,5 @@ auth/*.token.json
 
 oauth-debug.png
 *.log
+
+test-results
