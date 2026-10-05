@@ -244,9 +244,11 @@ test.describe('OAuth callback', () => {
 
   test('completes local login and consent flow in a real browser', async () => {
     const expectedState = 'integration-state';
-    const callbackProbe = await listen(http.createServer());
-    const callbackPort = callbackProbe.address().port;
-    await closeServer(callbackProbe);
+    const authorizer = new OAuthAuthorizer({
+      callbackHost: '127.0.0.1',
+      callbackPort: 0,
+      timeoutMs: 10_000,
+    });
 
     let submittedCredentials;
     const server = await listen(
@@ -274,8 +276,7 @@ test.describe('OAuth callback', () => {
             response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
             response.end(`
               <!doctype html>
-              <button type="button" onclick="window.location.href =
-                'http://127.0.0.1:${callbackPort}/oauth/callback?code=browser-code&state=${expectedState}'">
+              <button type="button" onclick="window.location.href='http://127.0.0.1:${authorizer.callbackPort}/oauth/callback?code=browser-code&state=${expectedState}'">
                 Allow Access
               </button>
             `);
@@ -288,12 +289,6 @@ test.describe('OAuth callback', () => {
       }),
     );
 
-    const authorizer = new OAuthAuthorizer({
-      callbackHost: '127.0.0.1',
-      callbackPort,
-      timeoutMs: 10_000,
-    });
-
     try {
       const result = await authorizer.authorize({
         authorizationUrl: `http://127.0.0.1:${server.address().port}/oauth2/authorize?state=${expectedState}`,
@@ -304,6 +299,12 @@ test.describe('OAuth callback', () => {
       expect(result).toEqual({ code: 'browser-code', state: expectedState });
       expect(submittedCredentials.get('username')).toBe('test-user');
       expect(submittedCredentials.get('password')).toBe('test-password');
+      await expect(
+        callbackRequest(
+          authorizer.callbackPort,
+          '/oauth/callback?code=unexpected&state=unexpected',
+        ),
+      ).rejects.toThrow();
     } finally {
       await closeServer(server);
     }
