@@ -1,29 +1,25 @@
 const { createRouteGroup } = require('../resource');
 
+const route = (method, path) => ({ method, path });
+
 function createWorkspaceNotificationsApi(client) {
   return createRouteGroup(client, {
     configuration: {
-      get: { method: 'GET', path: '/admin/workspace-notification/config' },
-      update: { method: 'PUT', path: '/admin/workspace-notification/config' },
+      get: route('GET', '/admin/workspace-notification/config'),
+      update: route('PUT', '/admin/workspace-notification/config'),
     },
     testRegistrations: {
-      create: {
-        method: 'POST',
-        path: '/admin/workspace-notification/registrations/test',
-      },
+      create: route('POST', '/admin/workspace-notification/registrations/test'),
     },
     testRegistration: {
-      create: {
-        method: 'POST',
-        path: '/admin/workspace-notification/registrations/{id}/test',
-      },
+      create: route('POST', '/admin/workspace-notification/registrations/{id}/test'),
     },
     registrations: {
-      list: { method: 'GET', path: '/admin/workspace-notification/registrations' },
-      create: { method: 'POST', path: '/admin/workspace-notification/registrations' },
-      delete: { method: 'DELETE', path: '/admin/workspace-notification/registrations' },
-      get: { method: 'GET', path: '/admin/workspace-notification/registrations/{id}' },
-      update: { method: 'PUT', path: '/admin/workspace-notification/registrations/{id}' },
+      list: route('GET', '/admin/workspace-notification/registrations'),
+      create: route('POST', '/admin/workspace-notification/registrations'),
+      delete: route('DELETE', '/admin/workspace-notification/registrations'),
+      get: route('GET', '/admin/workspace-notification/registrations/{id}'),
+      update: route('PUT', '/admin/workspace-notification/registrations/{id}'),
     },
   });
 }

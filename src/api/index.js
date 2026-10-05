@@ -1,7 +1,5 @@
 const { ApiClient } = require('./client');
 const { ApiError } = require('./errors');
-const { EmployeesApi } = require('./endpoints/employees');
-const { UsersApi } = require('./endpoints/users');
 const { createAdminApi } = require('./endpoints/admin');
 const { createAttendanceApi } = require('./endpoints/attendance');
 const { createAuthenticationApi } = require('./endpoints/authentication');
@@ -47,8 +45,6 @@ function createApi({ baseUrl, tokenManager, logger } = {}) {
     performance: createPerformanceApi(client),
     system: createSystemApi(client),
     workspaceNotifications: createWorkspaceNotificationsApi(client),
-    employees: new EmployeesApi(client),
-    users: new UsersApi(client),
     _client: client,
   };
 }

@@ -1,15 +1,17 @@
 const { createRouteGroup } = require('../resource');
 
+const route = (method, path) => ({ method, path });
+
 function createMaintenanceApi(client) {
   return createRouteGroup(client, {
     purge: {
-      delete: { method: 'DELETE', path: '/maintenance/purge' },
+      delete: route('DELETE', '/maintenance/purge'),
     },
     purgeCandidates: {
-      delete: { method: 'DELETE', path: '/maintenance/candidates/purge' },
+      delete: route('DELETE', '/maintenance/candidates/purge'),
     },
     candidates: {
-      list: { method: 'GET', path: '/maintenance/candidates' },
+      list: route('GET', '/maintenance/candidates'),
     },
   });
 }

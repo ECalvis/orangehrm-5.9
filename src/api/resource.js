@@ -6,14 +6,21 @@ function createRouteGroup(client, definitions) {
 
     for (const [operationName, definition] of Object.entries(operations)) {
       const operation = (input = {}) => {
-        const options = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
-        const pathParams = options.pathParams ?? options;
+        const isObjectInput = input && typeof input === 'object' && !Array.isArray(input);
+        const options = isObjectInput ? input : {};
+        const pathKeys = Array.from(definition.path.matchAll(/\{([^}]+)\}/g), (match) => match[1]);
+        const pathParams =
+          isObjectInput && (options.pathParams ?? options)
+            ? options.pathParams ?? options
+            : pathKeys.length === 1
+              ? { [pathKeys[0]]: input }
+              : {};
+
         const path = definition.path.replace(/\{([^}]+)\}/g, (_match, key) => {
           const value = pathParams[key];
           return encodeSegment(value, `${key} is required for ${endpointName}.${operationName}`);
         });
 
-        const pathKeys = Array.from(definition.path.matchAll(/\{([^}]+)\}/g), (match) => match[1]);
         const reservedKeys = new Set(['data', 'body', 'headers', 'params', 'pathParams', 'ids']);
         const query =
           definition.method === 'GET'
