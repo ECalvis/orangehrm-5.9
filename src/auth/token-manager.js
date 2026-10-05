@@ -1,4 +1,4 @@
-const { AuthenticationError } = require('./errors');
+const { AuthenticationError, OAuthRejectedError } = require('./errors');
 
 class TokenManager {
   constructor({ oauth, authorizer, store, credentials, refreshSafetyMs = 60_000 }) {
@@ -39,9 +39,23 @@ class TokenManager {
     const cached = this.store.load();
 
     if (cached?.refreshToken) {
-      try {
-        const refreshed = await this.oauth.refresh(cached.refreshToken);
+      let refreshed;
 
+      try {
+        refreshed = await this.oauth.refresh(cached.refreshToken);
+      } catch (err) {
+        // Only a rejected refresh token justifies the browser fallback. A
+        // transport failure (network down, timeout, 5xx) does not: the
+        // refresh token may still be valid, and launching a browser to retry
+        // will fail for the same reason while producing a much worse error.
+        if (!(err instanceof OAuthRejectedError)) {
+          throw err;
+        }
+
+        refreshed = null;
+      }
+
+      if (refreshed) {
         // OrangeHRM may or may not rotate the refresh token. If the new
         // response omits it, keep the old one — otherwise the next refresh
         // attempt has nothing to send and we fall back to the full browser
@@ -53,9 +67,6 @@ class TokenManager {
 
         this.store.save(merged);
         return merged;
-      } catch {
-        // Refresh failed (revoked, expired, server error). Fall through to
-        // the full authorization-code flow.
       }
     }
 
@@ -85,6 +96,13 @@ class TokenManager {
       return false;
     }
 
+    // ASSUMPTION: expiresAt === null means "the server did not tell us when
+    // this expires." OrangeHRM's token endpoint always returns expires_in
+    // (PT30M), so in practice this branch is only reached for tokens written
+    // by an older version of this code or hand-edited token files. Treating
+    // it as valid avoids a refresh storm; the next 401 from the API will
+    // force a re-acquire. If OrangeHRM ever omits expires_in, this assumption
+    // becomes dangerous — see docs/auth.md.
     if (token.expiresAt == null) {
       return true;
     }

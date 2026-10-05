@@ -1,5 +1,7 @@
-require('dotenv').config();
-require('dotenv-expand').expand({ parsed: process.env });
+const dotenv = require('dotenv');
+const dotenvExpand = require('dotenv-expand');
+
+dotenvExpand.expand(dotenv.config());
 
 const { OAuthClient } = require('../src/auth/oauth-client');
 const { OAuthAuthorizer } = require('../src/auth/oauth-authorizer');
@@ -25,10 +27,10 @@ async function main(roleName) {
   });
 
   const authorizer = new OAuthAuthorizer({
-    callbackHost: 'localhost',
-    callbackPort: env.authRedirectPort,
-    callbackPath: '/oauth/callback',
-    timeoutMs: 120_000, // browser + login + consent can exceed 60s on cold containers
+    callbackHost: env.callbackHost,
+    callbackPort: env.callbackPort,
+    callbackPath: env.callbackPath,
+    timeoutMs: 120_000,
   });
 
   const store = new FileTokenStore(role.tokenFile);

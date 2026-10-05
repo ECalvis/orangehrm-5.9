@@ -1,8 +1,11 @@
 const http = require('http');
+const path = require('path');
 const { URL } = require('url');
 const { chromium } = require('playwright');
 
 const { AuthenticationError } = require('./errors');
+
+const SCREENSHOT_DIR = process.cwd();
 
 class OAuthAuthorizer {
   constructor({
@@ -10,8 +13,15 @@ class OAuthAuthorizer {
     callbackPort = 9876,
     callbackPath = '/oauth/callback',
     timeoutMs = 120_000,
-    headless = true,
+    headless = false,
   } = {}) {
+    if (!Number.isFinite(callbackPort) || callbackPort < 0 || callbackPort > 65535) {
+      throw new TypeError(`callbackPort must be between 0 and 65535, got: ${callbackPort}`);
+    }
+    if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+      throw new TypeError(`timeoutMs must be a positive number, got: ${timeoutMs}`);
+    }
+
     this.callbackHost = callbackHost;
     this.callbackPort = callbackPort;
     this.callbackPath = callbackPath;
@@ -36,6 +46,9 @@ class OAuthAuthorizer {
 
     try {
       // 1. Start the callback server BEFORE the browser navigates anywhere.
+      //    NOTE: _createCallbackServer mutates this.callbackPort to the
+      //    actual bound port when callbackPort was 0. Callers must read
+      //    authorizer.callbackPort AFTER awaiting serverReady.
       const callback = this._createCallbackServer(expectedState);
       callbackServer = await callback.serverReady;
 
@@ -50,7 +63,6 @@ class OAuthAuthorizer {
       });
 
       // 3. Wait until EITHER the login form OR the consent screen is visible.
-      //    This replaces the old "wait 1s, then check isVisible()" heuristic.
       const usernameInput = page
         .locator('input[name="username"], input[placeholder="Username"]')
         .first();
@@ -88,8 +100,6 @@ class OAuthAuthorizer {
           }
         }
 
-        // Wait for navigation away from the login page, OR for the consent
-        // screen to appear. Whichever comes first.
         await Promise.race([
           page
             .waitForURL(/oauth2\/authorize|oauth2\/consent/, {
@@ -120,7 +130,17 @@ class OAuthAuthorizer {
       }
 
       if (!consentFound) {
-        await page.screenshot({ path: 'oauth-debug.png', fullPage: true }).catch(() => {});
+        const screenshotPath = path.join(SCREENSHOT_DIR, `oauth-debug-${Date.now()}.png`);
+
+        try {
+          await page.screenshot({ path: screenshotPath, fullPage: true });
+          console.error(`OAuth consent screen not found. Screenshot: ${screenshotPath}`);
+        } catch (err) {
+          console.error(
+            `OAuth consent screen not found. Screenshot failed: ${err.message}. ` +
+              `Current URL: ${page.url()}`,
+          );
+        }
 
         throw new AuthenticationError(
           `OAuth consent screen was not displayed. Current URL: ${page.url()}`,
@@ -148,14 +168,17 @@ class OAuthAuthorizer {
 
       throw new AuthenticationError(`OAuth authorization failed: ${err.message}`);
     } finally {
-      if (callbackServer) {
-        await this._stopCallbackServer(callbackServer);
-      }
+      // Close the browser before the callback server. If the browser is
+      // still holding a connection to the callback server, server.close()
+      // waits for that connection to finish, which can hang teardown.
       if (context) {
         await context.close().catch(() => {});
       }
       if (browser) {
         await browser.close().catch(() => {});
+      }
+      if (callbackServer) {
+        await this._stopCallbackServer(callbackServer);
       }
     }
   }
@@ -260,7 +283,6 @@ class OAuthAuthorizer {
       rejectResult(new AuthenticationError(`OAuth callback timed out after ${this.timeoutMs}ms.`));
     }, this.timeoutMs);
 
-    // If the server fails to start, don't leave the timer running.
     serverReady.catch(() => {
       settled = true;
       clearTimeout(timeout);

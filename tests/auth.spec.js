@@ -6,7 +6,7 @@ const path = require('node:path');
 
 const { expect, test } = require('@playwright/test');
 
-const { AuthenticationError } = require('../src/auth/errors');
+const { AuthenticationError, OAuthRejectedError } = require('../src/auth/errors');
 const { OAuthAuthorizer } = require('../src/auth/oauth-authorizer');
 const { OAuthClient } = require('../src/auth/oauth-client');
 const { createChallenge, createState, createVerifier } = require('../src/auth/pkce');
@@ -192,8 +192,9 @@ test.describe('OAuth client', () => {
       });
 
       await expect(client.refresh('refresh-value')).rejects.toMatchObject({
-        name: 'AuthenticationError',
+        name: 'OAuthRejectedError',
         status: 400,
+        oauthError: 'invalid_grant',
       });
     } finally {
       await closeServer(server);
@@ -473,7 +474,7 @@ test.describe('Token manager', () => {
     };
     const oauth = {
       async refresh() {
-        throw new AuthenticationError('Refresh rejected');
+        throw new OAuthRejectedError('Refresh rejected', { status: 400 });
       },
       createAuthorizationRequest() {
         return authorizationRequest;
@@ -557,5 +558,343 @@ test.describe('File token store', () => {
     } finally {
       fs.rmSync(directory, { recursive: true, force: true });
     }
+  });
+
+  test('does not fall back to browser flow on refresh transport failure', async () => {
+    const store = memoryStore({
+      accessToken: 'expired-access',
+      refreshToken: 'still-valid-refresh',
+      expiresAt: Date.now() - 1,
+    });
+
+    const oauth = {
+      async refresh() {
+        throw new AuthenticationError('Token refresh failed: ECONNREFUSED', {
+          cause: 'ECONNREFUSED',
+        });
+      },
+    };
+
+    const authorizer = {
+      async authorize() {
+        throw new Error('Authorizer must not be called for a transport failure');
+      },
+    };
+
+    const manager = new TokenManager({
+      oauth,
+      authorizer,
+      store,
+      credentials: { username: 'user', password: 'password' },
+    });
+
+    await expect(manager.getAccessToken()).rejects.toMatchObject({
+      name: 'AuthenticationError',
+      cause: 'ECONNREFUSED',
+    });
+
+    // The refresh token must still be on disk — the transport failure says
+    // nothing about its validity.
+    expect(store.token.refreshToken).toBe('still-valid-refresh');
+  });
+
+  test('uses the new refresh token when the server rotates it', async () => {
+    const store = memoryStore({
+      accessToken: 'expired-access',
+      refreshToken: 'old-refresh',
+      expiresAt: Date.now() - 1,
+    });
+
+    const oauth = {
+      async refresh(refreshToken) {
+        expect(refreshToken).toBe('old-refresh');
+        return {
+          accessToken: 'fresh-access',
+          refreshToken: 'rotated-refresh',
+          expiresAt: Date.now() + 600_000,
+        };
+      },
+    };
+
+    const manager = new TokenManager({
+      oauth,
+      authorizer: {},
+      store,
+      credentials: { username: 'user', password: 'password' },
+    });
+
+    await expect(manager.getAccessToken()).resolves.toBe('fresh-access');
+    expect(store.token.refreshToken).toBe('rotated-refresh');
+  });
+
+  test('allows retry after a rejected refresh has fallen through to browser flow', async () => {
+    // First call: refresh rejected, browser flow succeeds.
+    // Second call: token still valid, no refresh, no browser.
+    const store = memoryStore({
+      accessToken: 'expired-access',
+      refreshToken: 'revoked-refresh',
+      expiresAt: Date.now() - 1,
+    });
+
+    let authorizeCalls = 0;
+
+    const oauth = {
+      async refresh() {
+        throw new OAuthRejectedError('revoked', { status: 400 });
+      },
+      createAuthorizationRequest() {
+        return { url: 'https://hr.example.test/authorize', state: 's', verifier: 'v' };
+      },
+      async exchangeCode() {
+        return {
+          accessToken: 'browser-access',
+          refreshToken: 'browser-refresh',
+          expiresAt: Date.now() + 600_000,
+        };
+      },
+    };
+
+    const authorizer = {
+      async authorize() {
+        authorizeCalls += 1;
+        return { code: 'code', state: 's' };
+      },
+    };
+
+    const manager = new TokenManager({
+      oauth,
+      authorizer,
+      store,
+      credentials: { username: 'user', password: 'password' },
+    });
+
+    await expect(manager.getAccessToken()).resolves.toBe('browser-access');
+    expect(authorizeCalls).toBe(1);
+
+    await expect(manager.getAccessToken()).resolves.toBe('browser-access');
+    expect(authorizeCalls).toBe(1);
+  });
+
+  test('propagates permission errors from load()', () => {
+    test.skip(process.platform === 'win32', 'POSIX permission semantics');
+
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'orangehrm-auth-test-'));
+
+    try {
+      const store = new FileTokenStore(path.join(directory, 'token.json'));
+      store.save({ accessToken: 'x' });
+
+      fs.chmodSync(store.filePath, 0o000);
+
+      // Running as root bypasses permission bits even on POSIX.
+      if (process.getuid && process.getuid() === 0) {
+        return;
+      }
+
+      expect(() => store.load()).toThrow();
+    } finally {
+      try {
+        fs.chmodSync(path.join(directory, 'token.json'), 0o600);
+      } catch {
+        /* ignore */
+      }
+      fs.rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  test('applies 0600 permissions to an existing token file', () => {
+    test.skip(process.platform === 'win32', 'POSIX permission semantics');
+
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'orangehrm-auth-test-'));
+
+    try {
+      const store = new FileTokenStore(path.join(directory, 'token.json'));
+
+      store.save({ accessToken: 'first' });
+      fs.chmodSync(store.filePath, 0o644);
+
+      store.save({ accessToken: 'second' });
+
+      const mode = fs.statSync(store.filePath).mode & 0o777;
+      expect(mode).toBe(0o600);
+    } finally {
+      fs.rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  test('times out when no callback is received', async () => {
+    const authorizer = new OAuthAuthorizer({
+      callbackHost: '127.0.0.1',
+      callbackPort: 0,
+      timeoutMs: 100,
+    });
+
+    const callback = authorizer._createCallbackServer('expected-state');
+    const server = await callback.serverReady;
+
+    try {
+      await expect(callback.result).rejects.toThrow('OAuth callback timed out after 100ms');
+    } finally {
+      await authorizer._stopCallbackServer(server);
+    }
+  });
+
+  test('rejects serverReady when the callback port is already in use', async () => {
+    const blocker = await listen(http.createServer(() => {}));
+    const port = blocker.address().port;
+
+    try {
+      const authorizer = new OAuthAuthorizer({
+        callbackHost: '127.0.0.1',
+        callbackPort: port,
+        timeoutMs: 1_000,
+      });
+
+      const callback = authorizer._createCallbackServer('state');
+
+      await expect(callback.serverReady).rejects.toThrow();
+      await expect(callback.result).rejects.toThrow();
+    } finally {
+      await closeServer(blocker);
+    }
+  });
+
+  test.describe('Constructor validation', () => {
+    test('OAuthClient rejects missing required options', () => {
+      expect(() => new OAuthClient({})).toThrow(TypeError);
+      expect(
+        () =>
+          new OAuthClient({
+            authorizationUrl: 'https://x/authorize',
+            tokenUrl: 'https://x/token',
+            clientId: 'c',
+            // missing redirectUri
+          }),
+      ).toThrow(TypeError);
+      expect(
+        () =>
+          new OAuthClient({
+            authorizationUrl: 'https://x/authorize',
+            tokenUrl: 'https://x/token',
+            clientId: 'c',
+            redirectUri: 'http://localhost:9876/oauth/callback',
+            timeoutMs: -1,
+          }),
+      ).toThrow(TypeError);
+    });
+
+    test('TokenManager rejects missing collaborators', () => {
+      expect(() => new TokenManager({})).toThrow(TypeError);
+      expect(
+        () =>
+          new TokenManager({
+            oauth: {},
+            authorizer: {},
+            store: {},
+            // missing credentials
+          }),
+      ).toThrow(TypeError);
+    });
+
+    test('OAuthAuthorizer rejects invalid port and timeout', () => {
+      expect(() => new OAuthAuthorizer({ callbackPort: -1 })).toThrow(TypeError);
+      expect(() => new OAuthAuthorizer({ callbackPort: 70000 })).toThrow(TypeError);
+      expect(() => new OAuthAuthorizer({ timeoutMs: 0 })).toThrow(TypeError);
+    });
+  });
+
+  test.describe('AuthenticationError metadata', () => {
+    test('copies custom metadata onto the error', () => {
+      const err = new AuthenticationError('boom', { status: 401, hint: 'x' });
+      expect(err.status).toBe(401);
+      expect(err.hint).toBe('x');
+    });
+
+    test('does not let metadata overwrite reserved Error properties', () => {
+      const err = new AuthenticationError('original message', {
+        message: 'hijacked',
+        name: 'HijackedName',
+        stack: 'hijacked stack',
+      });
+
+      expect(err.message).toBe('original message');
+      expect(err.name).toBe('AuthenticationError');
+      expect(err.stack).not.toBe('hijacked stack');
+    });
+  });
+
+  const { execFileSync } = require('node:child_process');
+  const path = require('node:path');
+
+  test.describe('Config validation', () => {
+    const envModulePath = path.resolve(__dirname, '..', 'src', 'config', 'env.js');
+
+    // Runs env.js in a fresh child process with a controlled environment.
+    // Returns a function that throws with the child's stderr if the module
+    // throws, or returns stdout if it loads cleanly.
+    function runEnvWith(overrides) {
+      // JSON.stringify on the path produces a correctly escaped string literal
+      // even on Windows, where the raw path contains backslashes.
+      const script = `
+      Object.assign(process.env, ${JSON.stringify(overrides)});
+      process.env.OHRM_BASE_URL = process.env.OHRM_BASE_URL || 'http://localhost:8080';
+      process.env.OHRM_OAUTH_CLIENT_ID = process.env.OHRM_OAUTH_CLIENT_ID || 'client';
+      const env = require(${JSON.stringify(envModulePath)});
+      process.stdout.write(JSON.stringify({
+        callbackHost: env.callbackHost,
+        callbackPort: env.callbackPort,
+        callbackPath: env.callbackPath,
+      }));
+    `;
+
+      return () =>
+        execFileSync(process.execPath, ['-e', script], {
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
+    }
+
+    test('rejects a redirect URI with no explicit port', () => {
+      const run = runEnvWith({
+        OHRM_OAUTH_REDIRECT_URI: 'http://localhost/oauth/callback',
+      });
+      // Assert on the specific message, not just "something threw." Without
+      // this, a MODULE_NOT_FOUND from a bad path would satisfy the assertion.
+      expect(run).toThrow(/must include an explicit port/);
+    });
+
+    test('rejects a redirect URI with a non-numeric port', () => {
+      const run = runEnvWith({
+        OHRM_OAUTH_REDIRECT_URI: 'http://localhost:notaport/oauth/callback',
+      });
+      expect(run).toThrow(/not a valid absolute URL|invalid port/);
+    });
+
+    test('rejects a redirect URI with an out-of-range port', () => {
+      const run = runEnvWith({
+        OHRM_OAUTH_REDIRECT_URI: 'http://localhost:99999/oauth/callback',
+      });
+      expect(run).toThrow(/not a valid absolute URL|invalid port/);
+    });
+
+    test('rejects a non-http redirect URI', () => {
+      const run = runEnvWith({
+        OHRM_OAUTH_REDIRECT_URI: 'ftp://localhost:9876/oauth/callback',
+      });
+      expect(run).toThrow(/must use http or https/);
+    });
+
+    test('derives callbackHost, callbackPort, and callbackPath from the redirect URI', () => {
+      const run = runEnvWith({
+        OHRM_OAUTH_REDIRECT_URI: 'http://127.0.0.1:12345/custom/cb',
+      });
+      const output = run();
+      const parsed = JSON.parse(output);
+      expect(parsed).toEqual({
+        callbackHost: '127.0.0.1',
+        callbackPort: 12345,
+        callbackPath: '/custom/cb',
+      });
+    });
   });
 });
