@@ -15,12 +15,14 @@ class TokenManager {
     this.credentials = credentials;
     this.refreshSafetyMs = refreshSafetyMs;
     this.inFlight = null;
+    this.lastAccessTokenSource = null;
   }
 
   async getAccessToken() {
     const cached = this.store.load();
 
     if (this._isValid(cached)) {
+      this.lastAccessTokenSource = 'cache';
       return cached.accessToken;
     }
 
@@ -31,6 +33,8 @@ class TokenManager {
     }
 
     const token = await this.inFlight;
+
+    this.lastAccessTokenSource = token.source;
 
     return token.accessToken;
   }
@@ -62,7 +66,10 @@ class TokenManager {
         };
 
         this.store.save(merged);
-        return merged;
+        return {
+          ...merged,
+          source: 'refresh',
+        };
       }
     }
 
@@ -84,7 +91,10 @@ class TokenManager {
     });
 
     this.store.save(tokens);
-    return tokens;
+    return {
+      ...tokens,
+      source: 'authorization',
+    };
   }
 
   _isRefreshTokenRejection(err) {

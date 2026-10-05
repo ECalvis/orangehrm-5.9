@@ -49,8 +49,19 @@ async function main(roleName) {
 
   await manager.getAccessToken();
 
-  console.log('Access token acquired successfully.');
-  console.log(`Token saved to: ${role.tokenFile}`);
+  switch (manager.lastAccessTokenSource) {
+    case 'cache':
+      console.log('Access token loaded from cache.');
+      break;
+    case 'refresh':
+      console.log('Access token refreshed successfully.');
+      break;
+    case 'authorization':
+      console.log('Access token acquired via authorization flow.');
+      break;
+    default:
+      console.log('Access token acquired successfully.');
+  }
 }
 
 main(process.argv[2] || 'admin').catch((err) => {
