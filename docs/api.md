@@ -8,7 +8,7 @@
 - API contract version: 2.8.0
 - PHP: 8.3.35
 - Apache: 2.4.68 (Debian)
-- MariaDB: 10.11
+- MariaDB: 11.4.13-MariaDB-ubu2404 (live instance)
 - App URL: http://localhost:8080
 - DB URL: localhost:3307 → container 3306
 - Deployment: `php:8.3-apache-bookworm` base image, OrangeHRM 5.9 from SourceForge with MD5 verification, volume `orangehrm_app` at `/var/www/html`
@@ -779,6 +779,8 @@ Error shapes: Verify 401/403/404/422 bodies match documented envelopes
 
 OAuth: PKCE flow, token exchange, refresh, expired/invalid tokens
 
+The repository's live integration target (`npm run test:live`) exercises the configured OrangeHRM instance without HTTP or API mocks. It verifies Admin employee reads against MariaDB, checks ESS access to its linked employee and denial for another employee, and confirms that an unauthenticated request receives the live JSON 401 response. The test is read-only apart from normal authentication audit events.
+
 8.6 Verification
 Use GET endpoints to verify state after UI actions or API writes. For DB-level verification, query tables with mysql2 and compare with API responses.
 
@@ -789,7 +791,7 @@ Endpoint access (403 vs success)
 
 Data visibility (filtered lists vs full lists)
 
-self flag behavior (ESS sees only own record)
+self flag behavior (in the current live instance, ESS can GET its linked employee by ID and gets 422 for another employee; the unfiltered employee collection currently returns zero rows)
 
 Row-level access (Supervisor can access subordinates but not unrelated employees)
 
@@ -875,7 +877,7 @@ hasPassword user filter: Reads as boolean, semantically "has a password set".
     FACT (verified via file path, HTTP response, or DB row)
     Environment:
 
-App version 5.9, API contract version 2.8.0, PHP 8.3.35, Apache 2.4.68, MariaDB 10.11
+App version 5.9, API contract version 2.8.0, PHP 8.3.35, Apache 2.4.68, MariaDB 11.4.13-MariaDB-ubu2404
 
 Base URL http://localhost:8080, API prefix /web/index.php/api/v2/, OAuth prefix /web/index.php/oauth2/
 

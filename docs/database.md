@@ -1,12 +1,12 @@
 # OrangeHRM 5.9 Database Architecture and Data Model
 
-**Verified against:** Running 5.9 instance (MariaDB 10.11.19, PHP 8.3.35) and a cloned 5.9 source tree.
+**Verified against:** Running 5.9 instance (MariaDB 11.4.13-MariaDB-ubu2404, PHP 8.3.35) and a cloned 5.9 source tree.
 
 ---
 
 ## 1. Scope
 
-Covers the database layer of OrangeHRM 5.9 as deployed with MariaDB 10.11. Focuses on:
+Covers the database layer of OrangeHRM 5.9 as deployed with MariaDB 11.4. Focuses on:
 
 - Architecture, ORM, migration system
 - Key entities and relationships
@@ -250,7 +250,7 @@ This means the next employee created will receive `emp_number = 5`, **not** `max
 - `emp_number` is nullable — a user can exist without an employee link
 - `user_role_id` is NOT NULL — every user must have a role
 
-- **Live row count:** 1 (id=1, `user_name=Caummobunummu9625@yopmail.com`, role=Admin, `emp_number=1`)
+- **Live row count:** 2 (enabled Admin and ESS accounts, linked to employee numbers 1 and 2)
 - **API resource:** `/api/v2/admin/users` (class `OrangeHRM\Admin\Api\UserAPI`, data_group_id 81)
 - **UI feature:** Admin → User Management
 - **QA relevance:** Login credentials; role assignment; tied to employee deletion.
@@ -712,6 +712,8 @@ Useful for:
 
 Prefer API for setup when the API exists; fall back to DB for bulk or low-level fixtures.
 
+For live, read-only verification of the configured instance, run `npm run test:live`. The integration suite compares the Admin employee API response with `hs_hr_employee`, exercises repository reads and a read-only transaction through the real MariaDB pool, and does not seed or delete business data.
+
 ### 8.4 Cleanup
 
 - **Cascading tables:** deleting the employee via API removes most dependent rows automatically.
@@ -754,7 +756,8 @@ Prefer API for setup when the API exists; fall back to DB for bulk or low-level 
 
 - OrangeHRM version: 5.9.0 (from `hs_hr_config` key `instance.version`)
 - Migration version: last row in `ohrm_migration_log` is 5.9.0
-- MariaDB: 10.11.19-MariaDB-ubu2204
+- MariaDB runtime: 11.4.13-MariaDB-ubu2404
+- Historical migration install stamp: 10.11.19-MariaDB-ubu2204
 - PHP: 8.3.35
 - Doctrine ORM: 2.20.7
 - Doctrine DBAL: 3.8.1

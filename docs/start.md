@@ -2461,6 +2461,14 @@ npx prettier src/ui tests/ui.spec.js tests/fixtures/ui.js playwright.config.js -
 
 For environment-backed end-to-end tests, import { test, expect } from tests/fixtures/ui.js and use the injected ui fixture. Set OHRM_BASE_URL and the role credentials in .env before navigating to the local instance. These tests are intentionally separate from the isolated regression suite so running the latter does not require a deployed application.
 
+The repository also includes a no-mock integration suite against the running OrangeHRM, MariaDB, and real browser:
+
+```sh
+npm run test:live
+```
+
+Create `.env` from `.env.example`, start the documented Compose services, configure the Admin and ESS credentials, OAuth client, and database connection, then run the command. The suite checks real Admin and ESS UI login, authenticated employee API reads, ESS row-level authorization, unauthenticated API rejection, API-to-database employee consistency, and a read-only database transaction. It creates or deletes no business records. Normal login audit events are produced by the application. The focused `npm test` regression suite remains independent of a running instance.
+
 Part 11 — Naming the Whole Thing (for Your Own Defense)
 SRP — selectors, base navigation, one component per interaction pattern, one page per screen, one workflow per business flow.
 
