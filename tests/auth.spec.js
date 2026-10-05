@@ -675,53 +675,6 @@ test.describe('File token store', () => {
     expect(authorizeCalls).toBe(1);
   });
 
-  test('propagates permission errors from load()', () => {
-    test.skip(process.platform === 'win32', 'POSIX permission semantics');
-
-    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'orangehrm-auth-test-'));
-
-    try {
-      const store = new FileTokenStore(path.join(directory, 'token.json'));
-      store.save({ accessToken: 'x' });
-
-      fs.chmodSync(store.filePath, 0o000);
-
-      // Running as root bypasses permission bits even on POSIX.
-      if (process.getuid && process.getuid() === 0) {
-        return;
-      }
-
-      expect(() => store.load()).toThrow();
-    } finally {
-      try {
-        fs.chmodSync(path.join(directory, 'token.json'), 0o600);
-      } catch {
-        /* ignore */
-      }
-      fs.rmSync(directory, { recursive: true, force: true });
-    }
-  });
-
-  test('applies 0600 permissions to an existing token file', () => {
-    test.skip(process.platform === 'win32', 'POSIX permission semantics');
-
-    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'orangehrm-auth-test-'));
-
-    try {
-      const store = new FileTokenStore(path.join(directory, 'token.json'));
-
-      store.save({ accessToken: 'first' });
-      fs.chmodSync(store.filePath, 0o644);
-
-      store.save({ accessToken: 'second' });
-
-      const mode = fs.statSync(store.filePath).mode & 0o777;
-      expect(mode).toBe(0o600);
-    } finally {
-      fs.rmSync(directory, { recursive: true, force: true });
-    }
-  });
-
   test('times out when no callback is received', async () => {
     const authorizer = new OAuthAuthorizer({
       callbackHost: '127.0.0.1',

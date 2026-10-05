@@ -13,7 +13,7 @@ class OAuthAuthorizer {
     callbackPort = 9876,
     callbackPath = '/oauth/callback',
     timeoutMs = 120_000,
-    headless = false,
+    headless = true,
   } = {}) {
     if (!Number.isFinite(callbackPort) || callbackPort < 0 || callbackPort > 65535) {
       throw new TypeError(`callbackPort must be between 0 and 65535, got: ${callbackPort}`);
