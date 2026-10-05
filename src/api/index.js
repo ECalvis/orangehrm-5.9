@@ -1,4 +1,5 @@
 const { ApiClient } = require('./client');
+const { ApiError } = require('./errors');
 const { EmployeesApi } = require('./endpoints/employees');
 const { UsersApi } = require('./endpoints/users');
 
@@ -12,4 +13,4 @@ function createApi({ baseUrl, tokenManager, logger } = {}) {
   };
 }
 
-module.exports = { createApi };
+module.exports = { createApi, ApiError };

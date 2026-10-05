@@ -563,7 +563,7 @@ raw(opts) → AxiosResponse (escape hatch, rarely)
 // Data — what callers receive
 {
 data: T | T[], // envelope.data
-meta: object, // envelope.meta ({} or { total: N })
+meta: object | array, // OrangeHRM uses [] for single resources and objects for collections
 rels: array // envelope.rels (usually [])
 }
 Critical design choice: the client returns the whole envelope {data, meta, rels}. It does not flatten. Why? Because list endpoints need meta.total for pagination assertions, and hiding it means tests re-fetch. Keep the envelope; make it explicit.
@@ -577,7 +577,7 @@ constructor(message, { status, code, data, raw } = {}) {
 super(message);
 this.name = 'ApiError';
 this.status = status; // number | string (OrangeHRM quirk)
-this.code = code; // 'UNAUTHORIZED' | 'FORBIDDEN' | 'NOT_FOUND' | 'VALIDATION' | 'UNKNOWN'
+this.code = code; // includes UNAUTHORIZED, FORBIDDEN, NOT_FOUND, VALIDATION, OAUTH_ERROR
 this.data = data; // error.data (invalidParamKeys, etc.)
 this.raw = raw;
 }
@@ -723,13 +723,15 @@ Key points:
 
 Token is fetched on every request through TokenManager.getAccessToken(). Because Phase 1 caches and refreshes, this is cheap and correct.
 
-ApiError is the only error type callers ever see. No axios leaking.
+HTTP failures are normalized to ApiError; authentication failures from TokenManager propagate unchanged so callers can distinguish them. Axios errors do not leak through the regular request methods.
 
 The envelope is normalized here — endpoints never see raw axios responses.
 
 One interceptor. One place. No magic.
 
 logger is optional. If you don't have one, pass nothing.
+
+The client accepts only relative API paths, fixes each request to the configured base URL, and disables redirects. This prevents bearer tokens from being sent to an absolute URL or forwarded through a login redirect.
 
 src/api/endpoints/employees.js
 Domain language. No axios. No envelope. No auth.

@@ -2,9 +2,9 @@ const http = require('node:http');
 
 const { expect, test } = require('@playwright/test');
 
-const { ApiError } = require('../src/api/errors');
+const { AuthenticationError } = require('../src/auth/errors');
 const { normalizeError, normalizeSuccess } = require('../src/api/envelope');
-const { createApi } = require('../src/api');
+const { ApiError, createApi } = require('../src/api');
 
 function listen(server) {
   return new Promise((resolve, reject) => {
@@ -151,6 +151,11 @@ test.describe('API client and endpoint facade', () => {
       await api._client.put('/test/7', { enabled: true });
       await api._client.delete('/test/7', { ids: [7] });
       const raw = await api._client.raw({ method: 'GET', url: '/raw' });
+      await api._client.request({
+        method: 'GET',
+        url: '/safe',
+        baseURL: 'http://example.invalid',
+      });
 
       expect(received.slice(2).map(({ method, url }) => [method, url])).toEqual([
         ['GET', '/web/index.php/api/v2/pim/employees/7'],
@@ -161,6 +166,7 @@ test.describe('API client and endpoint facade', () => {
         ['PUT', '/web/index.php/api/v2/test/7'],
         ['DELETE', '/web/index.php/api/v2/test/7'],
         ['GET', '/web/index.php/api/v2/raw'],
+        ['GET', '/web/index.php/api/v2/safe'],
       ]);
       expect(received[3].body).toBe(JSON.stringify({ firstName: 'Test', lastName: 'Employee' }));
       expect(received[4].body).toBe(JSON.stringify({ ids: [7, 8] }));
@@ -171,7 +177,14 @@ test.describe('API client and endpoint facade', () => {
         status: 200,
         data: { data: [{ empNumber: 7 }], meta: { total: 1 }, rels: [] },
       });
-      expect(tokenCalls).toBe(10);
+      expect(tokenCalls).toBe(11);
+      await expect(api._client.get('https://example.invalid/steal')).rejects.toThrow(
+        'API request URL must be a relative path',
+      );
+      await expect(api._client.get('/../admin/users')).rejects.toThrow(
+        'API request URL must resolve within the configured API base URL',
+      );
+      expect(received).toHaveLength(11);
     } finally {
       await closeServer(server);
     }
@@ -237,9 +250,29 @@ test.describe('API client and endpoint facade', () => {
   test('requires a base URL and token manager interface', () => {
     expect(() => createApi({ tokenManager: {} })).toThrow(TypeError);
     expect(() => createApi({ baseUrl: 'http://localhost', tokenManager: {} })).toThrow(TypeError);
+    expect(() =>
+      createApi({
+        baseUrl: 'https://user:password@example.test/api',
+        tokenManager: { async getAccessToken() {} },
+      }),
+    ).toThrow(TypeError);
     expect(new ApiError('API failed', { code: 'UNKNOWN' })).toMatchObject({
       name: 'ApiError',
       code: 'UNKNOWN',
     });
+  });
+
+  test('preserves authentication failures instead of reclassifying them as API errors', async () => {
+    const authenticationError = new AuthenticationError('Token acquisition failed');
+    const api = createApi({
+      baseUrl: 'http://localhost/api/v2',
+      tokenManager: {
+        async getAccessToken() {
+          throw authenticationError;
+        },
+      },
+    });
+
+    await expect(api.employees.list()).rejects.toBe(authenticationError);
   });
 });
