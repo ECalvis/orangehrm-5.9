@@ -1,0 +1,7 @@
+node_modules/
+.env
+
+auth/*.token.json
+
+oauth-debug.png
+*.log
