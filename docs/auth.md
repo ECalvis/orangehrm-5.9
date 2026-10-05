@@ -1,6 +1,6 @@
 # Authentication and Authorization in OrangeHRM 5.9
 
-**Verified against:** Running 5.9 instance (MariaDB 10.11.19, PHP 8.3.35, Apache) and a cloned 5.9 source tree.
+**Verified against:** Running 5.9 instance (MariaDB 11.4.13-MariaDB-ubu2404, PHP 8.3.35, Apache) and a cloned 5.9 source tree.
 
 ---
 
@@ -796,7 +796,7 @@ Z3 Admin DELETE /api/v2/admin/users 200, {data:[id]}
 Z4 ESS POST /api/v2/admin/users 403 {"error":{"status":403,"message":"Unauthorized"}}
 Z5 ESS POST /api/v2/pim/employees 403 same
 Z6 ESS DELETE /api/v2/pim/employees 403 same
-Z7 ESS GET /api/v2/pim/employees 200, only own empNumber (self=1)
+Z7 ESS GET /api/v2/pim/employees/{ownEmpNumber} 200; GET for another employee returns 422. In the current live instance, an unfiltered ESS employee collection request returns zero rows, so collection self-scoping is not assumed by the integration test.
 Z8 ESS direct URL /admin/viewSystemUsers 403 HTML with <auth-forbidden>
 Z9 Row-level: ESS GET another empNumber 422 (blocked by IN_ACCESSIBLE_EMP_NUMBERS)
 Z10 Workflow: Admin DELETE active employee Allowed via FLOW_EMPLOYEE / ACTIVE / action 2
@@ -818,6 +818,8 @@ RECOMMENDATION: Test ENTITY_UNIQUE_PROPERTY with both purgedAt=null and non-null
 RECOMMENDATION: Never modify ohrm_user_role, ohrm_data_group, ohrm_user_role_data_group, or ohrm_api_permission in tests. Treat them as read-only fixtures.
 
 RECOMMENDATION: Do not log or persist oauth.encryption_key or oauth.token_encryption_key from hs_hr_config.
+
+The live integration target (`npm run test:live`) verifies real Admin and ESS browser login, API authentication, and ESS own-record versus other-record access. It uses the configured token stores and live database; it does not mock the OrangeHRM server.
 
 9. Known Quirks / Gotchas
 
@@ -848,7 +850,7 @@ Legacy OAuth tables ohrm_oauth_client, ohrm_oauth_access_token, ohrm_oauth_autho
 
 Active OAuth2 tables are ohrm_oauth2_*.
 
-MariaDB: 10.11.19-MariaDB-ubu2204.
+MariaDB runtime: 11.4.13-MariaDB-ubu2404. The migration log retains its historical install stamp of 10.11.19-MariaDB-ubu2204.
 
 PHP: 8.3.35.
 
@@ -916,7 +918,7 @@ ESS POST /api/v2/admin/users → 403.
 
 ESS POST/DELETE /api/v2/pim/employees → 403.
 
-ESS GET /api/v2/pim/employees → 200, only own empNumber (self=1).
+ESS GET /api/v2/pim/employees/{ownEmpNumber} → 200; GET for another employee returns 422. The unfiltered collection currently returns zero rows in this live instance.
 
 ESS direct URL /admin/viewSystemUsers → 403 HTML with <auth-forbidden>.
 
@@ -1075,7 +1077,7 @@ POST /web/index.php/api/v2/admin/users → 200 (Admin).
 
 DELETE /web/index.php/api/v2/admin/users → 200 (Admin).
 
-GET /web/index.php/api/v2/pim/employees → 200 (ESS, only own empNumber).
+GET /web/index.php/api/v2/pim/employees/{ownEmpNumber} → 200 (ESS); another employee ID returns 422. The unfiltered collection currently returns zero rows in this live instance.
 
 POST /web/index.php/api/v2/admin/users → 403 (ESS).
 

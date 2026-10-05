@@ -8,7 +8,7 @@ Every claim is traceable to a specific file, a pasted `app.js` trace, or a DB ro
 
 ## 1. Scope
 
-Covers the frontend/UI architecture of OrangeHRM 5.9 as deployed in a local instance (MariaDB 10.11.19, PHP 8.3.35, Apache) and verified against a cloned 5.9 source tree and a cloned OXD 2.0.3 source tree. Focuses on the Vue 3 single-page application (SPA) that Playwright will interact with:
+Covers the frontend/UI architecture of OrangeHRM 5.9 as deployed in a local instance (MariaDB 11.4.13-MariaDB-ubu2404, PHP 8.3.35, Apache) and verified against a cloned 5.9 source tree and a cloned OXD 2.0.3 source tree. Focuses on the Vue 3 single-page application (SPA) that Playwright will interact with:
 
 - Technology stack
 - Module structure

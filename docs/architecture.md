@@ -3,7 +3,7 @@
 **Status:** Source-verified and live-verified. Every claim is traceable to a specific source file, DB row, or HTTP response.
 **Version:** OrangeHRM 5.9
 **SUT:** http://localhost:8080/web/index.php
-**DB:** MariaDB 10.11 (schema inspected live)
+**DB:** MariaDB 11.4.13-MariaDB-ubu2404 (schema inspected live)
 **PHP:** 8.3.35 (Apache/2.4.68 Debian)
 **Evidence base:** 36 source files, 7 DB queries, 1 live HTTP trace.
 
