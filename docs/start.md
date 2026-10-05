@@ -530,16 +530,18 @@ src/api/
 ├── client.js # HTTP transport + auth + envelope unwrap + error mapping
 ├── errors.js # ApiError taxonomy
 ├── envelope.js # {data, meta, rels} + {error: {...}} normalizers
+├── resource.js # shared method/path route-group builder
+├── index.js # createApi composition root
 └── endpoints/
-├── employees.js
-├── users.js
-├── leave.js
-├── timesheets.js
-├── attendance.js
-├── recruitment.js
-├── claim.js
-└── admin.js
-Six conceptual pieces. Same shape as auth. Same boundaries. Same composition root pattern.
+    ├── admin.js, attendance.js, authentication.js, branding.js, buzz.js
+    ├── claim.js, core.js, dashboard.js, directory.js, employees.js
+    ├── ldap.js, leave.js, maintenance.js, mobile.js, openid.js
+    ├── performance.js, pim.js, recruitment.js, system.js, time.js
+    ├── users.js, workspace-notifications.js
+
+The facade covers all **523 HTTP method + path operations** declared in the 23
+plugin `routes.yaml` files in the bundled OrangeHRM 5.9 source archive. It
+excludes non-API file routes and legacy API v1, consistent with `docs/api.md`.
 
 Do not add schemas/, resources/, models/, or contracts/ yet. Those belong to Phase 3 (contract validation) when you actually have a reason to add them.
 
@@ -566,7 +568,7 @@ raw(opts) → AxiosResponse (escape hatch, rarely)
 // Data — what callers receive
 {
 data: T | T[], // envelope.data
-meta: object, // envelope.meta ({} or { total: N })
+meta: object | array, // OrangeHRM uses [] for single resources and objects for collections
 rels: array // envelope.rels (usually [])
 }
 Critical design choice: the client returns the whole envelope {data, meta, rels}. It does not flatten. Why? Because list endpoints need meta.total for pagination assertions, and hiding it means tests re-fetch. Keep the envelope; make it explicit.
@@ -580,7 +582,7 @@ constructor(message, { status, code, data, raw } = {}) {
 super(message);
 this.name = 'ApiError';
 this.status = status; // number | string (OrangeHRM quirk)
-this.code = code; // 'UNAUTHORIZED' | 'FORBIDDEN' | 'NOT_FOUND' | 'VALIDATION' | 'UNKNOWN'
+this.code = code; // includes UNAUTHORIZED, FORBIDDEN, NOT_FOUND, VALIDATION, OAUTH_ERROR
 this.data = data; // error.data (invalidParamKeys, etc.)
 this.raw = raw;
 }
@@ -726,13 +728,46 @@ Key points:
 
 Token is fetched on every request through TokenManager.getAccessToken(). Because Phase 1 caches and refreshes, this is cheap and correct.
 
-ApiError is the only error type callers ever see. No axios leaking.
+HTTP failures are normalized to ApiError; authentication failures from TokenManager propagate unchanged so callers can distinguish them. Axios errors do not leak through the regular request methods.
 
 The envelope is normalized here — endpoints never see raw axios responses.
 
 One interceptor. One place. No magic.
 
 logger is optional. If you don't have one, pass nothing.
+
+The client accepts only relative API paths, fixes each request to the configured base URL, and disables redirects. This prevents bearer tokens from being sent to an absolute URL or forwarded through a login redirect.
+
+No application-session cookie, SPA redirect/reload behavior, or frontend ETag
+cache is included. Those behaviors belong to OrangeHRM's Vue `APIService`;
+this client is the injected OAuth-token client for automation and API tests.
+
+Route-group calls keep HTTP parameters explicit:
+
+```js
+const { data, meta } = await api.pim.employees.list({ limit: 20, offset: 0 });
+const { data: employee } = await api.pim.employeePersonalDetails.get({ empNumber: 7 });
+await api.pim.employeePersonalDetails.update({
+  empNumber: 7,
+  data: { firstName: 'Updated' },
+});
+await api.pim.employeeDependents.create({
+  empNumber: 7,
+  data: { name: 'Dependent' },
+});
+await api.admin.users.get({ id: 3 });
+```
+
+Static GET methods accept query fields directly. Dynamic routes take their
+named path parameters on the argument object; dynamic POST/PUT requests place
+the payload in `data`. Static POST/PUT methods take the payload directly.
+Collection DELETE methods accept `ids` (sent as `{ids: [...]}`); item DELETE
+routes use the route's path identifier. Path segments are validated and URL
+encoded before transport.
+
+`api.employees` and `api.users` remain compatibility conveniences. New tests
+should use the domain-qualified surfaces (`api.pim.employees`,
+`api.admin.users`) to make the OrangeHRM module explicit.
 
 src/api/endpoints/employees.js
 Domain language. No axios. No envelope. No auth.
@@ -743,22 +778,22 @@ constructor(client) { this.client = client; }
 
 async list(params = {}) {
 // params: { limit?, offset?, model?, includeEmployees?, name?, ... }
-return this.client.get('/web/index.php/api/v2/pim/employees', { params });
+return this.client.get('/pim/employees', { params });
 }
 
 async get(empNumber) {
-return this.client.get(`/web/index.php/api/v2/pim/employees/${empNumber}`);
+return this.client.get(`/pim/employees/${empNumber}`);
 }
 
 async create({ firstName, lastName, middleName, employeeId }) {
-return this.client.post('/web/index.php/api/v2/pim/employees', {
+return this.client.post('/pim/employees', {
 firstName, lastName, middleName, employeeId,
 });
 }
 
 async delete(empNumbers) {
 const ids = Array.isArray(empNumbers) ? empNumbers : [empNumbers];
-return this.client.delete('/web/index.php/api/v2/pim/employees', { ids });
+return this.client.delete('/pim/employees', { ids });
 }
 }
 
@@ -777,18 +812,18 @@ class UsersApi {
 constructor(client) { this.client = client; }
 
 list(params = {}) {
-return this.client.get('/web/index.php/api/v2/admin/users', { params });
+return this.client.get('/admin/users', { params });
 }
 
 create({ username, password, status, userRoleId, empNumber }) {
-return this.client.post('/web/index.php/api/v2/admin/users', {
+return this.client.post('/admin/users', {
 username, password, status, userRoleId, empNumber,
 });
 }
 
 delete(ids) {
 const list = Array.isArray(ids) ? ids : [ids];
-return this.client.delete('/web/index.php/api/v2/admin/users', { ids: list });
+return this.client.delete('/admin/users', { ids: list });
 }
 }
 
@@ -831,22 +866,23 @@ const { OAuthAuthorizer } = require('../src/auth/oauth-authorizer');
 const { FileTokenStore } = require('../src/auth/token-store');
 const { TokenManager } = require('../src/auth/token-manager');
 const { createApi } = require('../src/api');
+const env = require('../src/config/env');
 
 async function buildApi(roleName) {
 const role = users[roleName];
-const baseUrl = process.env.OHRM_BASE_URL;
+const baseUrl = env.apiBaseUrl;
 
 const oauth = new OAuthClient({
-authorizationUrl: `${baseUrl}/web/index.php/oauth2/authorize`,
-tokenUrl: `${baseUrl}/web/index.php/oauth2/token`,
-clientId: process.env.OHRM_OAUTH_CLIENT_ID,
-redirectUri: process.env.OHRM_OAUTH_REDIRECT_URI,
+authorizationUrl: env.oauthAuthUrl,
+tokenUrl: env.oauthTokenUrl,
+clientId: env.oauthClientId,
+redirectUri: env.oauthRedirectUri,
 });
 
 const authorizer = new OAuthAuthorizer({
-callbackHost: 'localhost',
-callbackPort: 9876,
-callbackPath: '/oauth/callback',
+callbackHost: env.callbackHost,
+callbackPort: env.callbackPort,
+callbackPath: env.callbackPath,
 });
 
 const store = new FileTokenStore(role.tokenFile);
@@ -947,30 +983,17 @@ No construction outside composition root Only src/api/index.js builds the client
 Injected dependencies TokenManager is passed in, never imported by the client
 No speculative generality No retries, no schemas, no caches until a test fails
 Playwright never in infrastructure API layer is pure Node + axios; runs in scripts, CI, and tests
-Part 10 — What To Do Right Now
-Write src/api/errors.js — 30 seconds.
+Part 10 — Phase 2 Verification
+Run the isolated client and boundary tests with `npm test -- tests/api.spec.js`. They use a local HTTP server and do not require OrangeHRM credentials.
 
-Write src/api/envelope.js — 15 minutes. Copy the quirks table into a header comment.
+Run `npm run api:smoke -- admin` (or `npm run api:smoke -- ess`) to verify the complete OAuth + API composition against a configured OrangeHRM instance. This smoke check lists up to five employees; it does not create or delete data.
 
-Write src/api/client.js — 30 minutes. The interceptor is the only subtle part.
+The route-manifest test asserts coverage of the bundled source route inventory;
+the local-server tests exercise auth headers, request bodies and query strings,
+path-parameter encoding, the response/error envelopes, API redirects, and
+authentication failure propagation.
 
-Write src/api/endpoints/employees.js and users.js — 10 minutes each.
-
-Write src/api/index.js — 5 minutes.
-
-Write scripts/api-smoke.js — 15 minutes.
-
-Run: node scripts/api-smoke.js. Iterate.
-
-Write a tests/api/employees.spec.js (or a plain Node script if you haven't wired Playwright Test yet) that hits:
-
-list() → asserts meta.total is a number
-
-create({firstName:''}) → expects ApiError with code: 'VALIDATION', status: '422', invalidParamKeys contains firstName
-
-get(99999) → expects ApiError with code: 'NOT_FOUND', status: '404'
-
-Stop. Phase 2 is done. Do not add schemas, retries, or additional endpoint files until you build Phase 3 (data) or Phase 4 (UI) and need them.
+Stop here. Do not add schemas, retries, or other speculative API infrastructure.
 
 Part 11 — Naming the Whole Thing (for your own defense)
 SRP — client.js transports; envelope.js normalizes; errors.js types; endpoints/* speaks domain.
