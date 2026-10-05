@@ -1,4 +1,5 @@
 const { createRouteGroup } = require('../resource');
+const { userRoutes } = require('./users');
 
 const route = (method, path) => ({ method, path });
 
@@ -23,13 +24,7 @@ function createAdminApi(client) {
       get: route('GET', '/admin/job-categories/{id}'),
       update: route('PUT', '/admin/job-categories/{id}'),
     },
-    users: {
-      list: route('GET', '/admin/users'),
-      get: route('GET', '/admin/users/{id}'),
-      create: route('POST', '/admin/users'),
-      update: route('PUT', '/admin/users/{id}'),
-      delete: route('DELETE', '/admin/users'),
-    },
+    users: userRoutes,
     subunits: {
       list: route('GET', '/admin/subunits'),
       create: route('POST', '/admin/subunits'),

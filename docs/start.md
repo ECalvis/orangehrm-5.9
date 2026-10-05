@@ -532,25 +532,34 @@ src/api/
 ├── envelope.js # {data, meta, rels} + {error: {...}} normalizers
 ├── resource.js # shared method/path route-group builder
 ├── index.js # createApi composition root
-└── endpoints/
+├── endpoints/
     ├── admin.js, attendance.js, authentication.js, branding.js, buzz.js
     ├── claim.js, core.js, dashboard.js, directory.js, employees.js
     ├── ldap.js, leave.js, maintenance.js, mobile.js, openid.js
     ├── performance.js, pim.js, recruitment.js, system.js, time.js
     ├── users.js, workspace-notifications.js
+└── schemas/
+    ├── common.js, employees.js, users.js
+    ├── source-contracts.js, validate.js
+    └── orangehrm-v2.openapi.json
 
 The facade covers all **523 HTTP method + path operations** declared in the 23
 plugin `routes.yaml` files in the bundled OrangeHRM 5.9 source archive. It
 excludes non-API file routes and legacy API v1, consistent with `docs/api.md`.
 
-Do not add schemas/, resources/, models/, or contracts/ yet. Those belong to Phase 3 (contract validation) when you actually have a reason to add them.
+Contract validation is now part of the API phase. AJV validates requests,
+response envelopes, and source-backed endpoint response data. Of the 523
+facade operations, 483 have a matched OpenAPI response schema and 40 receive
+common request-shape and envelope validation only; those 40 are not
+field-level response contracts.
 
 Part 2 — The Boundaries (This Is the Whole Architecture)
 File Knows About MUST NOT Know About
 errors.js nothing nothing
-envelope.js nothing but JS objects axios, auth, config
-client.js axios, TokenManager (injected), ./envelope, ./errors, base config Playwright, DB, tests, roles
-endpoints/*.js the client, endpoint paths, param shapes auth, env, axios, envelope shape
+envelope.js plain objects and shared envelope schemas axios, auth, config
+schemas/* AJV and OrangeHRM source contracts HTTP transport, auth, test roles
+client.js axios, injected TokenManager, schemas, envelope, errors Playwright, DB, roles
+endpoints/*.js route definitions and applicable schemas auth, env, axios, envelope shape
 If you ever want to import TokenManager into endpoints/employees.js, stop. If you ever want to import axios into endpoints/employees.js, stop. The endpoint files speak domain language. The client speaks HTTP.
 
 Part 3 — Data Contracts (Freeze These)
@@ -568,10 +577,10 @@ raw(opts) → AxiosResponse (escape hatch, rarely)
 // Data — what callers receive
 {
 data: T | T[], // envelope.data
-meta: object | array, // OrangeHRM uses [] for single resources and objects for collections
+meta: object | array, // the source contract defines the allowed shape per operation
 rels: array // envelope.rels (usually [])
 }
-Critical design choice: the client returns the whole envelope {data, meta, rels}. It does not flatten. Why? Because list endpoints need meta.total for pagination assertions, and hiding it means tests re-fetch. Keep the envelope; make it explicit.
+Critical design choice: the client returns the whole envelope {data, meta, rels}. It does not flatten. Why? Because list endpoints need meta.total for pagination assertions, and hiding it means tests re-fetch. Keep the envelope; make it explicit. The envelope is validated as received; missing fields are not fabricated.
 
 If you want convenience, add getOne() / getAll() on the endpoint layer that pick data and data + meta respectively.
 
@@ -769,88 +778,59 @@ encoded before transport.
 should use the domain-qualified surfaces (`api.pim.employees`,
 `api.admin.users`) to make the OrangeHRM module explicit.
 
-src/api/endpoints/employees.js
-Domain language. No axios. No envelope. No auth.
+Endpoint modules are route-definition objects composed by
+`createRouteGroup()`. Employee and user route definitions are kept in
+`endpoints/employees.js` and `endpoints/users.js`; source-grounded field
+schemas live under `schemas/`. All endpoint calls share one request builder
+and one validation boundary.
 
-js
-class EmployeesApi {
-constructor(client) { this.client = client; }
+```js
+const employeeRoutes = {
+  list: {
+    method: 'GET',
+    path: '/pim/employees',
+    querySchema: employeeListQuery,
+    responseSchema: { type: 'array', items: employeeData },
+    metaSchema: collectionMeta,
+  },
+  create: {
+    method: 'POST',
+    path: '/pim/employees',
+    bodySchema: employeeCreateBody,
+    responseSchema: employeeModel,
+    metaSchema: emptyMeta,
+  },
+};
+```
 
-async list(params = {}) {
-// params: { limit?, offset?, model?, includeEmployees?, name?, ... }
-return this.client.get('/pim/employees', { params });
-}
-
-async get(empNumber) {
-return this.client.get(`/pim/employees/${empNumber}`);
-}
-
-async create({ firstName, lastName, middleName, employeeId }) {
-return this.client.post('/pim/employees', {
-firstName, lastName, middleName, employeeId,
-});
-}
-
-async delete(empNumbers) {
-const ids = Array.isArray(empNumbers) ? empNumbers : [empNumbers];
-return this.client.delete('/pim/employees', { ids });
-}
-}
-
-module.exports = { EmployeesApi };
-Notice:
-
-Returns the envelope. Callers assert on .data and .meta.total.
-
-No access_token. No Content-Type. No Authorization.
-
-Paths are strings; if they change, you change one file.
-
-src/api/endpoints/users.js
-js
-class UsersApi {
-constructor(client) { this.client = client; }
-
-list(params = {}) {
-return this.client.get('/admin/users', { params });
-}
-
-create({ username, password, status, userRoleId, empNumber }) {
-return this.client.post('/admin/users', {
-username, password, status, userRoleId, empNumber,
-});
-}
-
-delete(ids) {
-const list = Array.isArray(ids) ? ids : [ids];
-return this.client.delete('/admin/users', { ids: list });
-}
-}
-
-module.exports = { UsersApi };
-Same shape. Same rules.
+`source-contracts.js` matches routes to the bundled OrangeHRM 5.9 OpenAPI
+snapshot when an operation is available. Employee and user definitions add
+explicit request/response schemas where the source docs warrant tighter
+validation.
 
 src/api/index.js — the API facade
 This is the second composition root (the first was scripts/obtain-token.js). It wires all endpoints onto the client and hands back a single object.
 
 js
 const { ApiClient } = require('./client');
-const { EmployeesApi } = require('./endpoints/employees');
-const { UsersApi } = require('./endpoints/users');
-// ...import other endpoints here as you build them
+const { createPimApi } = require('./endpoints/pim');
+const { createAdminApi } = require('./endpoints/admin');
 
 function createApi({ baseUrl, tokenManager, logger }) {
 const client = new ApiClient({ baseUrl, tokenManager, logger });
+const pim = createPimApi(client);
+const admin = createAdminApi(client);
 return {
-employees: new EmployeesApi(client),
-users: new UsersApi(client),
-// leave: new LeaveApi(client), ... etc
+pim,
+admin,
+employees: pim.employees,
+users: admin.users,
 _client: client, // escape hatch for tests that need to hit a path directly
 };
 }
 
 module.exports = { createApi };
-Nowhere else in the framework constructs ApiClient or endpoint classes.
+The API composition root constructs one client and attaches all route groups.
 
 Part 5 — Composition Root (the whole framework so far)
 scripts/obtain-token.js — Phase 1, unchanged.
@@ -927,8 +907,25 @@ Clean. Explicit. Matches the wire.
 
 One quirk to handle explicitly: invalid Bearer on GET redirects (302) to /auth/login and returns HTML, not JSON. Your interceptor's validateStatus only accepts 2xx, so 302 falls into normalizeError — but there's no error body. The result is ApiError with code: 'UNKNOWN' and status: 302. That's acceptable. If it ever matters, add a specific branch. Don't over-engineer it now.
 
-Part 7 — What Phase 2 Does NOT Do (Yet)
-No schema validation. You have schemas/ in your old tree. Don't add it yet. When you have three endpoints that need response-shape assertions, add src/api/schemas/ with an AJV wrapper. Not before.
+Part 7 — API Contract Validation and Explicit Limits
+AJV 8 (2020-12) validates route path parameters, query parameters, request
+bodies, the OrangeHRM success/error envelopes, and endpoint response data.
+Source OpenAPI matching provides field-level response validation where the
+OrangeHRM 5.9 annotations define an operation; employee and user routes also
+have explicit request and response schemas. Unmatched routes receive common
+request-shape and success-envelope validation only. They are marked as
+`envelope` coverage rather than presented as complete field-level contracts.
+
+`ApiContractError` reports invalid caller inputs or server responses that
+contradict a declared contract. `ApiError` remains for HTTP/API failures with
+valid error envelopes. `api._client.raw()` is the explicit transport escape
+hatch and does not normalize or validate its response.
+
+The generated OpenAPI snapshot has annotation-generation defects and does
+not describe every facade operation. The adapter normalizes known invalid
+schema values (for example, numeric constraints emitted as strings and empty
+`enum` annotations) without inventing undocumented field constraints. See
+`docs/api.md` for the evidence and known coverage limits.
 
 No retries. OrangeHRM's APIs are idempotent enough that retries hurt more than help. Add retries when you have a flaky endpoint, not speculatively.
 
@@ -976,24 +973,27 @@ The whole stack composes from two roots: scripts/obtain-token.js (auth only) and
 
 Part 9 — Consistency With Phase 1 (Same Rules, Applied Again)
 Principle from Phase 1 Phase 2 Application
-External representation at the boundary {data, meta, rels} and {error: {...}} die inside envelope.js
+External representation at the boundary {data, meta, rels} is validated at envelope.js
 Camel-case internally ApiError.code, ApiError.status — never error_description, never invalidParamKeys outside data
 One reason to change per file Transport, error normalization, envelope normalization, and domain calls are four different files
 No construction outside composition root Only src/api/index.js builds the client
 Injected dependencies TokenManager is passed in, never imported by the client
-No speculative generality No retries, no schemas, no caches until a test fails
+No speculative generality No retries or caches without evidence; schema validation is an API boundary requirement
 Playwright never in infrastructure API layer is pure Node + axios; runs in scripts, CI, and tests
 Part 10 — Phase 2 Verification
 Run the isolated client and boundary tests with `npm test -- tests/api.spec.js`. They use a local HTTP server and do not require OrangeHRM credentials.
 
 Run `npm run api:smoke -- admin` (or `npm run api:smoke -- ess`) to verify the complete OAuth + API composition against a configured OrangeHRM instance. This smoke check lists up to five employees; it does not create or delete data.
 
-The route-manifest test asserts coverage of the bundled source route inventory;
-the local-server tests exercise auth headers, request bodies and query strings,
-path-parameter encoding, the response/error envelopes, API redirects, and
-authentication failure propagation.
+The route-manifest test checks all 523 operations, compiles every attached AJV
+schema, and asserts the 483/40 OpenAPI-versus-envelope coverage split. Local
+server tests exercise source-conforming response fixtures, auth headers,
+request bodies and query strings, API errors, redirects, and authentication
+failure propagation. Request-contract tests verify invalid input fails before
+transport.
 
-Stop here. Do not add schemas, retries, or other speculative API infrastructure.
+Do not add retries, caching, or other speculative API infrastructure without
+evidence.
 
 Part 11 — Naming the Whole Thing (for your own defense)
 SRP — client.js transports; envelope.js normalizes; errors.js types; endpoints/* speaks domain.
@@ -1006,7 +1006,7 @@ Composition root — one createApi() call wires everything; tests and scripts bo
 
 Law of Demeter — api.employees.create(...), not api.client.http.post(...).
 
-No speculative generality — no schemas, no retries, no caching, no HTTP session fallback until they're needed.
+No speculative generality — no retries, no caching, no HTTP session fallback until they're needed. Contract schemas are part of the API boundary because the OrangeHRM source contract requires them.
 
 Symmetry with auth — the API layer is shaped exactly like the auth layer: pure transport, boundary translation, injected dependencies, one composition root, flat files, no premature nesting.
 

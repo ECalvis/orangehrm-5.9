@@ -40,7 +40,10 @@ function createPerformanceApi(client) {
       updateFinalEvaluation: route('PUT', '/performance/reviews/{reviewId}/evaluation/final'),
     },
     trackers: {
-      list: route('GET', '/performance/trackers'),
+      list: {
+        ...route('GET', '/performance/trackers'),
+        openapiPath: '/api/v2/performance/trackers}',
+      },
       listForEmployees: route('GET', '/performance/employees/trackers'),
       getForEmployee: route('GET', '/performance/employees/trackers/{id}'),
       reviewers: route('GET', '/performance/trackers/reviewers'),

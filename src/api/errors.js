@@ -14,4 +14,19 @@ class ApiError extends Error {
   }
 }
 
-module.exports = { ApiError };
+class ApiContractError extends Error {
+  constructor(message, { stage, operation, issues }) {
+    super(message);
+
+    this.name = 'ApiContractError';
+    this.stage = stage;
+    this.operation = operation;
+    this.issues = issues;
+
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor);
+    }
+  }
+}
+
+module.exports = { ApiContractError, ApiError };

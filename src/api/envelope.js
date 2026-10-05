@@ -7,11 +7,16 @@ const STATUS_CODE_MAP = {
   500: 'SERVER_ERROR',
 };
 
+const { assertValid } = require('./schemas/validate');
+const { errorEnvelope, oauthErrorEnvelope, successEnvelope } = require('./schemas/common');
+
 function normalizeSuccess(body) {
+  assertValid(successEnvelope, body, { stage: 'response', operation: 'API response' });
+
   return {
-    data: body?.data ?? null,
-    meta: body?.meta ?? {},
-    rels: body?.rels ?? [],
+    data: body.data,
+    meta: body.meta,
+    rels: body.rels,
   };
 }
 
@@ -25,12 +30,23 @@ function normalizeError(axiosError) {
   const error = body?.error;
 
   if (body?.error_description) {
+    assertValid(oauthErrorEnvelope, body, {
+      stage: 'error response',
+      operation: `${response?.status ?? 'HTTP'} error`,
+    });
     return {
       message: body.error_description,
       status: response?.status,
       code: 'OAUTH_ERROR',
       data: body.hint == null ? undefined : { hint: body.hint },
     };
+  }
+
+  if (error && typeof error === 'object') {
+    assertValid(errorEnvelope, body, {
+      stage: 'error response',
+      operation: `${response?.status ?? 'HTTP'} error`,
+    });
   }
 
   return {

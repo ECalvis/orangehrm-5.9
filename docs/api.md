@@ -871,6 +871,105 @@ hasPassword user filter: Reads as boolean, semantically "has a password set".
     Refresh token TTL 1 month (P1M) hs_hr_config
     Important: The public API documentation at https://api-starter-orangehrm.readme.io/reference/get-started claims compatibility with "5.5 and above". Endpoint availability must be verified against the 5.9 source tree's routes.yaml files, not against the documentation alone.
 
+10.1. Automation Client Contract Snapshot
+
+The repository's API facade is covered against 523 HTTP method/path
+operations from the bundled OrangeHRM 5.9 routes. Its AJV 2020-12 contract
+adapter uses the generated OpenAPI 3.1 snapshot in
+`src/api/schemas/orangehrm-v2.openapi.json` plus explicit employee and user
+schemas. The current route test compiles every attached schema and verifies
+coverage: 483 routes have a matched OpenAPI response schema; 40 routes have
+only common request-shape and `{data, meta, rels}` envelope validation.
+
+This is deliberately not described as 523 complete field-level contracts.
+Even matched OpenAPI operations do not always define detailed query or body
+schemas. Where details are absent, the client validates the route/path shape
+and the JSON envelope but does not infer undocumented fields. The 40 unmatched
+routes are explicitly tagged `envelope` so callers and tests can distinguish
+that weaker boundary.
+
+The current envelope-only operations are:
+
+```text
+PIM:
+  PUT    /api/v2/pim/employees/{empNumber}
+  GET    /api/v2/pim/employees/{empNumber}/terminations
+  POST   /api/v2/pim/employees/{empNumber}/skills/allowed
+  DELETE /api/v2/pim/employees/{empNumber}/skills/allowed
+  POST   /api/v2/pim/employees/{empNumber}/languages/allowed
+  DELETE /api/v2/pim/employees/{empNumber}/languages/allowed
+  POST   /api/v2/pim/employees/{empNumber}/licenses/allowed
+  DELETE /api/v2/pim/employees/{empNumber}/licenses/allowed
+  GET    /api/v2/pim/reports
+  GET    /api/v2/pim/reports/data
+  GET    /api/v2/pim/reports/defined/{id}
+Leave:
+  POST   /api/v2/leave/leave-types/eligible
+  DELETE /api/v2/leave/leave-types/eligible
+  DELETE /api/v2/leave/leave-requests
+  DELETE /api/v2/leave/employees/leave-requests
+Admin:
+  PUT    /api/v2/admin/job-titles/{jobTitleId}/specification
+  DELETE /api/v2/admin/job-titles/{jobTitleId}/specification
+  PUT    /api/v2/admin/localization
+  GET    /api/v2/admin/oauth-clients/{id}
+  PUT    /api/v2/admin/oauth-clients/{id}
+Time:
+  GET    /api/v2/time/timesheets
+  POST   /api/v2/time/timesheets
+  PUT    /api/v2/time/timesheets/{id}
+Attendance:
+  GET    /api/v2/attendance/records
+  POST   /api/v2/attendance/records
+  PUT    /api/v2/attendance/records
+  DELETE /api/v2/attendance/records
+Recruitment:
+  GET    /api/v2/recruitment/candidates/statuses
+  GET    /api/v2/recruitment/candidates/{candidateId}/interviews/{interviewId}
+  PUT    /api/v2/recruitment/candidates/{candidateId}/interviews/{interviewId}
+  GET    /api/v2/recruitment/interviewers
+Claim:
+  GET    /api/v2/claim/requests/{requestId}/action
+Core:
+  GET    /api/v2/core/data-groups
+  POST   /api/v2/core/data-groups
+  DELETE /api/v2/core/data-groups
+  GET    /api/v2/core/public/version
+Authentication:
+  POST   /api/v2/auth/public/validation/password
+Performance:
+  POST   /api/v2/performance/supervisors
+  DELETE /api/v2/performance/supervisors
+System:
+  GET    /api/v2/core/system-check
+```
+
+The generated OpenAPI document contains 491 operations, not all of which map
+to the facade, and its source annotations have known generation defects. The
+adapter supports parameter-name differences when the path shape and method
+match, and explicitly associates the annotation's malformed
+`/api/v2/performance/trackers}` path with the actual `/performance/trackers`
+facade route. Known malformed annotation values are normalized at the schema
+boundary: numeric constraints emitted as strings become numbers, DateTime is
+treated as a date-time string, the source typo `boleean` is treated as
+boolean, empty enums are ignored, and duplicated `required` names are
+deduplicated. Employee `terminationId` and the corresponding embedded user
+employee field permit null, consistent with the documented new-employee
+response where no termination record exists. A symbolic PHP constant embedded
+in an annotation is not converted into a guessed numeric constraint.
+
+Success envelopes are validated without filling missing `data`, `meta`, or
+`rels`. Operation-specific response validation runs after envelope validation.
+When an OpenAPI operation declares an otherwise-empty `meta` object, the
+adapter also permits the verified empty-array form used by single-resource
+responses; it does not permit arbitrary array metadata.
+`ApiContractError` identifies request/response contract failures; `ApiError`
+represents HTTP failures. The low-level `raw()` escape hatch intentionally
+bypasses envelope and endpoint validation. Run
+`npx playwright test tests/api.spec.js` to check route inventory, schema
+compilation, request rejection, response rejection, error envelopes, and
+transport behavior without OrangeHRM credentials.
+
 11. Facts vs Inferences vs Assumptions
     FACT (verified via file path, HTTP response, or DB row)
     Environment:

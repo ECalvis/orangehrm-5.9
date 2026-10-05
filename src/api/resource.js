@@ -1,3 +1,5 @@
+const { sourceContract } = require('./schemas/source-contracts');
+
 function createRouteGroup(client, definitions) {
   const group = {};
 
@@ -5,13 +7,21 @@ function createRouteGroup(client, definitions) {
     group[endpointName] = {};
 
     for (const [operationName, definition] of Object.entries(operations)) {
+      const source = sourceContract(definition);
+      const contract = Object.freeze({
+        operation: `${endpointName}.${operationName}`,
+        ...source,
+        responseSchema: definition.responseSchema,
+        metaSchema: definition.metaSchema,
+      });
+
       const operation = (input = {}) => {
         const isObjectInput = input && typeof input === 'object' && !Array.isArray(input);
         const options = isObjectInput ? input : {};
         const pathKeys = Array.from(definition.path.matchAll(/\{([^}]+)\}/g), (match) => match[1]);
         const pathParams =
           isObjectInput && (options.pathParams ?? options)
-            ? options.pathParams ?? options
+            ? (options.pathParams ?? options)
             : pathKeys.length === 1
               ? { [pathKeys[0]]: input }
               : {};
@@ -58,11 +68,13 @@ function createRouteGroup(client, definitions) {
           params: query,
           data,
           headers: options.headers,
+          pathParams: Object.fromEntries(pathKeys.map((key) => [key, pathParams[key]])),
+          contract,
         });
       };
 
       Object.defineProperty(operation, 'route', {
-        value: Object.freeze({ ...definition }),
+        value: Object.freeze({ ...definition, contract }),
       });
 
       group[endpointName][operationName] = operation;

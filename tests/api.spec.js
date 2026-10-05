@@ -4,7 +4,8 @@ const { expect, test } = require('@playwright/test');
 
 const { AuthenticationError } = require('../src/auth/errors');
 const { normalizeError, normalizeSuccess } = require('../src/api/envelope');
-const { ApiError, createApi } = require('../src/api');
+const { ApiContractError, ApiError, createApi } = require('../src/api');
+const { ajv } = require('../src/api/schemas/validate');
 
 function listen(server) {
   return new Promise((resolve, reject) => {
@@ -19,19 +20,20 @@ function closeServer(server) {
   });
 }
 
-test.describe('API envelope boundary', () => {
-  test('normalizes response envelope defaults without flattening metadata', () => {
+test.describe('API contract validation', () => {
+  test('validates the actual OrangeHRM response envelope without inventing defaults', () => {
     expect(normalizeSuccess({ data: [1], meta: { total: 1 }, rels: [] })).toEqual({
       data: [1],
       meta: { total: 1 },
       rels: [],
     });
-    expect(normalizeSuccess({ data: 1, meta: [] })).toEqual({
+    expect(normalizeSuccess({ data: 1, meta: [], rels: [] })).toEqual({
       data: 1,
       meta: [],
       rels: [],
     });
-    expect(normalizeSuccess(null)).toEqual({ data: null, meta: {}, rels: [] });
+    expect(() => normalizeSuccess(null)).toThrow(ApiContractError);
+    expect(() => normalizeSuccess({ data: null, meta: [] })).toThrow(ApiContractError);
   });
 
   test('maps API and OAuth errors while preserving wire status values', () => {
@@ -61,7 +63,11 @@ test.describe('API envelope boundary', () => {
         message: 'Request failed',
         response: {
           status: 401,
-          data: { error_description: 'Token rejected', hint: 'invalid token' },
+          data: {
+            error: 'invalid_request',
+            error_description: 'Token rejected',
+            hint: 'invalid token',
+          },
         },
       }),
     ).toEqual({
@@ -70,6 +76,13 @@ test.describe('API envelope boundary', () => {
       code: 'OAUTH_ERROR',
       data: { hint: 'invalid token' },
     });
+
+    expect(() =>
+      normalizeError({
+        message: 'Request failed',
+        response: { status: 422, data: { error: { status: '422' } } },
+      }),
+    ).toThrow(ApiContractError);
   });
 });
 
@@ -124,119 +137,213 @@ test.describe('API client and endpoint facade', () => {
 
     expect(counts).toEqual(expected);
     expect(Object.values(counts).reduce((total, count) => total + count, 0)).toBe(523);
+
+    const coverage = { openapi: 0, envelope: 0 };
+    const routeSchemas = new Set();
+    const validateRoutes = (value) => {
+      if (!value || typeof value !== 'object') return;
+      for (const child of Object.values(value)) {
+        if (typeof child === 'function' && child.route) {
+          const { contract, method, path } = child.route;
+          coverage[contract.coverage] += 1;
+          expect(contract.pathParamsSchema || !path.includes('{')).toBeTruthy();
+          expect(contract.querySchema || method !== 'GET').toBeTruthy();
+          expect(
+            contract.bodySchema || !['POST', 'PUT', 'PATCH', 'DELETE'].includes(method),
+          ).toBeTruthy();
+          expect(contract.responseBodySchema || contract.coverage === 'envelope').toBeTruthy();
+          for (const schema of [
+            contract.pathParamsSchema,
+            contract.querySchema,
+            contract.bodySchema,
+            contract.responseSchema,
+            contract.metaSchema,
+            contract.responseBodySchema,
+          ]) {
+            if (schema && !routeSchemas.has(schema)) {
+              try {
+                ajv.compile(schema);
+              } catch (error) {
+                throw new Error(
+                  `Invalid schema for ${contract.operation} (${method} ${path}): ${error.message}`,
+                  { cause: error },
+                );
+              }
+              routeSchemas.add(schema);
+            }
+          }
+        } else if (typeof child === 'object') {
+          validateRoutes(child);
+        }
+      }
+    };
+    for (const domain of Object.keys(expected)) validateRoutes(api[domain]);
+    expect(coverage).toEqual({ openapi: 483, envelope: 40 });
+    expect(
+      api.admin.jobSpecification.get.route.contract.pathParamsSchema.properties.jobTitleId,
+    ).toMatchObject({ type: 'integer' });
+    expect(
+      api.buzz.postShares.list.route.contract.pathParamsSchema.properties.postId,
+    ).toMatchObject({ type: 'integer' });
   });
 
   test('routes domain requests with path, query, and body data kept separate', async () => {
     const received = [];
-    const server = await listen(
-      http.createServer((request, response) => {
-        const chunks = [];
-        request.on('data', (chunk) => chunks.push(chunk));
-        request.on('end', () => {
-          received.push({
-            method: request.method,
-            url: request.url,
-            body: Buffer.concat(chunks).toString(),
-          });
-          response.writeHead(200, { 'Content-Type': 'application/json' });
-          response.end(JSON.stringify({ data: null, meta: [], rels: [] }));
-        });
-      }),
-    );
-
-    try {
-      const api = createApi({
-        baseUrl: `http://127.0.0.1:${server.address().port}/web/index.php/api/v2`,
-        tokenManager: {
-          async getAccessToken() {
-            return 'access-token';
-          },
+    const api = createApi({
+      baseUrl: 'http://orangehrm.example.test/web/index.php/api/v2',
+      tokenManager: {
+        async getAccessToken() {
+          return 'access-token';
         },
+      },
+    });
+    api._client.request = async ({ method, url, params, data, pathParams, contract }) => {
+      const target = new URL(url.replace(/^\/+/, ''), `${api._client.baseUrl}/`);
+      if (params) target.search = new URLSearchParams(params).toString();
+      received.push({
+        method,
+        url: `${target.pathname}${target.search}`,
+        body: data === undefined ? '' : JSON.stringify(data),
+        pathParams,
+        contract,
       });
+      return { data: null, meta: [], rels: [] };
+    };
 
-      await api.pim.employeePersonalDetails.get({ empNumber: 12 });
-      await api.pim.employeeContactDetails.get({ empNumber: 12 });
-      await api.leave.workweek.update({ startDay: 1 });
-      await api.admin.users.update({ id: 8, data: { status: 0 } });
-      await api.admin.subunits.delete({ id: 9 });
-      await api.admin.oauthClients.create({ name: 'automation' });
-      await api.time.projectActivities.create({
-        projectId: 3,
-        data: { name: 'Regression' },
-      });
-      await api.attendance.employeeRecords.delete({ empNumber: 12, ids: [4] });
-      await api.recruitment.candidates.scheduleInterview({
-        candidateId: 5,
-        data: { interviewDate: '2026-10-05' },
-      });
-      await api.claim.expenses.delete({ requestId: 21, ids: [6, 7] });
-      await api.dashboard.employeesOnLeave.list({ date: '2026-10-05' });
-      await api.core.publicVersion.get();
-      await api.authentication.validatePassword.create({ password: 'example' });
-      await api.buzz.shareComments.create({
-        shareId: 2,
-        data: { text: 'test comment' },
-      });
-      await api.branding.theme.update({ primaryColor: '#123456' });
-      await api.directory.employees.get({ empNumber: 12 });
-      await api.ldap.testConnection.create({ host: 'ldap.example.test' });
-      await api.maintenance.candidates.list({ limit: 5 });
-      await api.mobile.menus.list();
-      await api.openid.providers.get({ id: 4 });
-      await api.performance.trackerLogs.update({
-        trackerId: 11,
-        id: 5,
-        data: { comment: 'reviewed' },
-      });
-      await api.system.check.get();
-      await api.workspaceNotifications.testRegistration.create({
-        id: 3,
-        data: { event: 'test' },
-      });
+    await api.pim.employeePersonalDetails.get({ empNumber: 12 });
+    await api.pim.employeeContactDetails.get({ empNumber: 12 });
+    await api.leave.workweek.update({ startDay: 1 });
+    await api.admin.users.update({ id: 8, data: { status: 0 } });
+    await api.admin.subunits.delete({ id: 9 });
+    await api.admin.oauthClients.create({ name: 'automation' });
+    await api.time.projectActivities.create({
+      projectId: 3,
+      data: { name: 'Regression' },
+    });
+    await api.attendance.employeeRecords.delete({ empNumber: 12, ids: [4] });
+    await api.recruitment.candidates.scheduleInterview({
+      candidateId: 5,
+      data: { interviewDate: '2026-10-05' },
+    });
+    await api.claim.expenses.delete({ requestId: 21, ids: [6, 7] });
+    await api.dashboard.employeesOnLeave.list({ date: '2026-10-05' });
+    await api.core.publicVersion.get();
+    await api.authentication.validatePassword.create({ password: 'example' });
+    await api.buzz.shareComments.create({
+      shareId: 2,
+      data: { text: 'test comment' },
+    });
+    await api.branding.theme.update({ primaryColor: '#123456' });
+    await api.directory.employees.get({ empNumber: 12 });
+    await api.ldap.testConnection.create({ host: 'ldap.example.test' });
+    await api.maintenance.candidates.list({ limit: 5 });
+    await api.mobile.menus.list();
+    await api.openid.providers.get({ id: 4 });
+    await api.performance.trackerLogs.update({
+      trackerId: 11,
+      id: 5,
+      data: { comment: 'reviewed' },
+    });
+    await api.system.check.get();
+    await api.workspaceNotifications.testRegistration.create({
+      id: 3,
+      data: { event: 'test' },
+    });
 
-      expect(received.map(({ method, url }) => [method, url])).toEqual([
-        ['GET', '/web/index.php/api/v2/pim/employees/12/personal-details'],
-        ['GET', '/web/index.php/api/v2/pim/employee/12/contact-details'],
-        ['PUT', '/web/index.php/api/v2/leave/workweek'],
-        ['PUT', '/web/index.php/api/v2/admin/users/8'],
-        ['DELETE', '/web/index.php/api/v2/admin/subunits/9'],
-        ['POST', '/web/index.php/api/v2/admin/oauth-clients'],
-        ['POST', '/web/index.php/api/v2/time/project/3/activities'],
-        ['DELETE', '/web/index.php/api/v2/attendance/employees/12/records'],
-        ['POST', '/web/index.php/api/v2/recruitment/candidates/5/shedule-interview'],
-        ['DELETE', '/web/index.php/api/v2/claim/requests/21/expenses'],
-        ['GET', '/web/index.php/api/v2/dashboard/employees/leaves?date=2026-10-05'],
-        ['GET', '/web/index.php/api/v2/core/public/version'],
-        ['POST', '/web/index.php/api/v2/auth/public/validation/password'],
-        ['POST', '/web/index.php/api/v2/buzz/shares/2/comments'],
-        ['PUT', '/web/index.php/api/v2/admin/theme'],
-        ['GET', '/web/index.php/api/v2/directory/employees/12'],
-        ['POST', '/web/index.php/api/v2/admin/ldap-test-connection'],
-        ['GET', '/web/index.php/api/v2/maintenance/candidates?limit=5'],
-        ['GET', '/web/index.php/api/v2/mobile/menus'],
-        ['GET', '/web/index.php/api/v2/auth/openid-providers/4'],
-        ['PUT', '/web/index.php/api/v2/performance/trackers/11/logs/5'],
-        ['GET', '/web/index.php/api/v2/core/system-check'],
-        ['POST', '/web/index.php/api/v2/admin/workspace-notification/registrations/3/test'],
-      ]);
-      expect(received.map(({ body }) => body).filter(Boolean)).toEqual([
-        JSON.stringify({ startDay: 1 }),
-        JSON.stringify({ status: 0 }),
-        JSON.stringify({ name: 'automation' }),
-        JSON.stringify({ name: 'Regression' }),
-        JSON.stringify({ ids: [4] }),
-        JSON.stringify({ interviewDate: '2026-10-05' }),
-        JSON.stringify({ ids: [6, 7] }),
-        JSON.stringify({ password: 'example' }),
-        JSON.stringify({ text: 'test comment' }),
-        JSON.stringify({ primaryColor: '#123456' }),
-        JSON.stringify({ host: 'ldap.example.test' }),
-        JSON.stringify({ comment: 'reviewed' }),
-        JSON.stringify({ event: 'test' }),
-      ]);
-    } finally {
-      await closeServer(server);
-    }
+    expect(received.map(({ method, url }) => [method, url])).toEqual([
+      ['GET', '/web/index.php/api/v2/pim/employees/12/personal-details'],
+      ['GET', '/web/index.php/api/v2/pim/employee/12/contact-details'],
+      ['PUT', '/web/index.php/api/v2/leave/workweek'],
+      ['PUT', '/web/index.php/api/v2/admin/users/8'],
+      ['DELETE', '/web/index.php/api/v2/admin/subunits/9'],
+      ['POST', '/web/index.php/api/v2/admin/oauth-clients'],
+      ['POST', '/web/index.php/api/v2/time/project/3/activities'],
+      ['DELETE', '/web/index.php/api/v2/attendance/employees/12/records'],
+      ['POST', '/web/index.php/api/v2/recruitment/candidates/5/shedule-interview'],
+      ['DELETE', '/web/index.php/api/v2/claim/requests/21/expenses'],
+      ['GET', '/web/index.php/api/v2/dashboard/employees/leaves?date=2026-10-05'],
+      ['GET', '/web/index.php/api/v2/core/public/version'],
+      ['POST', '/web/index.php/api/v2/auth/public/validation/password'],
+      ['POST', '/web/index.php/api/v2/buzz/shares/2/comments'],
+      ['PUT', '/web/index.php/api/v2/admin/theme'],
+      ['GET', '/web/index.php/api/v2/directory/employees/12'],
+      ['POST', '/web/index.php/api/v2/admin/ldap-test-connection'],
+      ['GET', '/web/index.php/api/v2/maintenance/candidates?limit=5'],
+      ['GET', '/web/index.php/api/v2/mobile/menus'],
+      ['GET', '/web/index.php/api/v2/auth/openid-providers/4'],
+      ['PUT', '/web/index.php/api/v2/performance/trackers/11/logs/5'],
+      ['GET', '/web/index.php/api/v2/core/system-check'],
+      ['POST', '/web/index.php/api/v2/admin/workspace-notification/registrations/3/test'],
+    ]);
+    expect(received.map(({ body }) => body).filter(Boolean)).toEqual([
+      JSON.stringify({ startDay: 1 }),
+      JSON.stringify({ status: 0 }),
+      JSON.stringify({ name: 'automation' }),
+      JSON.stringify({ name: 'Regression' }),
+      JSON.stringify({ ids: [4] }),
+      JSON.stringify({ interviewDate: '2026-10-05' }),
+      JSON.stringify({ ids: [6, 7] }),
+      JSON.stringify({ password: 'example' }),
+      JSON.stringify({ text: 'test comment' }),
+      JSON.stringify({ primaryColor: '#123456' }),
+      JSON.stringify({ host: 'ldap.example.test' }),
+      JSON.stringify({ comment: 'reviewed' }),
+      JSON.stringify({ event: 'test' }),
+    ]);
+    expect(received[0].pathParams).toEqual({ empNumber: 12 });
+    expect(received[0].contract.operation).toBe('employeePersonalDetails.get');
+  });
+
+  test('rejects invalid route inputs and response data before accepting the contract', async () => {
+    const api = createApi({
+      baseUrl: 'http://orangehrm.example.test/web/index.php/api/v2',
+      tokenManager: {
+        async getAccessToken() {
+          return 'access-token';
+        },
+      },
+    });
+    let sends = 0;
+    api._client._send = async () => {
+      sends += 1;
+      return { data: { data: [{ empNumber: 7 }], meta: { total: 1 }, rels: [] } };
+    };
+    expect(
+      ajv.validate(api.admin.users.update.route.contract.bodySchema, {
+        username: 'qa-user',
+        password: 'not-a-real-password',
+        status: true,
+        userRoleId: 2,
+        empNumber: 7,
+      }),
+    ).toBeTruthy();
+
+    await expect(
+      api.pim.employees.create({ firstName: 12, lastName: 'Employee' }),
+    ).rejects.toBeInstanceOf(ApiContractError);
+    await expect(
+      api.admin.jobSpecification.get({ jobTitleId: 'invalid-id' }),
+    ).rejects.toBeInstanceOf(ApiContractError);
+    await expect(api.pim.employees.list({ unrecognizedFilter: true })).rejects.toBeInstanceOf(
+      ApiContractError,
+    );
+    await expect(
+      api.admin.users.create({
+        username: 'qa-user',
+        password: 'not-a-real-password',
+        status: 1,
+        userRoleId: 2,
+        empNumber: 7,
+      }),
+    ).rejects.toBeInstanceOf(ApiContractError);
+    await expect(api.admin.users.update({ id: 9 })).rejects.toBeInstanceOf(ApiContractError);
+    expect(sends).toBe(0);
+
+    await expect(api.pim.employees.list()).rejects.toMatchObject({
+      name: 'ApiContractError',
+      stage: 'response data',
+    });
+    expect(sends).toBe(1);
   });
 
   test('sends authenticated requests and returns endpoint envelopes', async () => {
@@ -246,6 +353,46 @@ test.describe('API client and endpoint facade', () => {
         const chunks = [];
         request.on('data', (chunk) => chunks.push(chunk));
         request.on('end', () => {
+          const isEmployee = request.url.includes('/pim/employees');
+          const isUser = request.url.includes('/admin/users');
+          const employee = {
+            empNumber: 7,
+            lastName: 'Employee',
+            firstName: 'Test',
+            middleName: '',
+            employeeId: 'E007',
+            terminationId: null,
+          };
+          const user = {
+            id: 2,
+            userName: 'qa-user',
+            deleted: false,
+            status: true,
+            employee: {
+              empNumber: 7,
+              employeeId: 'E007',
+              firstName: 'Test',
+              middleName: '',
+              lastName: 'Employee',
+              terminationId: null,
+            },
+            userRole: { id: 2, name: 'Admin', displayName: 'Admin' },
+          };
+          const data =
+            request.method === 'DELETE'
+              ? [7, 8]
+              : isEmployee
+                ? request.method === 'GET' && request.url.includes('?')
+                  ? [employee]
+                  : request.method === 'GET'
+                    ? employee
+                    : employee
+                : isUser
+                  ? request.method === 'GET'
+                    ? [user]
+                    : user
+                  : [employee];
+          const meta = request.method === 'GET' && request.url.includes('?') ? { total: 1 } : [];
           received.push({
             method: request.method,
             url: request.url,
@@ -255,8 +402,8 @@ test.describe('API client and endpoint facade', () => {
           response.writeHead(200, { 'Content-Type': 'application/json' });
           response.end(
             JSON.stringify({
-              data: [{ empNumber: 7 }],
-              meta: { total: 1 },
+              data,
+              meta,
               rels: [],
             }),
           );
@@ -278,7 +425,16 @@ test.describe('API client and endpoint facade', () => {
 
       const result = await api.pim.employees.list({ limit: 5, offset: 0 });
       expect(result).toEqual({
-        data: [{ empNumber: 7 }],
+        data: [
+          {
+            empNumber: 7,
+            lastName: 'Employee',
+            firstName: 'Test',
+            middleName: '',
+            employeeId: 'E007',
+            terminationId: null,
+          },
+        ],
         meta: { total: 1 },
         rels: [],
       });
@@ -291,7 +447,7 @@ test.describe('API client and endpoint facade', () => {
       await api.admin.users.create({
         username: 'qa-user',
         password: 'not-a-real-password',
-        status: 1,
+        status: true,
         userRoleId: 2,
         empNumber: 7,
       });
@@ -302,7 +458,7 @@ test.describe('API client and endpoint facade', () => {
         body: JSON.stringify({
           username: 'qa-user',
           password: 'not-a-real-password',
-          status: 1,
+          status: true,
           userRoleId: 2,
           empNumber: 7,
         }),
@@ -340,7 +496,20 @@ test.describe('API client and endpoint facade', () => {
       expect(received[8].body).toBe(JSON.stringify({ ids: [7] }));
       expect(raw).toMatchObject({
         status: 200,
-        data: { data: [{ empNumber: 7 }], meta: { total: 1 }, rels: [] },
+        data: {
+          data: [
+            {
+              empNumber: 7,
+              lastName: 'Employee',
+              firstName: 'Test',
+              middleName: '',
+              employeeId: 'E007',
+              terminationId: null,
+            },
+          ],
+          meta: [],
+          rels: [],
+        },
       });
       expect(tokenCalls).toBe(11);
       await expect(api._client.get('https://example.invalid/steal')).rejects.toThrow(

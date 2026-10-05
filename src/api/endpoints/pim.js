@@ -1,17 +1,11 @@
 const { createRouteGroup } = require('../resource');
+const { employeeRoutes } = require('./employees');
 
 const route = (method, path) => ({ method, path });
 
 function createPimApi(client) {
   return createRouteGroup(client, {
-    employees: {
-      list: route('GET', '/pim/employees'),
-      get: route('GET', '/pim/employees/{empNumber}'),
-      create: route('POST', '/pim/employees'),
-      update: route('PUT', '/pim/employees/{empNumber}'),
-      delete: route('DELETE', '/pim/employees'),
-      count: route('GET', '/pim/employees/count'),
-    },
+    employees: employeeRoutes,
     employeePicture: {
       get: route('GET', '/pim/employees/{empNumber}/picture'),
       update: route('PUT', '/pim/employees/{empNumber}/picture'),

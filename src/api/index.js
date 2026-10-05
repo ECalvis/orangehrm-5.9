@@ -1,5 +1,5 @@
 const { ApiClient } = require('./client');
-const { ApiError } = require('./errors');
+const { ApiContractError, ApiError } = require('./errors');
 const { createAdminApi } = require('./endpoints/admin');
 const { createAttendanceApi } = require('./endpoints/attendance');
 const { createAuthenticationApi } = require('./endpoints/authentication');
@@ -23,11 +23,13 @@ const { createWorkspaceNotificationsApi } = require('./endpoints/workspace-notif
 
 function createApi({ baseUrl, tokenManager, logger } = {}) {
   const client = new ApiClient({ baseUrl, tokenManager, logger });
+  const pim = createPimApi(client);
+  const admin = createAdminApi(client);
 
   return {
-    pim: createPimApi(client),
+    pim,
     leave: createLeaveApi(client),
-    admin: createAdminApi(client),
+    admin,
     time: createTimeApi(client),
     attendance: createAttendanceApi(client),
     recruitment: createRecruitmentApi(client),
@@ -45,8 +47,10 @@ function createApi({ baseUrl, tokenManager, logger } = {}) {
     performance: createPerformanceApi(client),
     system: createSystemApi(client),
     workspaceNotifications: createWorkspaceNotificationsApi(client),
+    employees: pim.employees,
+    users: admin.users,
     _client: client,
   };
 }
 
-module.exports = { createApi, ApiError };
+module.exports = { createApi, ApiContractError, ApiError };

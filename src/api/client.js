@@ -2,6 +2,7 @@ const axios = require('axios');
 
 const { ApiError } = require('./errors');
 const { normalizeSuccess, normalizeError } = require('./envelope');
+const { assertValid } = require('./schemas/validate');
 
 class ApiClient {
   constructor({ baseUrl, tokenManager, logger } = {}) {
@@ -109,9 +110,48 @@ class ApiClient {
     }
   }
 
-  async request(config) {
+  async request({ contract, pathParams, ...config } = {}) {
+    const operation = contract?.operation ?? `${config.method ?? 'GET'} ${config.url ?? ''}`;
+    if (contract?.pathParamsSchema) {
+      assertValid(contract.pathParamsSchema, pathParams, {
+        stage: 'request path',
+        operation,
+      });
+    }
+    if (
+      contract?.querySchema &&
+      (config.params !== undefined || contract.querySchema.required?.length)
+    ) {
+      assertValid(contract.querySchema, config.params ?? {}, {
+        stage: 'request query',
+        operation,
+      });
+    }
+    if (contract?.bodySchema && (contract.bodyRequired || config.data !== undefined)) {
+      assertValid(contract.bodySchema, config.data, { stage: 'request body', operation });
+    }
+
     const response = await this._send(config);
-    return normalizeSuccess(response.data);
+    const result = normalizeSuccess(response.data);
+    if (contract?.responseSchema) {
+      assertValid(contract.responseSchema, result.data, {
+        stage: 'response data',
+        operation,
+      });
+    }
+    if (contract?.metaSchema) {
+      assertValid(contract.metaSchema, result.meta, {
+        stage: 'response meta',
+        operation,
+      });
+    }
+    if (contract?.responseBodySchema) {
+      assertValid(contract.responseBodySchema, response.data, {
+        stage: 'OpenAPI response',
+        operation,
+      });
+    }
+    return result;
   }
 
   raw(config) {
