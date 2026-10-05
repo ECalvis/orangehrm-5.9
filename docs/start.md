@@ -530,16 +530,13 @@ src/api/
 ├── client.js # HTTP transport + auth + envelope unwrap + error mapping
 ├── errors.js # ApiError taxonomy
 ├── envelope.js # {data, meta, rels} + {error: {...}} normalizers
+├── index.js # createApi composition root
 └── endpoints/
-├── employees.js
-├── users.js
-├── leave.js
-├── timesheets.js
-├── attendance.js
-├── recruitment.js
-├── claim.js
-└── admin.js
+    ├── employees.js
+    └── users.js
 Six conceptual pieces. Same shape as auth. Same boundaries. Same composition root pattern.
+
+Build additional endpoint modules only when a test needs them.
 
 Do not add schemas/, resources/, models/, or contracts/ yet. Those belong to Phase 3 (contract validation) when you actually have a reason to add them.
 
@@ -743,22 +740,22 @@ constructor(client) { this.client = client; }
 
 async list(params = {}) {
 // params: { limit?, offset?, model?, includeEmployees?, name?, ... }
-return this.client.get('/web/index.php/api/v2/pim/employees', { params });
+return this.client.get('/pim/employees', { params });
 }
 
 async get(empNumber) {
-return this.client.get(`/web/index.php/api/v2/pim/employees/${empNumber}`);
+return this.client.get(`/pim/employees/${empNumber}`);
 }
 
 async create({ firstName, lastName, middleName, employeeId }) {
-return this.client.post('/web/index.php/api/v2/pim/employees', {
+return this.client.post('/pim/employees', {
 firstName, lastName, middleName, employeeId,
 });
 }
 
 async delete(empNumbers) {
 const ids = Array.isArray(empNumbers) ? empNumbers : [empNumbers];
-return this.client.delete('/web/index.php/api/v2/pim/employees', { ids });
+return this.client.delete('/pim/employees', { ids });
 }
 }
 
@@ -777,18 +774,18 @@ class UsersApi {
 constructor(client) { this.client = client; }
 
 list(params = {}) {
-return this.client.get('/web/index.php/api/v2/admin/users', { params });
+return this.client.get('/admin/users', { params });
 }
 
 create({ username, password, status, userRoleId, empNumber }) {
-return this.client.post('/web/index.php/api/v2/admin/users', {
+return this.client.post('/admin/users', {
 username, password, status, userRoleId, empNumber,
 });
 }
 
 delete(ids) {
 const list = Array.isArray(ids) ? ids : [ids];
-return this.client.delete('/web/index.php/api/v2/admin/users', { ids: list });
+return this.client.delete('/admin/users', { ids: list });
 }
 }
 
@@ -831,22 +828,23 @@ const { OAuthAuthorizer } = require('../src/auth/oauth-authorizer');
 const { FileTokenStore } = require('../src/auth/token-store');
 const { TokenManager } = require('../src/auth/token-manager');
 const { createApi } = require('../src/api');
+const env = require('../src/config/env');
 
 async function buildApi(roleName) {
 const role = users[roleName];
-const baseUrl = process.env.OHRM_BASE_URL;
+const baseUrl = env.apiBaseUrl;
 
 const oauth = new OAuthClient({
-authorizationUrl: `${baseUrl}/web/index.php/oauth2/authorize`,
-tokenUrl: `${baseUrl}/web/index.php/oauth2/token`,
-clientId: process.env.OHRM_OAUTH_CLIENT_ID,
-redirectUri: process.env.OHRM_OAUTH_REDIRECT_URI,
+authorizationUrl: env.oauthAuthUrl,
+tokenUrl: env.oauthTokenUrl,
+clientId: env.oauthClientId,
+redirectUri: env.oauthRedirectUri,
 });
 
 const authorizer = new OAuthAuthorizer({
-callbackHost: 'localhost',
-callbackPort: 9876,
-callbackPath: '/oauth/callback',
+callbackHost: env.callbackHost,
+callbackPort: env.callbackPort,
+callbackPath: env.callbackPath,
 });
 
 const store = new FileTokenStore(role.tokenFile);
@@ -947,30 +945,12 @@ No construction outside composition root Only src/api/index.js builds the client
 Injected dependencies TokenManager is passed in, never imported by the client
 No speculative generality No retries, no schemas, no caches until a test fails
 Playwright never in infrastructure API layer is pure Node + axios; runs in scripts, CI, and tests
-Part 10 — What To Do Right Now
-Write src/api/errors.js — 30 seconds.
+Part 10 — Phase 2 Verification
+Run the isolated client and boundary tests with `npm test -- tests/api.spec.js`. They use a local HTTP server and do not require OrangeHRM credentials.
 
-Write src/api/envelope.js — 15 minutes. Copy the quirks table into a header comment.
+Run `node scripts/api-smoke.js admin` to verify the complete OAuth + API composition against a configured OrangeHRM instance. This smoke check lists up to five employees; it does not create or delete data.
 
-Write src/api/client.js — 30 minutes. The interceptor is the only subtle part.
-
-Write src/api/endpoints/employees.js and users.js — 10 minutes each.
-
-Write src/api/index.js — 5 minutes.
-
-Write scripts/api-smoke.js — 15 minutes.
-
-Run: node scripts/api-smoke.js. Iterate.
-
-Write a tests/api/employees.spec.js (or a plain Node script if you haven't wired Playwright Test yet) that hits:
-
-list() → asserts meta.total is a number
-
-create({firstName:''}) → expects ApiError with code: 'VALIDATION', status: '422', invalidParamKeys contains firstName
-
-get(99999) → expects ApiError with code: 'NOT_FOUND', status: '404'
-
-Stop. Phase 2 is done. Do not add schemas, retries, or additional endpoint files until you build Phase 3 (data) or Phase 4 (UI) and need them.
+Stop here. Add more endpoint modules only when a test needs them. Do not add schemas, retries, or other speculative API infrastructure.
 
 Part 11 — Naming the Whole Thing (for your own defense)
 SRP — client.js transports; envelope.js normalizes; errors.js types; endpoints/* speaks domain.
