@@ -1,3 +1,5 @@
+const { encodeSegment } = require('../resource');
+
 class UsersApi {
   constructor(client) {
     this.client = client;
@@ -7,14 +9,16 @@ class UsersApi {
     return this.client.get('/admin/users', { params });
   }
 
-  create({ username, password, status, userRoleId, empNumber }) {
-    return this.client.post('/admin/users', {
-      username,
-      password,
-      status,
-      userRoleId,
-      empNumber,
-    });
+  get(id, params) {
+    return this.client.get(`/admin/users/${encodeSegment(id)}`, { params });
+  }
+
+  create(data) {
+    return this.client.post('/admin/users', data);
+  }
+
+  update(id, data) {
+    return this.client.put(`/admin/users/${encodeSegment(id)}`, data);
   }
 
   delete(ids) {

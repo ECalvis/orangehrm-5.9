@@ -1,3 +1,5 @@
+const { encodeSegment } = require('../resource');
+
 class EmployeesApi {
   constructor(client) {
     this.client = client;
@@ -8,16 +10,15 @@ class EmployeesApi {
   }
 
   get(empNumber) {
-    return this.client.get(`/pim/employees/${empNumber}`);
+    return this.client.get(`/pim/employees/${encodeSegment(empNumber)}`);
   }
 
-  create({ firstName, lastName, middleName, employeeId }) {
-    return this.client.post('/pim/employees', {
-      firstName,
-      lastName,
-      middleName,
-      employeeId,
-    });
+  create(data) {
+    return this.client.post('/pim/employees', data);
+  }
+
+  update(empNumber, data) {
+    return this.client.put(`/pim/employees/${encodeSegment(empNumber)}`, data);
   }
 
   delete(empNumbers) {

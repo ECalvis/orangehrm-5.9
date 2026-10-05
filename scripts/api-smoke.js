@@ -52,7 +52,7 @@ async function buildApi(roleName) {
 
 async function main(roleName = 'admin') {
   const api = await buildApi(roleName);
-  const result = await api.employees.list({ limit: 5 });
+  const result = await api.pim.employees.list({ limit: 5 });
   console.log(JSON.stringify(result, null, 2));
 }
 

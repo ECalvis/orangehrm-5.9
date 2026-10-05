@@ -74,6 +74,171 @@ test.describe('API envelope boundary', () => {
 });
 
 test.describe('API client and endpoint facade', () => {
+  test('covers every documented 5.9 API operation with supported HTTP methods', () => {
+    const api = createApi({
+      baseUrl: 'http://localhost/web/index.php/api/v2',
+      tokenManager: {
+        async getAccessToken() {
+          return 'access-token';
+        },
+      },
+    });
+    const expected = {
+      pim: 130,
+      leave: 50,
+      admin: 111,
+      claim: 28,
+      time: 42,
+      attendance: 20,
+      recruitment: 39,
+      dashboard: 8,
+      core: 6,
+      authentication: 1,
+      buzz: 21,
+      branding: 4,
+      directory: 2,
+      ldap: 5,
+      maintenance: 3,
+      mobile: 1,
+      openid: 5,
+      performance: 37,
+      system: 1,
+      workspaceNotifications: 9,
+    };
+    const counts = {};
+
+    for (const domain of Object.keys(expected)) {
+      counts[domain] = 0;
+      const visit = (value) => {
+        if (!value || typeof value !== 'object') return;
+        for (const child of Object.values(value)) {
+          if (typeof child === 'function' && child.route) {
+            counts[domain] += 1;
+          } else if (typeof child === 'object') {
+            visit(child);
+          }
+        }
+      };
+      visit(api[domain]);
+    }
+
+    expect(counts).toEqual(expected);
+    expect(Object.values(counts).reduce((total, count) => total + count, 0)).toBe(523);
+  });
+
+  test('routes domain requests with path, query, and body data kept separate', async () => {
+    const received = [];
+    const server = await listen(
+      http.createServer((request, response) => {
+        const chunks = [];
+        request.on('data', (chunk) => chunks.push(chunk));
+        request.on('end', () => {
+          received.push({
+            method: request.method,
+            url: request.url,
+            body: Buffer.concat(chunks).toString(),
+          });
+          response.writeHead(200, { 'Content-Type': 'application/json' });
+          response.end(JSON.stringify({ data: null, meta: [], rels: [] }));
+        });
+      }),
+    );
+
+    try {
+      const api = createApi({
+        baseUrl: `http://127.0.0.1:${server.address().port}/web/index.php/api/v2`,
+        tokenManager: {
+          async getAccessToken() {
+            return 'access-token';
+          },
+        },
+      });
+
+      await api.pim.employeePersonalDetails.get({ empNumber: 12 });
+      await api.pim.employeeContactDetails.get({ empNumber: 12 });
+      await api.leave.workweek.update({ startDay: 1 });
+      await api.admin.users.update({ id: 8, data: { status: 0 } });
+      await api.admin.subunits.delete({ id: 9 });
+      await api.admin.oauthClients.create({ name: 'automation' });
+      await api.time.projectActivities.create({
+        projectId: 3,
+        data: { name: 'Regression' },
+      });
+      await api.attendance.employeeRecords.delete({ empNumber: 12, ids: [4] });
+      await api.recruitment.candidates.scheduleInterview({
+        candidateId: 5,
+        data: { interviewDate: '2026-10-05' },
+      });
+      await api.claim.expenses.delete({ requestId: 21, ids: [6, 7] });
+      await api.dashboard.employeesOnLeave.list({ date: '2026-10-05' });
+      await api.core.publicVersion.get();
+      await api.authentication.validatePassword.create({ password: 'example' });
+      await api.buzz.shareComments.create({
+        shareId: 2,
+        data: { text: 'test comment' },
+      });
+      await api.branding.theme.update({ primaryColor: '#123456' });
+      await api.directory.employees.get({ empNumber: 12 });
+      await api.ldap.testConnection.create({ host: 'ldap.example.test' });
+      await api.maintenance.candidates.list({ limit: 5 });
+      await api.mobile.menus.list();
+      await api.openid.providers.get({ id: 4 });
+      await api.performance.trackerLogs.update({
+        trackerId: 11,
+        id: 5,
+        data: { comment: 'reviewed' },
+      });
+      await api.system.check.get();
+      await api.workspaceNotifications.testRegistration.create({
+        id: 3,
+        data: { event: 'test' },
+      });
+
+      expect(received.map(({ method, url }) => [method, url])).toEqual([
+        ['GET', '/web/index.php/api/v2/pim/employees/12/personal-details'],
+        ['GET', '/web/index.php/api/v2/pim/employee/12/contact-details'],
+        ['PUT', '/web/index.php/api/v2/leave/workweek'],
+        ['PUT', '/web/index.php/api/v2/admin/users/8'],
+        ['DELETE', '/web/index.php/api/v2/admin/subunits/9'],
+        ['POST', '/web/index.php/api/v2/admin/oauth-clients'],
+        ['POST', '/web/index.php/api/v2/time/project/3/activities'],
+        ['DELETE', '/web/index.php/api/v2/attendance/employees/12/records'],
+        ['POST', '/web/index.php/api/v2/recruitment/candidates/5/shedule-interview'],
+        ['DELETE', '/web/index.php/api/v2/claim/requests/21/expenses'],
+        ['GET', '/web/index.php/api/v2/dashboard/employees/leaves?date=2026-10-05'],
+        ['GET', '/web/index.php/api/v2/core/public/version'],
+        ['POST', '/web/index.php/api/v2/auth/public/validation/password'],
+        ['POST', '/web/index.php/api/v2/buzz/shares/2/comments'],
+        ['PUT', '/web/index.php/api/v2/admin/theme'],
+        ['GET', '/web/index.php/api/v2/directory/employees/12'],
+        ['POST', '/web/index.php/api/v2/admin/ldap-test-connection'],
+        ['GET', '/web/index.php/api/v2/maintenance/candidates?limit=5'],
+        ['GET', '/web/index.php/api/v2/mobile/menus'],
+        ['GET', '/web/index.php/api/v2/auth/openid-providers/4'],
+        ['PUT', '/web/index.php/api/v2/performance/trackers/11/logs/5'],
+        ['GET', '/web/index.php/api/v2/core/system-check'],
+        ['POST', '/web/index.php/api/v2/admin/workspace-notification/registrations/3/test'],
+      ]);
+      expect(received.map(({ body }) => body).filter(Boolean)).toEqual([
+        JSON.stringify({ startDay: 1 }),
+        JSON.stringify({ status: 0 }),
+        JSON.stringify({ name: 'automation' }),
+        JSON.stringify({ name: 'Regression' }),
+        JSON.stringify({ ids: [4] }),
+        JSON.stringify({ interviewDate: '2026-10-05' }),
+        JSON.stringify({ ids: [6, 7] }),
+        JSON.stringify({ password: 'example' }),
+        JSON.stringify({ text: 'test comment' }),
+        JSON.stringify({ primaryColor: '#123456' }),
+        JSON.stringify({ host: 'ldap.example.test' }),
+        JSON.stringify({ comment: 'reviewed' }),
+        JSON.stringify({ event: 'test' }),
+      ]);
+    } finally {
+      await closeServer(server);
+    }
+  });
+
   test('sends authenticated requests and returns endpoint envelopes', async () => {
     const received = [];
     const server = await listen(

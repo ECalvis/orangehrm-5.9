@@ -530,13 +530,18 @@ src/api/
 ├── client.js # HTTP transport + auth + envelope unwrap + error mapping
 ├── errors.js # ApiError taxonomy
 ├── envelope.js # {data, meta, rels} + {error: {...}} normalizers
+├── resource.js # shared method/path route-group builder
 ├── index.js # createApi composition root
 └── endpoints/
-    ├── employees.js
-    └── users.js
-Six conceptual pieces. Same shape as auth. Same boundaries. Same composition root pattern.
+    ├── admin.js, attendance.js, authentication.js, branding.js, buzz.js
+    ├── claim.js, core.js, dashboard.js, directory.js, employees.js
+    ├── ldap.js, leave.js, maintenance.js, mobile.js, openid.js
+    ├── performance.js, pim.js, recruitment.js, system.js, time.js
+    ├── users.js, workspace-notifications.js
 
-Build additional endpoint modules only when a test needs them.
+The facade covers all **523 HTTP method + path operations** declared in the 23
+plugin `routes.yaml` files in the bundled OrangeHRM 5.9 source archive. It
+excludes non-API file routes and legacy API v1, consistent with `docs/api.md`.
 
 Do not add schemas/, resources/, models/, or contracts/ yet. Those belong to Phase 3 (contract validation) when you actually have a reason to add them.
 
@@ -732,6 +737,37 @@ One interceptor. One place. No magic.
 logger is optional. If you don't have one, pass nothing.
 
 The client accepts only relative API paths, fixes each request to the configured base URL, and disables redirects. This prevents bearer tokens from being sent to an absolute URL or forwarded through a login redirect.
+
+No application-session cookie, SPA redirect/reload behavior, or frontend ETag
+cache is included. Those behaviors belong to OrangeHRM's Vue `APIService`;
+this client is the injected OAuth-token client for automation and API tests.
+
+Route-group calls keep HTTP parameters explicit:
+
+```js
+const { data, meta } = await api.pim.employees.list({ limit: 20, offset: 0 });
+const { data: employee } = await api.pim.employeePersonalDetails.get({ empNumber: 7 });
+await api.pim.employeePersonalDetails.update({
+  empNumber: 7,
+  data: { firstName: 'Updated' },
+});
+await api.pim.employeeDependents.create({
+  empNumber: 7,
+  data: { name: 'Dependent' },
+});
+await api.admin.users.get({ id: 3 });
+```
+
+Static GET methods accept query fields directly. Dynamic routes take their
+named path parameters on the argument object; dynamic POST/PUT requests place
+the payload in `data`. Static POST/PUT methods take the payload directly.
+Collection DELETE methods accept `ids` (sent as `{ids: [...]}`); item DELETE
+routes use the route's path identifier. Path segments are validated and URL
+encoded before transport.
+
+`api.employees` and `api.users` remain compatibility conveniences. New tests
+should use the domain-qualified surfaces (`api.pim.employees`,
+`api.admin.users`) to make the OrangeHRM module explicit.
 
 src/api/endpoints/employees.js
 Domain language. No axios. No envelope. No auth.
@@ -950,9 +986,14 @@ Playwright never in infrastructure API layer is pure Node + axios; runs in scrip
 Part 10 — Phase 2 Verification
 Run the isolated client and boundary tests with `npm test -- tests/api.spec.js`. They use a local HTTP server and do not require OrangeHRM credentials.
 
-Run `node scripts/api-smoke.js admin` to verify the complete OAuth + API composition against a configured OrangeHRM instance. This smoke check lists up to five employees; it does not create or delete data.
+Run `npm run api:smoke -- admin` (or `npm run api:smoke -- ess`) to verify the complete OAuth + API composition against a configured OrangeHRM instance. This smoke check lists up to five employees; it does not create or delete data.
 
-Stop here. Add more endpoint modules only when a test needs them. Do not add schemas, retries, or other speculative API infrastructure.
+The route-manifest test asserts coverage of the bundled source route inventory;
+the local-server tests exercise auth headers, request bodies and query strings,
+path-parameter encoding, the response/error envelopes, API redirects, and
+authentication failure propagation.
+
+Stop here. Do not add schemas, retries, or other speculative API infrastructure.
 
 Part 11 — Naming the Whole Thing (for your own defense)
 SRP — client.js transports; envelope.js normalizes; errors.js types; endpoints/* speaks domain.

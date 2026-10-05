@@ -90,7 +90,9 @@ class ApiClient {
       return await this.http.request({
         ...config,
         baseURL: this.baseUrl,
+        allowAbsoluteUrls: false,
         maxRedirects: 0,
+        validateStatus: (status) => status >= 200 && status < 300,
       });
     } catch (error) {
       if (!axios.isAxiosError(error)) {

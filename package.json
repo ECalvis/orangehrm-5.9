@@ -19,7 +19,8 @@
     "test:debug": "playwright test --debug",
     "token": "node scripts/obtain-token.js",
     "token:admin": "node scripts/obtain-token.js admin",
-    "token:ess": "node scripts/obtain-token.js ess"
+    "token:ess": "node scripts/obtain-token.js ess",
+    "api:smoke": "node scripts/api-smoke.js"
   },
   "dependencies": {
     "axios": "^1.20.0",
