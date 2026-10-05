@@ -4,10 +4,11 @@ class AuthenticationError extends Error {
 
     this.name = 'AuthenticationError';
 
-    // Guard against meta overwriting the properties that make an Error an
-    // Error. Assign everything except the reserved keys.
-    const { message: _m, name: _n, stack: _s, ...rest } = meta;
-    Object.assign(this, rest);
+    for (const [key, value] of Object.entries(meta)) {
+      if (key !== 'message' && key !== 'name' && key !== 'stack') {
+        this[key] = value;
+      }
+    }
 
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, this.constructor);

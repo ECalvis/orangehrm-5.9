@@ -44,11 +44,7 @@ class TokenManager {
       try {
         refreshed = await this.oauth.refresh(cached.refreshToken);
       } catch (err) {
-        // Only a rejected refresh token justifies the browser fallback. A
-        // transport failure (network down, timeout, 5xx) does not: the
-        // refresh token may still be valid, and launching a browser to retry
-        // will fail for the same reason while producing a much worse error.
-        if (!(err instanceof OAuthRejectedError)) {
+        if (!this._isRefreshTokenRejection(err)) {
           throw err;
         }
 
@@ -89,6 +85,21 @@ class TokenManager {
 
     this.store.save(tokens);
     return tokens;
+  }
+
+  _isRefreshTokenRejection(err) {
+    if (!(err instanceof OAuthRejectedError)) {
+      return false;
+    }
+
+    // OrangeHRM currently reports an undecryptable refresh token as a 401
+    // invalid_request with this hint; other OAuth rejections must surface.
+    return (
+      err.oauthError === 'invalid_grant' ||
+      (err.status === 401 &&
+        err.oauthError === 'invalid_request' &&
+        /cannot decrypt the refresh token/i.test(err.hint || ''))
+    );
   }
 
   _isValid(token) {

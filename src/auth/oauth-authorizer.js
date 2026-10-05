@@ -1,11 +1,12 @@
 const http = require('http');
+const os = require('os');
 const path = require('path');
 const { URL } = require('url');
 const { chromium } = require('playwright');
 
 const { AuthenticationError } = require('./errors');
 
-const SCREENSHOT_DIR = process.cwd();
+/* eslint-disable no-console */
 
 class OAuthAuthorizer {
   constructor({
@@ -14,12 +15,16 @@ class OAuthAuthorizer {
     callbackPath = '/oauth/callback',
     timeoutMs = 120_000,
     headless = true,
+    screenshotDirectory = os.tmpdir(),
   } = {}) {
-    if (!Number.isFinite(callbackPort) || callbackPort < 0 || callbackPort > 65535) {
+    if (!Number.isInteger(callbackPort) || callbackPort < 0 || callbackPort > 65535) {
       throw new TypeError(`callbackPort must be between 0 and 65535, got: ${callbackPort}`);
     }
     if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
       throw new TypeError(`timeoutMs must be a positive number, got: ${timeoutMs}`);
+    }
+    if (typeof screenshotDirectory !== 'string' || !path.isAbsolute(screenshotDirectory)) {
+      throw new TypeError('screenshotDirectory must be an absolute path');
     }
 
     this.callbackHost = callbackHost;
@@ -27,6 +32,7 @@ class OAuthAuthorizer {
     this.callbackPath = callbackPath;
     this.timeoutMs = timeoutMs;
     this.headless = headless;
+    this.screenshotDirectory = screenshotDirectory;
   }
 
   async authorize({ authorizationUrl, expectedState, credentials }) {
@@ -71,12 +77,9 @@ class OAuthAuthorizer {
 
       const allowButton = page.getByRole('button', { name: /allow access/i }).first();
 
-      const allowLink = page.getByRole('link', { name: /allow access/i }).first();
-
       await Promise.race([
         usernameInput.waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {}),
         allowButton.waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {}),
-        allowLink.waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {}),
       ]);
 
       // 4. If the login form is showing, log in. Otherwise assume session exists.
@@ -110,27 +113,11 @@ class OAuthAuthorizer {
         ]);
       }
 
-      // 5. Consent screen. Button preferred, link as fallback.
-      let consentFound = false;
-
+      // 5. The OrangeHRM consent screen exposes "Allow Access" as a button.
       try {
         await allowButton.waitFor({ state: 'visible', timeout: 15_000 });
-        consentFound = true;
       } catch {
-        /* fall through to link */
-      }
-
-      if (!consentFound) {
-        try {
-          await allowLink.waitFor({ state: 'visible', timeout: 5_000 });
-          consentFound = true;
-        } catch {
-          /* fall through to error */
-        }
-      }
-
-      if (!consentFound) {
-        const screenshotPath = path.join(SCREENSHOT_DIR, `oauth-debug-${Date.now()}.png`);
+        const screenshotPath = path.join(this.screenshotDirectory, `oauth-debug-${Date.now()}.png`);
 
         try {
           await page.screenshot({ path: screenshotPath, fullPage: true });
@@ -147,11 +134,7 @@ class OAuthAuthorizer {
         );
       }
 
-      if (await allowButton.isVisible().catch(() => false)) {
-        await allowButton.click();
-      } else {
-        await allowLink.click();
-      }
+      await allowButton.click();
 
       // 6. Wait for the callback server to resolve.
       //    State validation has already happened inside the server.

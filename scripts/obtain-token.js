@@ -10,6 +10,8 @@ const { TokenManager } = require('../src/auth/token-manager');
 const env = require('../src/config/env');
 const users = require('../src/config/users');
 
+/* eslint-disable no-console */
+
 async function main(roleName) {
   const role = users[roleName];
 

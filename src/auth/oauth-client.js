@@ -97,7 +97,12 @@ class OAuthClient {
     const status = err.response?.status;
     const wire = err.response?.data;
 
-    if (typeof status === 'number' && status >= 400 && status < 500) {
+    if (
+      typeof status === 'number' &&
+      status >= 400 &&
+      status < 500 &&
+      typeof wire?.error === 'string'
+    ) {
       return new OAuthRejectedError(
         `${label} rejected: ${wire?.error || wire?.message || err.message}`,
         {

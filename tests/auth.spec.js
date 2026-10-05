@@ -1,4 +1,5 @@
 const crypto = require('node:crypto');
+const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const http = require('node:http');
 const os = require('node:os');
@@ -249,6 +250,7 @@ test.describe('OAuth callback', () => {
       callbackHost: '127.0.0.1',
       callbackPort: 0,
       timeoutMs: 10_000,
+      headless: true,
     });
 
     let submittedCredentials;
@@ -474,7 +476,10 @@ test.describe('Token manager', () => {
     };
     const oauth = {
       async refresh() {
-        throw new OAuthRejectedError('Refresh rejected', { status: 400 });
+        throw new OAuthRejectedError('Refresh rejected', {
+          status: 400,
+          oauthError: 'invalid_grant',
+        });
       },
       createAuthorizationRequest() {
         return authorizationRequest;
@@ -559,7 +564,9 @@ test.describe('File token store', () => {
       fs.rmSync(directory, { recursive: true, force: true });
     }
   });
+});
 
+test.describe('Token manager refresh failure handling', () => {
   test('does not fall back to browser flow on refresh transport failure', async () => {
     const store = memoryStore({
       accessToken: 'expired-access',
@@ -596,6 +603,106 @@ test.describe('File token store', () => {
     // The refresh token must still be on disk — the transport failure says
     // nothing about its validity.
     expect(store.token.refreshToken).toBe('still-valid-refresh');
+  });
+
+  test('does not fall back for unrelated OAuth client rejections', async () => {
+    const store = memoryStore({
+      accessToken: 'expired-access',
+      refreshToken: 'refresh-value',
+      expiresAt: Date.now() - 1,
+    });
+    const oauth = {
+      async refresh() {
+        throw new OAuthRejectedError('invalid client', {
+          status: 401,
+          oauthError: 'invalid_client',
+        });
+      },
+    };
+    const authorizer = {
+      async authorize() {
+        throw new Error('Authorizer must not be called for invalid_client');
+      },
+    };
+    const manager = new TokenManager({
+      oauth,
+      authorizer,
+      store,
+      credentials: { username: 'user', password: 'password' },
+    });
+
+    await expect(manager.getAccessToken()).rejects.toMatchObject({
+      name: 'OAuthRejectedError',
+      oauthError: 'invalid_client',
+    });
+  });
+
+  test('does not launch browser fallback for rate limiting', async () => {
+    const store = memoryStore({
+      accessToken: 'expired-access',
+      refreshToken: 'refresh-value',
+      expiresAt: Date.now() - 1,
+    });
+    const oauth = {
+      async refresh() {
+        throw new OAuthRejectedError('rate limited', {
+          status: 429,
+          oauthError: 'temporarily_unavailable',
+        });
+      },
+    };
+    const authorizer = {
+      async authorize() {
+        throw new Error('Authorizer must not be called for rate limiting');
+      },
+    };
+    const manager = new TokenManager({
+      oauth,
+      authorizer,
+      store,
+      credentials: { username: 'user', password: 'password' },
+    });
+
+    await expect(manager.getAccessToken()).rejects.toMatchObject({
+      name: 'OAuthRejectedError',
+      status: 429,
+    });
+  });
+
+  test('falls back for OrangeHRM invalid-refresh responses', async () => {
+    const store = memoryStore({
+      accessToken: 'expired-access',
+      refreshToken: 'invalid-refresh',
+      expiresAt: Date.now() - 1,
+    });
+    const oauth = {
+      async refresh() {
+        throw new OAuthRejectedError('Token refresh rejected', {
+          status: 401,
+          oauthError: 'invalid_request',
+          hint: 'Cannot decrypt the refresh token',
+        });
+      },
+      createAuthorizationRequest() {
+        return { url: 'https://hr.example.test/authorize', state: 'state', verifier: 'verifier' };
+      },
+      async exchangeCode() {
+        return { accessToken: 'new-access', refreshToken: 'new-refresh' };
+      },
+    };
+    const authorizer = {
+      async authorize() {
+        return { code: 'code', state: 'state' };
+      },
+    };
+    const manager = new TokenManager({
+      oauth,
+      authorizer,
+      store,
+      credentials: { username: 'user', password: 'password' },
+    });
+
+    await expect(manager.getAccessToken()).resolves.toBe('new-access');
   });
 
   test('uses the new refresh token when the server rotates it', async () => {
@@ -640,7 +747,10 @@ test.describe('File token store', () => {
 
     const oauth = {
       async refresh() {
-        throw new OAuthRejectedError('revoked', { status: 400 });
+        throw new OAuthRejectedError('revoked', {
+          status: 400,
+          oauthError: 'invalid_grant',
+        });
       },
       createAuthorizationRequest() {
         return { url: 'https://hr.example.test/authorize', state: 's', verifier: 'v' };
@@ -674,7 +784,54 @@ test.describe('File token store', () => {
     await expect(manager.getAccessToken()).resolves.toBe('browser-access');
     expect(authorizeCalls).toBe(1);
   });
+});
 
+test.describe('File token store permissions', () => {
+  test('propagates permission errors from load()', () => {
+    test.skip(process.platform === 'win32', 'POSIX permission semantics');
+
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'orangehrm-auth-test-'));
+    const tokenPath = path.join(directory, 'token.json');
+
+    try {
+      const store = new FileTokenStore(tokenPath);
+      store.save({ accessToken: 'x' });
+      fs.chmodSync(tokenPath, 0o000);
+
+      if (process.getuid && process.getuid() === 0) {
+        return;
+      }
+
+      expect(() => store.load()).toThrow();
+    } finally {
+      try {
+        fs.chmodSync(tokenPath, 0o600);
+      } catch {
+        // The file may not exist if setup failed.
+      }
+      fs.rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  test('applies 0600 permissions to an existing token file', () => {
+    test.skip(process.platform === 'win32', 'POSIX permission semantics');
+
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'orangehrm-auth-test-'));
+    const store = new FileTokenStore(path.join(directory, 'token.json'));
+
+    try {
+      store.save({ accessToken: 'first' });
+      fs.chmodSync(store.filePath, 0o644);
+      store.save({ accessToken: 'second' });
+
+      expect(fs.statSync(store.filePath).mode & 0o777).toBe(0o600);
+    } finally {
+      fs.rmSync(directory, { recursive: true, force: true });
+    }
+  });
+});
+
+test.describe('OAuth callback lifecycle', () => {
   test('times out when no callback is received', async () => {
     const authorizer = new OAuthAuthorizer({
       callbackHost: '127.0.0.1',
@@ -691,7 +848,6 @@ test.describe('File token store', () => {
       await authorizer._stopCallbackServer(server);
     }
   });
-
   test('rejects serverReady when the callback port is already in use', async () => {
     const blocker = await listen(http.createServer(() => {}));
     const port = blocker.address().port;
@@ -711,143 +867,151 @@ test.describe('File token store', () => {
       await closeServer(blocker);
     }
   });
+});
 
-  test.describe('Constructor validation', () => {
-    test('OAuthClient rejects missing required options', () => {
-      expect(() => new OAuthClient({})).toThrow(TypeError);
-      expect(
-        () =>
-          new OAuthClient({
-            authorizationUrl: 'https://x/authorize',
-            tokenUrl: 'https://x/token',
-            clientId: 'c',
-            // missing redirectUri
-          }),
-      ).toThrow(TypeError);
-      expect(
-        () =>
-          new OAuthClient({
-            authorizationUrl: 'https://x/authorize',
-            tokenUrl: 'https://x/token',
-            clientId: 'c',
-            redirectUri: 'http://localhost:9876/oauth/callback',
-            timeoutMs: -1,
-          }),
-      ).toThrow(TypeError);
-    });
-
-    test('TokenManager rejects missing collaborators', () => {
-      expect(() => new TokenManager({})).toThrow(TypeError);
-      expect(
-        () =>
-          new TokenManager({
-            oauth: {},
-            authorizer: {},
-            store: {},
-            // missing credentials
-          }),
-      ).toThrow(TypeError);
-    });
-
-    test('OAuthAuthorizer rejects invalid port and timeout', () => {
-      expect(() => new OAuthAuthorizer({ callbackPort: -1 })).toThrow(TypeError);
-      expect(() => new OAuthAuthorizer({ callbackPort: 70000 })).toThrow(TypeError);
-      expect(() => new OAuthAuthorizer({ timeoutMs: 0 })).toThrow(TypeError);
-    });
+test.describe('Constructor validation', () => {
+  test('OAuthClient rejects missing required options', () => {
+    expect(() => new OAuthClient({})).toThrow(TypeError);
+    expect(
+      () =>
+        new OAuthClient({
+          authorizationUrl: 'https://x/authorize',
+          tokenUrl: 'https://x/token',
+          clientId: 'c',
+          // missing redirectUri
+        }),
+    ).toThrow(TypeError);
+    expect(
+      () =>
+        new OAuthClient({
+          authorizationUrl: 'https://x/authorize',
+          tokenUrl: 'https://x/token',
+          clientId: 'c',
+          redirectUri: 'http://localhost:9876/oauth/callback',
+          timeoutMs: -1,
+        }),
+    ).toThrow(TypeError);
   });
 
-  test.describe('AuthenticationError metadata', () => {
-    test('copies custom metadata onto the error', () => {
-      const err = new AuthenticationError('boom', { status: 401, hint: 'x' });
-      expect(err.status).toBe(401);
-      expect(err.hint).toBe('x');
-    });
-
-    test('does not let metadata overwrite reserved Error properties', () => {
-      const err = new AuthenticationError('original message', {
-        message: 'hijacked',
-        name: 'HijackedName',
-        stack: 'hijacked stack',
-      });
-
-      expect(err.message).toBe('original message');
-      expect(err.name).toBe('AuthenticationError');
-      expect(err.stack).not.toBe('hijacked stack');
-    });
+  test('TokenManager rejects missing collaborators', () => {
+    expect(() => new TokenManager({})).toThrow(TypeError);
+    expect(
+      () =>
+        new TokenManager({
+          oauth: {},
+          authorizer: {},
+          store: {},
+          // missing credentials
+        }),
+    ).toThrow(TypeError);
   });
 
-  const { execFileSync } = require('node:child_process');
-  const path = require('node:path');
+  test('OAuthAuthorizer rejects invalid port and timeout', () => {
+    expect(() => new OAuthAuthorizer({ callbackPort: -1 })).toThrow(TypeError);
+    expect(() => new OAuthAuthorizer({ callbackPort: 70000 })).toThrow(TypeError);
+    expect(() => new OAuthAuthorizer({ timeoutMs: 0 })).toThrow(TypeError);
+    expect(() => new OAuthAuthorizer({ screenshotDirectory: '' })).toThrow(TypeError);
+  });
+});
 
-  test.describe('Config validation', () => {
-    const envModulePath = path.resolve(__dirname, '..', 'src', 'config', 'env.js');
+test.describe('AuthenticationError metadata', () => {
+  test('copies custom metadata onto the error', () => {
+    const err = new AuthenticationError('boom', { status: 401, hint: 'x' });
+    expect(err.status).toBe(401);
+    expect(err.hint).toBe('x');
+  });
 
-    // Runs env.js in a fresh child process with a controlled environment.
-    // Returns a function that throws with the child's stderr if the module
-    // throws, or returns stdout if it loads cleanly.
-    function runEnvWith(overrides) {
-      // JSON.stringify on the path produces a correctly escaped string literal
-      // even on Windows, where the raw path contains backslashes.
-      const script = `
-      Object.assign(process.env, ${JSON.stringify(overrides)});
+  test('does not let metadata overwrite reserved Error properties', () => {
+    const err = new AuthenticationError('original message', {
+      message: 'hijacked',
+      name: 'HijackedName',
+      stack: 'hijacked stack',
+    });
+
+    expect(err.message).toBe('original message');
+    expect(err.name).toBe('AuthenticationError');
+    expect(err.stack).not.toBe('hijacked stack');
+  });
+});
+
+test.describe('Config validation', () => {
+  const envModulePath = path.resolve(__dirname, '..', 'src', 'config', 'env.js');
+
+  // Runs env.js in a fresh child process with a controlled environment.
+  // Returns a function that throws with the child's stderr if the module
+  // throws, or returns stdout if it loads cleanly.
+  function runEnvWith(overrides) {
+    const script = `
+    delete process.env.API_BASE_URL;
+    Object.assign(process.env, ${JSON.stringify(overrides)});
       process.env.OHRM_BASE_URL = process.env.OHRM_BASE_URL || 'http://localhost:8080';
       process.env.OHRM_OAUTH_CLIENT_ID = process.env.OHRM_OAUTH_CLIENT_ID || 'client';
       const env = require(${JSON.stringify(envModulePath)});
       process.stdout.write(JSON.stringify({
+        apiBaseUrl: env.apiBaseUrl,
         callbackHost: env.callbackHost,
         callbackPort: env.callbackPort,
         callbackPath: env.callbackPath,
       }));
     `;
 
-      return () =>
-        execFileSync(process.execPath, ['-e', script], {
-          encoding: 'utf8',
-          stdio: ['ignore', 'pipe', 'pipe'],
-        });
-    }
+    return () =>
+      execFileSync(process.execPath, ['-e', script], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+  }
 
-    test('rejects a redirect URI with no explicit port', () => {
-      const run = runEnvWith({
-        OHRM_OAUTH_REDIRECT_URI: 'http://localhost/oauth/callback',
-      });
-      // Assert on the specific message, not just "something threw." Without
-      // this, a MODULE_NOT_FOUND from a bad path would satisfy the assertion.
-      expect(run).toThrow(/must include an explicit port/);
+  test('rejects a redirect URI with no explicit port', () => {
+    const run = runEnvWith({
+      OHRM_OAUTH_REDIRECT_URI: 'http://localhost/oauth/callback',
     });
+    expect(run).toThrow(/must include an explicit port/);
+  });
 
-    test('rejects a redirect URI with a non-numeric port', () => {
-      const run = runEnvWith({
-        OHRM_OAUTH_REDIRECT_URI: 'http://localhost:notaport/oauth/callback',
-      });
-      expect(run).toThrow(/not a valid absolute URL|invalid port/);
+  test('rejects a redirect URI with a non-numeric port', () => {
+    const run = runEnvWith({
+      OHRM_OAUTH_REDIRECT_URI: 'http://localhost:notaport/oauth/callback',
     });
+    expect(run).toThrow(/not a valid absolute URL|invalid port/);
+  });
 
-    test('rejects a redirect URI with an out-of-range port', () => {
-      const run = runEnvWith({
-        OHRM_OAUTH_REDIRECT_URI: 'http://localhost:99999/oauth/callback',
-      });
-      expect(run).toThrow(/not a valid absolute URL|invalid port/);
+  test('rejects a redirect URI with an out-of-range port', () => {
+    const run = runEnvWith({
+      OHRM_OAUTH_REDIRECT_URI: 'http://localhost:99999/oauth/callback',
     });
+    expect(run).toThrow(/not a valid absolute URL|invalid port/);
+  });
 
-    test('rejects a non-http redirect URI', () => {
-      const run = runEnvWith({
-        OHRM_OAUTH_REDIRECT_URI: 'ftp://localhost:9876/oauth/callback',
-      });
-      expect(run).toThrow(/must use http or https/);
+  test('rejects a non-http redirect URI', () => {
+    const run = runEnvWith({
+      OHRM_OAUTH_REDIRECT_URI: 'ftp://localhost:9876/oauth/callback',
     });
+    expect(run).toThrow(/must use http/);
+  });
 
-    test('derives callbackHost, callbackPort, and callbackPath from the redirect URI', () => {
-      const run = runEnvWith({
-        OHRM_OAUTH_REDIRECT_URI: 'http://127.0.0.1:12345/custom/cb',
-      });
-      const output = run();
-      const parsed = JSON.parse(output);
-      expect(parsed).toEqual({
-        callbackHost: '127.0.0.1',
-        callbackPort: 12345,
-        callbackPath: '/custom/cb',
-      });
+  test('derives API and callback settings from environment values', () => {
+    const run = runEnvWith({
+      OHRM_BASE_URL: 'http://hr.example.test:8080',
+      OHRM_OAUTH_REDIRECT_URI: 'http://127.0.0.1:12345/custom/cb',
     });
+    const parsed = JSON.parse(run());
+
+    expect(parsed).toEqual({
+      apiBaseUrl: 'http://hr.example.test:8080/web/index.php/api/v2',
+      callbackHost: '127.0.0.1',
+      callbackPort: 12345,
+      callbackPath: '/custom/cb',
+    });
+  });
+
+  test('uses API_BASE_URL when configured', () => {
+    const run = runEnvWith({
+      API_BASE_URL: 'https://api.example.test/v2',
+      OHRM_OAUTH_REDIRECT_URI: 'http://127.0.0.1:12345/oauth/callback',
+    });
+    const parsed = JSON.parse(run());
+
+    expect(parsed.apiBaseUrl).toBe('https://api.example.test/v2');
   });
 });

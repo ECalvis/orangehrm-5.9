@@ -25,8 +25,10 @@ try {
   throw new Error(`OHRM_OAUTH_REDIRECT_URI is not a valid absolute URL: ${oauthRedirectUri}`);
 }
 
-if (redirectUrl.protocol !== 'http:' && redirectUrl.protocol !== 'https:') {
-  throw new Error(`OHRM_OAUTH_REDIRECT_URI must use http or https: ${oauthRedirectUri}`);
+if (redirectUrl.protocol !== 'http:') {
+  throw new Error(
+    `OHRM_OAUTH_REDIRECT_URI must use http because the local callback server does not terminate TLS: ${oauthRedirectUri}`,
+  );
 }
 
 if (!redirectUrl.port) {
@@ -42,6 +44,7 @@ if (!Number.isInteger(callbackPort) || callbackPort < 1 || callbackPort > 65535)
 
 const env = {
   baseUrl,
+  apiBaseUrl: process.env.API_BASE_URL || `${baseUrl}/web/index.php/api/v2`,
 
   oauthClientId: required('OHRM_OAUTH_CLIENT_ID'),
 

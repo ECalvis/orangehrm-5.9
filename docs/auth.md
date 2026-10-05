@@ -13,6 +13,12 @@ Describes the authentication and authorization mechanisms of OrangeHRM 5.9. Cove
 
 Does **not** design a test framework. Authentication and authorization are treated as separate concepts throughout.
 
+## Local OAuth token helper
+
+Register an OAuth client in OrangeHRM and set its client ID, registered redirect URI, and admin or ESS credentials in `.env` (see `.env.example`). Then run `npm run token:admin` or `npm run token:ess`. The helper caches each role's token pair in `auth/<role>.token.json`; these files contain bearer credentials and must remain untracked.
+
+On a failed run, check that the registered redirect URI exactly matches `OHRM_OAUTH_REDIRECT_URI`, that its local callback port is available, and that the client ID and role credentials are correct. The browser authorizer writes a screenshot to the operating system temporary directory if the expected consent button is missing.
+
 ---
 
 ## 2. What It Is
@@ -194,6 +200,8 @@ ConfigService reads them at getOAuthAuthCodeTTL(), getOAuthRefreshTokenTTL(), ge
 NOT VERIFIED (live): Behavior of an actually expired access token (e.g. 401 vs 302). The TTL is verified from the response and config; the exact rejection response has not been captured live.
 
 3.1.6 Refresh-token rotation
+FACT (live, 2026-10-05): In a refresh run through the token helper, OrangeHRM returned a different refresh token, and the helper stored the new value. This confirms rotation for that request.
+
 NOT VERIFIED (live): Whether the server invalidates the old refresh token when a new one is issued. The earlier API research doc noted an attempted reuse returned 401 with hint Cannot decrypt the refresh token, but that test also used a mismatched client_id, so the cause is ambiguous.
 
 RECOMMENDATION: Do a clean two-request test:
