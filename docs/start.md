@@ -52,7 +52,7 @@ authorize({ authorizationUrl, expectedState }) → { code, state }
 { getAccessToken() → string, clear() }
 The single most important rule: access_token, refresh_token, expires_in are wire format. They are translated once, inside oauth-client.js. Nowhere else in the framework should ever see snake_case.
 
-Auth unit tests live in `tests/auth.spec.js` and run with `npm test`. They cover PKCE, OAuth token requests and normalization, callback state validation, token refresh/caching, and file-store behavior without requiring live credentials or opening a browser. The full browser login and OrangeHRM exchange still require an integration environment.
+Auth tests live in `tests/auth.spec.js` and run with `npm test`. They cover PKCE, OAuth token requests and normalization, callback state validation, token refresh/caching, and file-store behavior. A local browser integration test exercises the authorizer's login, consent, and callback flow without OrangeHRM credentials. The four live OrangeHRM scenarios (cold, warm, expired with refresh, and expired with invalid refresh) are separate manual integration checks and are not part of `npm test`.
 
 Part 4 — What Your Current Code Gets Wrong (Concretely)
 Violation	Location	Fix

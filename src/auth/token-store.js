@@ -34,7 +34,9 @@ class FileTokenStore {
       throw new TypeError('Token must be an object');
     }
 
-    fs.mkdirSync(path.dirname(this.filePath), { recursive: true });
+    const directory = path.dirname(this.filePath);
+
+    fs.mkdirSync(directory, { recursive: true });
 
     fs.writeFileSync(this.filePath, JSON.stringify(token, null, 2), {
       encoding: 'utf8',

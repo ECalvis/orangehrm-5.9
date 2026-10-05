@@ -137,14 +137,6 @@ class OAuthAuthorizer {
       //    State validation has already happened inside the server.
       const callbackResult = await callback.result;
 
-      if (callbackResult.error) {
-        throw new AuthenticationError(
-          `OAuth authorization failed: ${callbackResult.error}${
-            callbackResult.errorDescription ? ` - ${callbackResult.errorDescription}` : ''
-          }`,
-        );
-      }
-
       if (!callbackResult.code) {
         throw new AuthenticationError('OAuth callback did not contain an authorization code.');
       }

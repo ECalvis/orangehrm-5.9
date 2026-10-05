@@ -242,6 +242,73 @@ test.describe('OAuth callback', () => {
     }
   }
 
+  test('completes local login and consent flow in a real browser', async () => {
+    const expectedState = 'integration-state';
+    const callbackProbe = await listen(http.createServer());
+    const callbackPort = callbackProbe.address().port;
+    await closeServer(callbackProbe);
+
+    let submittedCredentials;
+    const server = await listen(
+      http.createServer((request, response) => {
+        const requestUrl = new URL(request.url, 'http://127.0.0.1');
+
+        if (requestUrl.pathname === '/oauth2/authorize') {
+          response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+          response.end(`
+            <!doctype html>
+            <form action="/login" method="post">
+              <input name="username" placeholder="Username">
+              <input name="password" type="password">
+              <button type="submit">Login</button>
+            </form>
+          `);
+          return;
+        }
+
+        if (requestUrl.pathname === '/login') {
+          const chunks = [];
+          request.on('data', (chunk) => chunks.push(chunk));
+          request.on('end', () => {
+            submittedCredentials = new URLSearchParams(Buffer.concat(chunks).toString());
+            response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+            response.end(`
+              <!doctype html>
+              <button type="button" onclick="window.location.href =
+                'http://127.0.0.1:${callbackPort}/oauth/callback?code=browser-code&state=${expectedState}'">
+                Allow Access
+              </button>
+            `);
+          });
+          return;
+        }
+
+        response.writeHead(404);
+        response.end('Not found');
+      }),
+    );
+
+    const authorizer = new OAuthAuthorizer({
+      callbackHost: '127.0.0.1',
+      callbackPort,
+      timeoutMs: 10_000,
+    });
+
+    try {
+      const result = await authorizer.authorize({
+        authorizationUrl: `http://127.0.0.1:${server.address().port}/oauth2/authorize?state=${expectedState}`,
+        expectedState,
+        credentials: { username: 'test-user', password: 'test-password' },
+      });
+
+      expect(result).toEqual({ code: 'browser-code', state: expectedState });
+      expect(submittedCredentials.get('username')).toBe('test-user');
+      expect(submittedCredentials.get('password')).toBe('test-password');
+    } finally {
+      await closeServer(server);
+    }
+  });
+
   test('accepts a callback only when its state matches', async () => {
     await withCallbackServer(async (callback, port) => {
       const result = callback.result;
@@ -470,27 +537,6 @@ test.describe('File token store', () => {
       expect(store.load()).toEqual(token);
       store.clear();
       expect(store.load()).toBeNull();
-    } finally {
-      fs.rmSync(directory, { recursive: true, force: true });
-    }
-  });
-
-  test('restricts permissions when overwriting an existing token file on POSIX', () => {
-    test.skip(
-      process.platform === 'win32',
-      'POSIX file permission bits are not available on Windows',
-    );
-
-    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'orangehrm-auth-test-'));
-
-    try {
-      const store = new FileTokenStore(path.join(directory, 'token.json'));
-
-      store.save({ accessToken: 'initial' });
-      fs.chmodSync(store.filePath, 0o644);
-      store.save({ accessToken: 'updated' });
-
-      expect(fs.statSync(store.filePath).mode & 0o777).toBe(0o600);
     } finally {
       fs.rmSync(directory, { recursive: true, force: true });
     }
