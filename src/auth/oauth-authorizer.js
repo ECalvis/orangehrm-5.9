@@ -137,10 +137,6 @@ class OAuthAuthorizer {
       //    State validation has already happened inside the server.
       const callbackResult = await callback.result;
 
-      if (!callbackResult.code) {
-        throw new AuthenticationError('OAuth callback did not contain an authorization code.');
-      }
-
       return {
         code: callbackResult.code,
         state: callbackResult.state,
@@ -254,7 +250,10 @@ class OAuthAuthorizer {
         rejectResult(err);
       });
 
-      server.listen(this.callbackPort, this.callbackHost, () => resolve(server));
+      server.listen(this.callbackPort, this.callbackHost, () => {
+        this.callbackPort = server.address().port;
+        resolve(server);
+      });
     });
 
     const timeout = setTimeout(() => {
