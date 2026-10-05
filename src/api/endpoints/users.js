@@ -1,30 +1,19 @@
-const { encodeSegment } = require('../resource');
+const { createRouteGroup } = require('../resource');
 
-class UsersApi {
-  constructor(client) {
-    this.client = client;
-  }
+const route = (method, path) => ({ method, path });
 
-  list(params = {}) {
-    return this.client.get('/admin/users', { params });
-  }
+function createUsersApi(client) {
+  const routes = createRouteGroup(client, {
+    users: {
+      list: route('GET', '/admin/users'),
+      get: route('GET', '/admin/users/{id}'),
+      create: route('POST', '/admin/users'),
+      update: route('PUT', '/admin/users/{id}'),
+      delete: route('DELETE', '/admin/users'),
+    },
+  });
 
-  get(id, params) {
-    return this.client.get(`/admin/users/${encodeSegment(id)}`, { params });
-  }
-
-  create(data) {
-    return this.client.post('/admin/users', data);
-  }
-
-  update(id, data) {
-    return this.client.put(`/admin/users/${encodeSegment(id)}`, data);
-  }
-
-  delete(ids) {
-    const userIds = Array.isArray(ids) ? ids : [ids];
-    return this.client.delete('/admin/users', { ids: userIds });
-  }
+  return routes.users;
 }
 
-module.exports = { UsersApi };
+module.exports = { createUsersApi, UsersApi: createUsersApi };

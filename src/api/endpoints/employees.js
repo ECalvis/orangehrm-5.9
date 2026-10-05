@@ -1,30 +1,19 @@
-const { encodeSegment } = require('../resource');
+const { createRouteGroup } = require('../resource');
 
-class EmployeesApi {
-  constructor(client) {
-    this.client = client;
-  }
+const route = (method, path) => ({ method, path });
 
-  list(params = {}) {
-    return this.client.get('/pim/employees', { params });
-  }
+function createEmployeesApi(client) {
+  const routes = createRouteGroup(client, {
+    employees: {
+      list: route('GET', '/pim/employees'),
+      get: route('GET', '/pim/employees/{empNumber}'),
+      create: route('POST', '/pim/employees'),
+      update: route('PUT', '/pim/employees/{empNumber}'),
+      delete: route('DELETE', '/pim/employees'),
+    },
+  });
 
-  get(empNumber) {
-    return this.client.get(`/pim/employees/${encodeSegment(empNumber)}`);
-  }
-
-  create(data) {
-    return this.client.post('/pim/employees', data);
-  }
-
-  update(empNumber, data) {
-    return this.client.put(`/pim/employees/${encodeSegment(empNumber)}`, data);
-  }
-
-  delete(empNumbers) {
-    const ids = Array.isArray(empNumbers) ? empNumbers : [empNumbers];
-    return this.client.delete('/pim/employees', { ids });
-  }
+  return routes.employees;
 }
 
-module.exports = { EmployeesApi };
+module.exports = { createEmployeesApi, EmployeesApi: createEmployeesApi };
