@@ -19,7 +19,7 @@ export default [
     files: ['**/*.js'],
     languageOptions: {
       ecmaVersion: 'latest',
-      sourceType: 'module',
+      sourceType: 'commonjs',
     },
     rules: {
       'no-console': 'warn',
