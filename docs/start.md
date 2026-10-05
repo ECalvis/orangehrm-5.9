@@ -1580,34 +1580,20 @@ Error taxonomy ✅ AuthenticationError ✅ ApiError ✅ DbError
 No hidden deps in tests n/a ✅ ✅ (explicit opt-in)
 That table is the whole point of doing this in phases: the shape repeats, so the mental model transfers. You solved auth once, and now API and DB are the same problem with different payloads.
 
-Part 10 — What To Do Right Now
-Write src/db/errors.js — 30 seconds. The MySQL code map is worth the 10 lines.
+Part 10 — Phase 3 Implementation and Verification
+The initial DB layer is implemented in src/db/. It includes the MySQL pool, query client and transactions, DB error normalization, opt-in row conversion, and the employees and permissions repositories. scripts/db-smoke.js composes the layer without auth or API dependencies.
 
-Write src/db/row.js — 5 minutes.
-
-Write src/db/pool.js — 10 minutes.
-
-Write src/db/client.js — 30 minutes. Get transactions right.
-
-Write src/db/repositories/employees.js and permissions.js — 15 minutes each.
-
-Write src/db/index.js — 5 minutes.
-
-Write scripts/db-smoke.js — 15 minutes.
-
-Add DB env vars to .env and .env.example.
-
-Run node scripts/db-smoke.js. Iterate.
-
-Write one Node smoke script that asserts:
+Run npm run db:smoke to verify that:
 
 employees.countAll() returns a number
 
-permissions.rolePermissionsForApi('OrangeHRM\\Pim\\Api\\EmployeeAPI') returns the four rows from your research (Admin, ESS, Supervisor×2)
+permissions.rolePermissionsForApi('OrangeHRM\\Pim\\Api\\EmployeeAPI') returns the four expected rows (Admin, ESS, Supervisor×2)
 
 permissions.isActionAllowed(3, 'NOT_EXIST', 'ADMIN', 1) returns true
 
-Stop. Phase 3 is done. Do not add cleanup helpers, migrations, or ORM features until Phase 4 needs them.
+Run npx playwright test tests/db.spec.js for the focused client and row-helper tests.
+
+Stop here for Phase 3. Do not add cleanup helpers, migrations, or ORM features until Phase 4 needs them.
 
 Part 11 — Naming the Whole Thing (for your own defense)
 SRP — pool connection lifecycle, client query interface, row translation, and repositories are four different concerns.
