@@ -40,7 +40,7 @@ The backend is **plugin-modular**. Each HR domain — PIM, Leave, Admin, Claim, 
 
 **Live confirmation of UI→API contract:**
 
-```http
+````http
 GET http://localhost:8080/web/index.php/api/v2/pim/employees?limit=50&offset=0&model=detailed&includeEmployees=onlyCurrent&sortField=employee.firstName&sortOrder=ASC
 Accept: application/json
 Cookie: _orangehrm=<session>
@@ -56,7 +56,8 @@ Every /api/v2/... route in PIM, Leave, Admin, Claim routes.yaml uses:
 ```yaml
 controller: OrangeHRM\Core\Controller\Rest\V2\GenericRestController::handle
 and declares _api under defaults.
-```
+````
+
 3.2 Screen routes return SPA shell; API routes return JSON
 Screen routes (/pim/..., /leave/..., /admin/..., /claim/...) use dedicated controller classes. API routes return JSON. The SPA is loaded by a screen route and then fetches data from API routes.
 
@@ -85,6 +86,7 @@ json
 }
 meta contains total for collections. rels is [] when empty.
 ```
+
 3.5 Validation strips framework-internal keys
 ParamRuleCollection::DEFAULT_EXCLUDED_PARAM_KEYS:
 
@@ -92,6 +94,7 @@ ParamRuleCollection::DEFAULT_EXCLUDED_PARAM_KEYS:
 ['_api', '_key', '_controller', '_route', '_route_params', '_i18nEnabled', '_dateFormattingEnabled']
 Validator::validate() calls getOnlyNecessaryValues() to remove these before iterating. Symfony-injected routing attributes are therefore not treated as unexpected parameters.
 ```
+
 3.6 Strict mode is on by default
 ParamRuleCollection::$strict = true. Any parameter without a declared rule triggers InvalidParamException('Unexpected Parameter ('<key>') Received').
 
@@ -114,6 +117,7 @@ BasicUserRoleManager::getApiPermissions($apiClass)
      → reduce DataGroupPermission[] → ResourcePermission (OR of each flag)
 Live data confirms the chain:
 ```
+
 ohrm_api_permission maps OrangeHRM\Pim\Api\EmployeeAPI → data_group_id = 96.
 
 ohrm_data_group id 96: apiv2_pim_employee (API-v2 PIM - Employees), read=1, create=1, update=0, delete=1.
@@ -131,14 +135,14 @@ Supervisor (role 3): read=1, create=0, update=0, delete=0, self=1
 So PUT is not allowed for any role on EmployeeAPI — consistent with EmployeeAPI::update() throwing NotImplementedException.
 
 3.9 Role model is 7 predefined roles
-id	name	display_name	is_assignable	is_predefined
-1	Admin	Admin	1	1
-2	ESS	ESS	1	1
-3	Supervisor	Supervisor	0	1
-4	ProjectAdmin	ProjectAdmin	0	1
-5	Interviewer	Interviewer	0	1
-6	HiringManager	HiringManager	0	1
-7	Reviewer	Reviewer	0	1
+id name display_name is_assignable is_predefined
+1 Admin Admin 1 1
+2 ESS ESS 1 1
+3 Supervisor Supervisor 0 1
+4 ProjectAdmin ProjectAdmin 0 1
+5 Interviewer Interviewer 0 1
+6 HiringManager HiringManager 0 1
+7 Reviewer Reviewer 0 1
 Only Admin and ESS are assignable. The other five are derived roles added by BasicUserRoleManager::computeUserRoles().
 
 3.10 Workflow state machine is a populated DB table
@@ -146,12 +150,12 @@ ohrm_workflow_state_machine has 152 rows across flows 0–7. The workflow column
 
 Verified Employee flow (workflow = '3'):
 
-state	role	action	resulting_state
-NOT_EXIST	ADMIN	1	ACTIVE
-ACTIVE	ADMIN	2	NOT_EXIST
-ACTIVE	ADMIN	3	TERMINATED
-TERMINATED	ADMIN	4	ACTIVE
-TERMINATED	ADMIN	5	NOT_EXIST
+state role action resulting_state
+NOT_EXIST ADMIN 1 ACTIVE
+ACTIVE ADMIN 2 NOT_EXIST
+ACTIVE ADMIN 3 TERMINATED
+TERMINATED ADMIN 4 ACTIVE
+TERMINATED ADMIN 5 NOT_EXIST
 Verified Claim flow (workflow = '7'): 12 rows including INITIATED/ESS USER/1/SUBMITTED, SUBMITTED/ADMIN/2/PAID, APPROVED/ADMIN/3/PAID, etc.
 
 Verified Leave flow (workflow = '4'): uses string actions: APPLY, ASSIGN, APPROVE, CANCEL, REJECT. States: INITIAL, PENDING APPROVAL, SCHEDULED, TAKEN, CANCELLED, REJECTED, LEAVE TYPE DELETED PENDING APPROVAL, etc.
@@ -180,6 +184,7 @@ text
 gif, jpeg, jpg, jfif, png
 Base64Attachment::validate() enforces:
 ```
+
 Input has name, type, base64, size.
 
 type is in $allowedTypes.
@@ -225,6 +230,7 @@ $uniqueOption->setMatchValues(['purgedAt' => null]);
 new Rule(Rules::ENTITY_UNIQUE_PROPERTY, [Employee::class, 'employeeId', $uniqueOption])
 So employeeId uniqueness only considers non-purged employees.
 ```
+
 3.15 Result serialization differs by collection vs resource
 EndpointResourceResult::normalize() → normalizeObject() (single object → array).
 
@@ -248,7 +254,8 @@ Doctrine annotation: uniqueConstraints={@ORM\UniqueConstraint(name="api_name", c
 Errors are emitted as {error: {status, message, data?}}, not wrapped in the success envelope.
 
 4. Architecture
-4.1 Request lifecycle (fully verified)
+   4.1 Request lifecycle (fully verified)
+
 ```text
 HTTP request
   ↓
@@ -320,12 +327,13 @@ Traits	UserRoleManagerTrait, AuthUserTrait	orangehrmCorePlugin/Traits/
 4.3 Concrete representative flow: "Get employee list"
 Admin navigates to PIM → Employee List.
 ```
+
 Live HTTP request:
 
 http
 GET /web/index.php/api/v2/pim/employees
-    ?limit=50&offset=0&model=detailed&includeEmployees=onlyCurrent
-    &sortField=employee.firstName&sortOrder=ASC
+?limit=50&offset=0&model=detailed&includeEmployees=onlyCurrent
+&sortField=employee.firstName&sortOrder=ASC
 Accept: application/json
 Cookie: _orangehrm=<session>
 Symfony router matches apiv2_pim_employees → GenericRestController::handle.
@@ -385,29 +393,30 @@ Live response:
 }
 DB verification: SELECT * FROM hs_hr_employee WHERE purged_at IS NULL returns 2 rows with emp_number 1 and 2, matching the response.
 ```
+
 5. Important Concepts
-Concept	Description
-_api	Mandatory route attribute pointing to the endpoint class.
-_key	Optional param name used for getOne vs getAll distinction. Default: 'id'.
-CrudEndpoint	Interface bundling getAll, getOne, create, update, delete.
-Normalizable	Interface for JSON-serializable models.
-ModelTrait	Standard implementation: wire entity, declare filters, get JSON.
-EndpointResourceResult	Single-resource response wrapper.
-EndpointCollectionResult	Collection response wrapper with meta.
-ParameterBag	Holds the meta object.
-ParamRuleCollection	Strict parameter validation container.
-ParamRule	Single parameter validation rule.
-ValidationDecorator	Wraps rules as required or not-required.
-ALLOWED_SORT_FIELDS	Per-resource constant listing valid sortField values.
-MODEL_MAP	Pattern for ?model= variant selection (default/detailed).
-ResourcePermission	OR-reduced permission flags from DataGroupPermission.
-self flag	Restricts a role to its own data rows.
-IN_ACCESSIBLE_EMP_NUMBERS	Row-level authorization rule.
-ENTITY_UNIQUE_PROPERTY	DB-backed uniqueness validation rule.
-WorkflowStateMachine	DB table of allowed state transitions.
-CapableViewController	Marker interface for endpoints that bypass permission checks.
-5.1 _api is mandatory
-GenericRestController::init() throws if _api is null. ApiAuthorizationSubscriber::onControllerEvent() also throws ForbiddenException if _api is null. Two independent layers enforce this.
+   Concept Description
+   _api Mandatory route attribute pointing to the endpoint class.
+   _key Optional param name used for getOne vs getAll distinction. Default: 'id'.
+   CrudEndpoint Interface bundling getAll, getOne, create, update, delete.
+   Normalizable Interface for JSON-serializable models.
+   ModelTrait Standard implementation: wire entity, declare filters, get JSON.
+   EndpointResourceResult Single-resource response wrapper.
+   EndpointCollectionResult Collection response wrapper with meta.
+   ParameterBag Holds the meta object.
+   ParamRuleCollection Strict parameter validation container.
+   ParamRule Single parameter validation rule.
+   ValidationDecorator Wraps rules as required or not-required.
+   ALLOWED_SORT_FIELDS Per-resource constant listing valid sortField values.
+   MODEL_MAP Pattern for ?model= variant selection (default/detailed).
+   ResourcePermission OR-reduced permission flags from DataGroupPermission.
+   self flag Restricts a role to its own data rows.
+   IN_ACCESSIBLE_EMP_NUMBERS Row-level authorization rule.
+   ENTITY_UNIQUE_PROPERTY DB-backed uniqueness validation rule.
+   WorkflowStateMachine DB table of allowed state transitions.
+   CapableViewController Marker interface for endpoints that bypass permission checks.
+   5.1 _api is mandatory
+   GenericRestController::init() throws if _api is null. ApiAuthorizationSubscriber::onControllerEvent() also throws ForbiddenException if _api is null. Two independent layers enforce this.
 
 5.2 _key determines getOne() vs getAll()
 GenericRestController::isGetOneRequest():
@@ -417,6 +426,7 @@ $idAttribute = $request->getAttributes()->get('_key', 'id');
 return $request->getAttributes()->has($idAttribute) || $request->getQuery()->has($idAttribute);
 Default _key is 'id'. Checks both attributes and query string.
 ```
+
 5.3 Authorization is three-stage
 Endpoint-level (controller event): ApiAuthorizationSubscriber checks ResourcePermission for the _api class.
 
@@ -461,8 +471,8 @@ addParamValidation() throws ValidatorException on duplicate keys.
 If a rule throws a ValidationEscapableException, Validator::validate() rethrows it immediately.
 
 6. Important Objects, Components, Endpoints, Entities
-6.1 PIM routes (verified from routes.yaml)
-API routes:
+   6.1 PIM routes (verified from routes.yaml)
+   API routes:
 
 GET, POST, DELETE /api/v2/pim/employees — EmployeeAPI
 
@@ -806,79 +816,79 @@ GET /claim/requests/{requestId}/attachId/{attachId} — ClaimAttachmentControlle
 6.5 API permission table (live, 199 rows)
 ohrm_api_permission maps each API class to a data_group_id. Key rows:
 
-id	module_id	data_group_id	api_name
-32	3	96	OrangeHRM\Pim\Api\EmployeeAPI
-181	3	261	OrangeHRM\Pim\Api\MyInfoAPI
-66	4	130	OrangeHRM\Leave\Api\HolidayAPI
-185	18	265	OrangeHRM\Claim\Api\ClaimEventAPI
-17	2	81	OrangeHRM\Admin\Api\UserAPI
-64	3	128	OrangeHRM\Pim\Api\UpdatePasswordAPI
-118	13	187	OrangeHRM\Maintenance\Api\PurgeEmployeeAPI
-199	2	280	OrangeHRM\WorkspaceNotifications\Api\WorkspaceNotificationTestWebhookAPI
+id module_id data_group_id api_name
+32 3 96 OrangeHRM\Pim\Api\EmployeeAPI
+181 3 261 OrangeHRM\Pim\Api\MyInfoAPI
+66 4 130 OrangeHRM\Leave\Api\HolidayAPI
+185 18 265 OrangeHRM\Claim\Api\ClaimEventAPI
+17 2 81 OrangeHRM\Admin\Api\UserAPI
+64 3 128 OrangeHRM\Pim\Api\UpdatePasswordAPI
+118 13 187 OrangeHRM\Maintenance\Api\PurgeEmployeeAPI
+199 2 280 OrangeHRM\WorkspaceNotifications\Api\WorkspaceNotificationTestWebhookAPI
 6.6 Data group table (live, 280 rows)
 Key rows:
 
-id	name	description	can_read	can_create	can_update	can_delete
-96	apiv2_pim_employee	API-v2 PIM - Employees	1	1	0	1
-261	apiv2_pim_my_info	PIM - Logged In User Details	1	0	0	0
-81	apiv2_admin_user	API-v2 Admin - Users	1	1	1	1
-128	apiv2_pim_update_password	API-v2 PIM - Password Update	0	0	1	0
-187	apiv2_maintenance_purge_employee	API-v2 Maintenance - Purge Employee	1	0	0	1
-280	apiv2_admin_workspace_notification_test	API-v2 Admin - Workspace Notification Test Webhook	0	1	0	0
+id name description can_read can_create can_update can_delete
+96 apiv2_pim_employee API-v2 PIM - Employees 1 1 0 1
+261 apiv2_pim_my_info PIM - Logged In User Details 1 0 0 0
+81 apiv2_admin_user API-v2 Admin - Users 1 1 1 1
+128 apiv2_pim_update_password API-v2 PIM - Password Update 0 0 1 0
+187 apiv2_maintenance_purge_employee API-v2 Maintenance - Purge Employee 1 0 0 1
+280 apiv2_admin_workspace_notification_test API-v2 Admin - Workspace Notification Test Webhook 0 1 0 0
 6.7 User role data group (live, 717 rows)
 Key rows for data_group_id = 96 (apiv2_pim_employee):
 
-id	user_role_id	data_group_id	can_read	can_create	can_update	can_delete	self
-272	1 (Admin)	96	1	1	0	1	0
-273	2 (ESS)	96	1	0	0	0	1
-274	3 (Supervisor)	96	1	0	0	0	0
-275	3 (Supervisor)	96	1	0	0	0	1
+id user_role_id data_group_id can_read can_create can_update can_delete self
+272 1 (Admin) 96 1 1 0 1 0
+273 2 (ESS) 96 1 0 0 0 1
+274 3 (Supervisor) 96 1 0 0 0 0
+275 3 (Supervisor) 96 1 0 0 0 1
 6.8 User role table (live, 7 rows)
-id	name	display_name	is_assignable	is_predefined
-1	Admin	Admin	1	1
-2	ESS	ESS	1	1
-3	Supervisor	Supervisor	0	1
-4	ProjectAdmin	ProjectAdmin	0	1
-5	Interviewer	Interviewer	0	1
-6	HiringManager	HiringManager	0	1
-7	Reviewer	Reviewer	0	1
+id name display_name is_assignable is_predefined
+1 Admin Admin 1 1
+2 ESS ESS 1 1
+3 Supervisor Supervisor 0 1
+4 ProjectAdmin ProjectAdmin 0 1
+5 Interviewer Interviewer 0 1
+6 HiringManager HiringManager 0 1
+7 Reviewer Reviewer 0 1
 6.9 Workflow state machine (live, 152 rows)
 Employee flow (workflow = '3'):
 
-id	workflow	state	role	action	resulting_state	roles_to_notify	priority
-81	3	NOT_EXIST	ADMIN	1	ACTIVE		0
-82	3	ACTIVE	ADMIN	2	NOT_EXIST		0
-83	3	ACTIVE	ADMIN	3	TERMINATED		0
-84	3	TERMINATED	ADMIN	4	ACTIVE		0
-85	3	TERMINATED	ADMIN	5	NOT_EXIST		0
+id workflow state role action resulting_state roles_to_notify priority
+81 3 NOT_EXIST ADMIN 1 ACTIVE 0
+82 3 ACTIVE ADMIN 2 NOT_EXIST 0
+83 3 ACTIVE ADMIN 3 TERMINATED 0
+84 3 TERMINATED ADMIN 4 ACTIVE 0
+85 3 TERMINATED ADMIN 5 NOT_EXIST 0
 Claim flow (workflow = '7'):
 
-id	workflow	state	role	action	resulting_state	roles_to_notify	priority
-127	7	INITIATED	ESS USER	1	SUBMITTED		10
-128	7	INITIATED	ESS USER	4	CANCELLED		10
-129	7	SUBMITTED	ESS USER	4	CANCELLED		10
-130	7	REJECTED	ESS USER	1	SUBMITTED		10
-131	7	INITIATED	ADMIN	1	PAID		0
-132	7	APPROVED	ADMIN	5	REJECTED		0
-133	7	SUBMITTED	ADMIN	2	PAID		10
-134	7	SUBMITTED	ADMIN	5	REJECTED		0
-135	7	APPROVED	ADMIN	3	PAID		0
-136	7	INITIATED	SUPERVISOR	1	APPROVED		0
-137	7	SUBMITTED	SUPERVISOR	2	APPROVED		0
-138	7	SUBMITTED	SUPERVISOR	5	REJECTED		0
+id workflow state role action resulting_state roles_to_notify priority
+127 7 INITIATED ESS USER 1 SUBMITTED 10
+128 7 INITIATED ESS USER 4 CANCELLED 10
+129 7 SUBMITTED ESS USER 4 CANCELLED 10
+130 7 REJECTED ESS USER 1 SUBMITTED 10
+131 7 INITIATED ADMIN 1 PAID 0
+132 7 APPROVED ADMIN 5 REJECTED 0
+133 7 SUBMITTED ADMIN 2 PAID 10
+134 7 SUBMITTED ADMIN 5 REJECTED 0
+135 7 APPROVED ADMIN 3 PAID 0
+136 7 INITIATED SUPERVISOR 1 APPROVED 0
+137 7 SUBMITTED SUPERVISOR 2 APPROVED 0
+138 7 SUBMITTED SUPERVISOR 5 REJECTED 0
 Leave flow (workflow = '4') uses string actions and states. Example rows:
 
-id	workflow	state	role	action	resulting_state	roles_to_notify	priority
-86	4	INITIAL	ESS	APPLY	PENDING APPROVAL	supervisor,subscriber	0
-87	4	INITIAL	ADMIN	ASSIGN	SCHEDULED	ess,supervisor,subscriber	0
-88	4	INITIAL	SUPERVISOR	ASSIGN	SCHEDULED	ess,supervisor,subscriber	0
-89	4	PENDING APPROVAL	ADMIN	APPROVE	SCHEDULED	ess,subscriber	0
-90	4	PENDING APPROVAL	SUPERVISOR	APPROVE	SCHEDULED	ess,subscriber	0
-91	4	PENDING APPROVAL	ESS	CANCEL	CANCELLED	supervisor,subscriber	0
-92	4	PENDING APPROVAL	ADMIN	CANCEL	CANCELLED	ess,subscriber	0
-93	4	PENDING APPROVAL	SUPERVISOR	CANCEL	CANCELLED	ess,subscriber	0
-94	4	PENDING APPROVAL	ADMIN	REJECT	REJECTED	ess,subscriber	0
-95	4	PENDING APPROVAL	SUPERVISOR	REJECT	REJECTED	ess,subscriber	0
+id workflow state role action resulting_state roles_to_notify priority
+86 4 INITIAL ESS APPLY PENDING APPROVAL supervisor,subscriber 0
+87 4 INITIAL ADMIN ASSIGN SCHEDULED ess,supervisor,subscriber 0
+88 4 INITIAL SUPERVISOR ASSIGN SCHEDULED ess,supervisor,subscriber 0
+89 4 PENDING APPROVAL ADMIN APPROVE SCHEDULED ess,subscriber 0
+90 4 PENDING APPROVAL SUPERVISOR APPROVE SCHEDULED ess,subscriber 0
+91 4 PENDING APPROVAL ESS CANCEL CANCELLED supervisor,subscriber 0
+92 4 PENDING APPROVAL ADMIN CANCEL CANCELLED ess,subscriber 0
+93 4 PENDING APPROVAL SUPERVISOR CANCEL CANCELLED ess,subscriber 0
+94 4 PENDING APPROVAL ADMIN REJECT REJECTED ess,subscriber 0
+95 4 PENDING APPROVAL SUPERVISOR REJECT REJECTED ess,subscriber 0
 6.10 Employee entity (verified against live schema)
 Employee maps to hs_hr_employee. All 48 columns match. Key fields:
 
@@ -934,8 +944,8 @@ DataGroupPermission → ohrm_user_role_data_group: id, can_read, can_create, can
 ApiPermission → ohrm_api_permission: id, api_name (unique), module_id, data_group_id
 
 7. Relationships to Other OrangeHRM Layers
-7.1 UI → API (live-verified)
-The SPA at /web/index.php/pim/viewEmployeeList issued a GET to /web/index.php/api/v2/pim/employees with Accept: application/json and a session cookie, receiving {data, meta, rels}. This proves the SPA uses the REST API and session-cookie auth.
+   7.1 UI → API (live-verified)
+   The SPA at /web/index.php/pim/viewEmployeeList issued a GET to /web/index.php/api/v2/pim/employees with Accept: application/json and a session cookie, receiving {data, meta, rels}. This proves the SPA uses the REST API and session-cookie auth.
 
 7.2 API → Service → DAO → Entity → DB (verified)
 EmployeeAPI::getAll() → EmployeeService::getEmployeeList() / getEmployeeCount() → EmployeeDao::getEmployeeList() / getEmployeeCount() → Doctrine query on Employee entity → hs_hr_employee.
@@ -960,8 +970,8 @@ ValidationEscapableException bypasses the error bag and is rethrown immediately.
 ohrm_workflow_state_machine has 152 rows. EmployeeAPI::create() checks FLOW_EMPLOYEE / STATE_NOT_EXIST / EMPLOYEE_ACTION_ADD. getValidationRuleForDelete() checks FLOW_EMPLOYEE / STATE_ACTIVE or STATE_TERMINATED / EMPLOYEE_ACTION_DELETE_ACTIVE or EMPLOYEE_ACTION_DELETE_TERMINATED.
 
 8. Testing Implications
-8.1 UI tests exercise the API indirectly
-The live trace proves the SPA calls /api/v2/... with Accept: application/json and a session cookie. Playwright UI tests therefore also exercise the API contract.
+   8.1 UI tests exercise the API indirectly
+   The live trace proves the SPA calls /api/v2/... with Accept: application/json and a session cookie. Playwright UI tests therefore also exercise the API contract.
 
 8.2 API tests are faster and more precise
 Direct API calls are the right layer for testing request/response schemas, status codes, validation errors, and authorization.
@@ -1006,44 +1016,45 @@ Direct DB queries are appropriate for verifying persistence, setting up precondi
 Terminating an employee affects PIM (employee record), Admin (user account), and potentially Leave (entitlements). Understanding cross-module service calls is necessary for correct test data setup and cleanup.
 
 9. Known Quirks and Gotchas
-#	Quirk	Evidence
-9.1	Missing endpoint methods return 501, not 405	EmployeeAPI::update() throws NotImplementedException → AbstractRestController::handle() catches → 501 with {error: {status: "501", message: "Not Implemented"}}.
-9.2	_api is mandatory	GenericRestController::init() throws if _api is null. ApiAuthorizationSubscriber::onControllerEvent() throws ForbiddenException if _api is null.
-9.3	Same endpoint class for collection and resource	EmployeeAPI handles both /api/v2/pim/employees and /api/v2/pim/employees/{empNumber}. Same for HolidayAPI, etc.
-9.4	Some routes have fixed id defaults	apiv2_leave_workweek (id: 1), apiv2_leave_leave_period (id: 0), apiv2_pim_optional_field (id: 0), apiv2_pim_update_password (id: 0), apiv2_admin_organization (id: 0), apiv2_admin_email_configuration (id: 0), apiv2_admin_localization (id: 0), apiv2_pim_my_info (id: 0).
-9.5	Some routes use non-ID _key	apiv2_pim_reports / apiv2_leave_reports → _key: name. apiv2_pim_validate_employee_email → _key: workEmail. apiv2_pim_validate_employee_other_email → _key: otherEmail. apiv2_admin_validate_user_name → _key: userName. apiv2_admin_i18n_translation_validation → _key: langStringId.
-9.6	apiv2_pim_employee_contact_details uses singular employee	Path is /api/v2/pim/employee/{empNumber}/contact-details — singular, unlike all other PIM employee sub-resources.
-9.7	initDeleteValidationRule() only handles CollectionEndpoint	A pure ResourceEndpoint (not CollectionEndpoint) skips delete validation rule initialization, even though handleDeleteRequest() accepts either interface.
-9.8	getEmployeeByEmpNumber() does not filter purgedAt	EmployeeDao::getEmployeeByEmpNumber() uses find($empNumber) with no purgedAt check. List queries always filter isNull('employee.purgedAt').
-9.9	deleteEmployees() is a hard delete	EmployeeDao::deleteEmployees() uses $q->delete()->where(...). Does not set purgedAt.
-9.10	AbstractRestController catch ordering matters	ForbiddenException is caught after BadRequestException and rethrown.
-9.11	ExceptionSubscriber only sets status/headers	Does not format JSON. Uncaught exceptions may produce non-JSON bodies.
-9.12	InvalidParamException has a TODO	Source comment: // TODO:: should format to show multiple errors.
-9.13	create() always returns EmployeeModel	Does not respect the model query param, even though getOne() and getAll() do.
-9.14	EmployeeService owns max-length constants	FIRST_NAME_MAX_LENGTH = 30, MIDDLE_NAME_MAX_LENGTH = 30, LAST_NAME_MAX_LENGTH = 30, EMPLOYEE_ID_MAX_LENGTH = 10, WORK_EMAIL_MAX_LENGTH = 50.
-9.15	Workflow state machine gates create and delete	EmployeeAPI::create() and getValidationRuleForDelete().
-9.16	Rules::STRING_TYPE is NotBlankStringType	Rejects blank strings.
-9.17	UserRoleManager class is config-driven	Read from authorize_user_role_manager_class.
-9.18	BasicUserRoleManager::computeUserRoles() expands roles	Adds ESS, ProjectAdmin, HiringManager, Interviewer, Supervisor, Reviewer based on empNumber-scoped checks.
-9.19	salaryGradeCode is deprecated but still in schema	Employee::$salaryGradeCode has @deprecated and @todo remove from schema, but sal_grd_code exists.
-9.20	purgedAt is a datetime, not a boolean	purged_at datetime nullable.
-9.21	EmpPicture has explicit allowed types/extensions	ALLOWED_IMAGE_TYPES, ALLOWED_IMAGE_EXTENSIONS.
-9.22	Response::formatData() always includes data, meta, rels	Live-confirmed.
-9.23	AbstractEndpointResult throws NormalizeException if model class does not exist	class_exists($modelClass) check in constructor.
-9.24	ParamRuleCollection::addParamValidation() rejects duplicate keys	Throws ValidatorException if a rule is already registered for a param key.
-9.25	Validator::validate() rethrows ValidationEscapableException	Bypasses the error bag.
-9.26	Base64Attachment size check can be strict	If $checkSizeStrictly, decoded base64 length must equal declared size.
-9.27	InAccessibleEmpNumbers includes the logged-in user by default	Constructor default $includeLoggedInEmpNumber = true.
-9.28	EntityUniqueProperty supports matchValues and ignoreValues	matchValues adds equality/null filters; ignoreValues adds inequality filters.
-9.29	DataGroupPermission.self is a separate flag	isSelf() returns the self boolean. Used to scope access to the logged-in user's own records.
-9.30	UserRole has is_assignable and is_predefined flags	Only Admin and ESS are is_assignable = 1. Derived roles are is_assignable = 0, is_predefined = 1.
-9.31	ApiPermission.api_name is unique	Doctrine annotation: uniqueConstraints={@ORM\UniqueConstraint(name="api_name", columns={"api_name"})}.
-9.32	ApiPermission is linked to both Module and DataGroup	api_name → data_group_id → ohrm_data_group. module_id links to the module.
-9.33	Response::formatError() does not wrap in data/meta/rels	It emits the raw error structure.
-9.34	EndpointCollectionResult handles CollectionNormalizable	If the model class implements CollectionNormalizable, it normalizes as a single object; otherwise as an array.
-9.35	ParamRuleCollection::$strict is true by default	Strict mode is on unless explicitly disabled.
-9.36	Validator::getOnlyNecessaryValues() removes excluded keys	The excluded keys are framework-internal.
-10. Version-Specific Notes
+
+# Quirk Evidence
+
+9.1 Missing endpoint methods return 501, not 405 EmployeeAPI::update() throws NotImplementedException → AbstractRestController::handle() catches → 501 with {error: {status: "501", message: "Not Implemented"}}.
+9.2 _api is mandatory GenericRestController::init() throws if _api is null. ApiAuthorizationSubscriber::onControllerEvent() throws ForbiddenException if _api is null.
+9.3 Same endpoint class for collection and resource EmployeeAPI handles both /api/v2/pim/employees and /api/v2/pim/employees/{empNumber}. Same for HolidayAPI, etc.
+9.4 Some routes have fixed id defaults apiv2_leave_workweek (id: 1), apiv2_leave_leave_period (id: 0), apiv2_pim_optional_field (id: 0), apiv2_pim_update_password (id: 0), apiv2_admin_organization (id: 0), apiv2_admin_email_configuration (id: 0), apiv2_admin_localization (id: 0), apiv2_pim_my_info (id: 0).
+9.5 Some routes use non-ID _key apiv2_pim_reports / apiv2_leave_reports → _key: name. apiv2_pim_validate_employee_email → _key: workEmail. apiv2_pim_validate_employee_other_email → _key: otherEmail. apiv2_admin_validate_user_name → _key: userName. apiv2_admin_i18n_translation_validation → _key: langStringId.
+9.6 apiv2_pim_employee_contact_details uses singular employee Path is /api/v2/pim/employee/{empNumber}/contact-details — singular, unlike all other PIM employee sub-resources.
+9.7 initDeleteValidationRule() only handles CollectionEndpoint A pure ResourceEndpoint (not CollectionEndpoint) skips delete validation rule initialization, even though handleDeleteRequest() accepts either interface.
+9.8 getEmployeeByEmpNumber() does not filter purgedAt EmployeeDao::getEmployeeByEmpNumber() uses find($empNumber) with no purgedAt check. List queries always filter isNull('employee.purgedAt').
+9.9 deleteEmployees() is a hard delete EmployeeDao::deleteEmployees() uses $q->delete()->where(...). Does not set purgedAt.
+9.10 AbstractRestController catch ordering matters ForbiddenException is caught after BadRequestException and rethrown.
+9.11 ExceptionSubscriber only sets status/headers Does not format JSON. Uncaught exceptions may produce non-JSON bodies.
+9.12 InvalidParamException has a TODO Source comment: // TODO:: should format to show multiple errors.
+9.13 create() always returns EmployeeModel Does not respect the model query param, even though getOne() and getAll() do.
+9.14 EmployeeService owns max-length constants FIRST_NAME_MAX_LENGTH = 30, MIDDLE_NAME_MAX_LENGTH = 30, LAST_NAME_MAX_LENGTH = 30, EMPLOYEE_ID_MAX_LENGTH = 10, WORK_EMAIL_MAX_LENGTH = 50.
+9.15 Workflow state machine gates create and delete EmployeeAPI::create() and getValidationRuleForDelete().
+9.16 Rules::STRING_TYPE is NotBlankStringType Rejects blank strings.
+9.17 UserRoleManager class is config-driven Read from authorize_user_role_manager_class.
+9.18 BasicUserRoleManager::computeUserRoles() expands roles Adds ESS, ProjectAdmin, HiringManager, Interviewer, Supervisor, Reviewer based on empNumber-scoped checks.
+9.19 salaryGradeCode is deprecated but still in schema Employee::$salaryGradeCode has @deprecated and @todo remove from schema, but sal_grd_code exists.
+9.20 purgedAt is a datetime, not a boolean purged_at datetime nullable.
+9.21 EmpPicture has explicit allowed types/extensions ALLOWED_IMAGE_TYPES, ALLOWED_IMAGE_EXTENSIONS.
+9.22 Response::formatData() always includes data, meta, rels Live-confirmed.
+9.23 AbstractEndpointResult throws NormalizeException if model class does not exist class_exists($modelClass) check in constructor.
+9.24 ParamRuleCollection::addParamValidation() rejects duplicate keys Throws ValidatorException if a rule is already registered for a param key.
+9.25 Validator::validate() rethrows ValidationEscapableException Bypasses the error bag.
+9.26 Base64Attachment size check can be strict If $checkSizeStrictly, decoded base64 length must equal declared size.
+9.27 InAccessibleEmpNumbers includes the logged-in user by default Constructor default $includeLoggedInEmpNumber = true.
+9.28 EntityUniqueProperty supports matchValues and ignoreValues matchValues adds equality/null filters; ignoreValues adds inequality filters.
+9.29 DataGroupPermission.self is a separate flag isSelf() returns the self boolean. Used to scope access to the logged-in user's own records.
+9.30 UserRole has is_assignable and is_predefined flags Only Admin and ESS are is_assignable = 1. Derived roles are is_assignable = 0, is_predefined = 1.
+9.31 ApiPermission.api_name is unique Doctrine annotation: uniqueConstraints={@ORM\UniqueConstraint(name="api_name", columns={"api_name"})}.
+9.32 ApiPermission is linked to both Module and DataGroup api_name → data_group_id → ohrm_data_group. module_id links to the module.
+9.33 Response::formatError() does not wrap in data/meta/rels It emits the raw error structure.
+9.34 EndpointCollectionResult handles CollectionNormalizable If the model class implements CollectionNormalizable, it normalizes as a single object; otherwise as an array.
+9.35 ParamRuleCollection::$strict is true by default Strict mode is on unless explicitly disabled.
+9.36 Validator::getOnlyNecessaryValues() removes excluded keys The excluded keys are framework-internal. 10. Version-Specific Notes
 All facts above are from the 5.9 source files, the live 5.9 DB schema, and live HTTP traffic from a running 5.9 instance. No version drift was detected.
 
 Key 5.9-era facts:
@@ -1063,8 +1074,8 @@ OpenID Connect is present in 5.9 (apiv2_auth_openid_provider).
 Sources describing 5.7 or 5.8 architecture are likely accurate for 5.9 in broad strokes, but exact endpoint availability, validation rules, and response models should be verified against 5.9 source.
 
 11. Facts vs Inferences vs Assumptions
-FACT (source- or live-verified)
-Everything in sections 3–9 that cites a pasted file, a DB row, or an HTTP response.
+    FACT (source- or live-verified)
+    Everything in sections 3–9 that cites a pasted file, a DB row, or an HTTP response.
 
 INFERENCE
 The Vue SPA uses an Axios-based APIService wrapper — inferred from the live HTTP trace, not directly verified in a Vue file.
@@ -1077,7 +1088,7 @@ ASSUMPTION
 None remaining that affect the architectural claims above.
 
 12. Sources
-All facts in this document are from the following, which you pasted from your cloned 5.9 source, your running DB, or your running HTTP instance.
+    All facts in this document are from the following, which you pasted from your cloned 5.9 source, your running DB, or your running HTTP instance.
 
 Source files:
 

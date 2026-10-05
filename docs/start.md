@@ -15,13 +15,13 @@ src/auth/
 That is the right call. Everything below is the concrete implementation that matches your research findings, so you can write the six files and stop deliberating.
 
 Part 2 — The Boundaries (This Is the Whole Architecture)
-File	Knows About	MUST NOT Know About
-pkce.js	crypto	Everything else
-errors.js	nothing	nothing
-oauth-client.js	axios, config object, ./pkce, ./errors	Playwright, files, roles, @playwright/test
-oauth-authorizer.js	playwright (not @playwright/test), http, config object	Tokens, axios, files, refresh logic
-token-store.js	fs	OAuth, Playwright, refresh logic, roles
-token-manager.js	the four above (injected)	HTTP details, Playwright details, file paths, roles
+File Knows About MUST NOT Know About
+pkce.js crypto Everything else
+errors.js nothing nothing
+oauth-client.js axios, config object, ./pkce, ./errors Playwright, files, roles, @playwright/test
+oauth-authorizer.js playwright (not @playwright/test), http, config object Tokens, axios, files, refresh logic
+token-store.js fs OAuth, Playwright, refresh logic, roles
+token-manager.js the four above (injected) HTTP details, Playwright details, file paths, roles
 If you ever want to import Playwright into oauth-client.js, or roles into token-manager.js, you've broken the design. Re-read this table.
 
 Part 3 — Data Contracts (Freeze These)
@@ -36,10 +36,10 @@ refresh(refreshToken) → Token
 
 // Token (internal, camelCase — wire format dies at the boundary)
 {
-  accessToken:  string,
-  refreshToken: string | null,
-  tokenType:    'Bearer',
-  expiresAt:    number | null   // epoch ms
+accessToken: string,
+refreshToken: string | null,
+tokenType: 'Bearer',
+expiresAt: number | null // epoch ms
 }
 
 // oauth-authorizer.js
@@ -55,34 +55,34 @@ The single most important rule: access_token, refresh_token, expires_in are wire
 Auth tests live in `tests/auth.spec.js` and run with `npm test`. They cover PKCE, OAuth token requests and normalization, callback state validation, token refresh/caching, and file-store behavior. A local browser integration test exercises the authorizer's login, consent, and callback flow without OrangeHRM credentials. The four live OrangeHRM scenarios (cold, warm, expired with refresh, and expired with invalid refresh) are separate manual integration checks and are not part of `npm test`.
 
 Part 4 — What Your Current Code Gets Wrong (Concretely)
-Violation	Location	Fix
-Protocol layer imports chromium from @playwright/test	oauth-client.js	Move browser code to oauth-authorizer.js; import playwright (not @playwright/test)
-TokenManager knows about roles	token-manager.js constructor(roleName)	Inject collaborators; roles live in src/config/users.js
-Snake_case leaks everywhere	normalizeTokenResponse returns access_token, expires_at	Return camelCase Token; convert at boundary
-OAuthClient reaches into global config	require('../../../config/config')	Constructor takes a plain config object
-Redundant await on callbackPromise	Promise.all([allowButton.click(), callbackPromise]) then await callbackPromise	Restructure: const cb = waitForCallback(...); await allowButton.click(); const { code } = await cb;
-AuthenticationError from ../../core/errors	creates unused hierarchy	Own errors.js in src/auth/
-@playwright/test in auth infra	can't run outside test runner	Use playwright package
+Violation Location Fix
+Protocol layer imports chromium from @playwright/test oauth-client.js Move browser code to oauth-authorizer.js; import playwright (not @playwright/test)
+TokenManager knows about roles token-manager.js constructor(roleName) Inject collaborators; roles live in src/config/users.js
+Snake_case leaks everywhere normalizeTokenResponse returns access_token, expires_at Return camelCase Token; convert at boundary
+OAuthClient reaches into global config require('../../../config/config') Constructor takes a plain config object
+Redundant await on callbackPromise Promise.all([allowButton.click(), callbackPromise]) then await callbackPromise Restructure: const cb = waitForCallback(...); await allowButton.click(); const { code } = await cb;
+AuthenticationError from ../../core/errors creates unused hierarchy Own errors.js in src/auth/
+@playwright/test in auth infra can't run outside test runner Use playwright package
 Part 5 — Concrete File Sketches
 src/auth/pkce.js
 js
 const crypto = require('crypto');
 
 function base64url(buf) {
-  return buf.toString('base64')
-    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+return buf.toString('base64')
+.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
 function createVerifier() {
-  return base64url(crypto.randomBytes(64));
+return base64url(crypto.randomBytes(64));
 }
 
 function createChallenge(verifier) {
-  return base64url(crypto.createHash('sha256').update(verifier).digest());
+return base64url(crypto.createHash('sha256').update(verifier).digest());
 }
 
 function createState() {
-  return crypto.randomBytes(16).toString('hex');
+return crypto.randomBytes(16).toString('hex');
 }
 
 module.exports = { createVerifier, createChallenge, createState };
@@ -91,11 +91,11 @@ No classes. No config. No logging. Just PKCE.
 src/auth/errors.js
 js
 class AuthenticationError extends Error {
-  constructor(message, meta = {}) {
-    super(message);
-    this.name = 'AuthenticationError';
-    Object.assign(this, meta);
-  }
+constructor(message, meta = {}) {
+super(message);
+this.name = 'AuthenticationError';
+Object.assign(this, meta);
+}
 }
 
 module.exports = { AuthenticationError };
@@ -106,17 +106,17 @@ const { createVerifier, createChallenge, createState } = require('./pkce');
 const { AuthenticationError } = require('./errors');
 
 class OAuthClient {
-  constructor({ authorizationUrl, tokenUrl, clientId, redirectUri }) {
-    this.authorizationUrl = authorizationUrl;
-    this.tokenUrl = tokenUrl;
-    this.clientId = clientId;
-    this.redirectUri = redirectUri;
-  }
+constructor({ authorizationUrl, tokenUrl, clientId, redirectUri }) {
+this.authorizationUrl = authorizationUrl;
+this.tokenUrl = tokenUrl;
+this.clientId = clientId;
+this.redirectUri = redirectUri;
+}
 
-  createAuthorizationRequest() {
-    const verifier = createVerifier();
-    const challenge = createChallenge(verifier);
-    const state = createState();
+createAuthorizationRequest() {
+const verifier = createVerifier();
+const challenge = createChallenge(verifier);
+const state = createState();
 
     const url = new URL(this.authorizationUrl);
     url.searchParams.set('response_type', 'code');
@@ -127,54 +127,55 @@ class OAuthClient {
     url.searchParams.set('state', state);
 
     return { url: url.toString(), verifier, state };
-  }
 
-  async exchangeCode({ code, verifier }) {
-    return this._tokenRequest({
-      grant_type: 'authorization_code',
-      code,
-      client_id: this.clientId,
-      redirect_uri: this.redirectUri,
-      code_verifier: verifier,
-    }, 'Token exchange');
-  }
+}
 
-  async refresh(refreshToken) {
-    return this._tokenRequest({
-      grant_type: 'refresh_token',
-      refresh_token: refreshToken,
-      client_id: this.clientId,
-    }, 'Token refresh');
-  }
+async exchangeCode({ code, verifier }) {
+return this._tokenRequest({
+grant_type: 'authorization_code',
+code,
+client_id: this.clientId,
+redirect_uri: this.redirectUri,
+code_verifier: verifier,
+}, 'Token exchange');
+}
 
-  async _tokenRequest(params, label) {
-    const body = new URLSearchParams(params).toString();
-    try {
-      const { data } = await axios.post(this.tokenUrl, body, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      });
-      return this._normalize(data);
-    } catch (err) {
-      const wire = err.response?.data;
-      throw new AuthenticationError(
-        `${label} failed: ${wire?.error || err.message}`,
-        { status: err.response?.status, hint: wire?.hint },
-      );
-    }
-  }
+async refresh(refreshToken) {
+return this._tokenRequest({
+grant_type: 'refresh_token',
+refresh_token: refreshToken,
+client_id: this.clientId,
+}, 'Token refresh');
+}
 
-  // The ONLY place snake_case is allowed.
-  _normalize(data) {
-    if (!data?.access_token) {
-      throw new AuthenticationError('Token response missing access_token');
-    }
-    return {
-      accessToken:  data.access_token,
-      refreshToken: data.refresh_token ?? null,
-      tokenType:    data.token_type ?? 'Bearer',
-      expiresAt:    data.expires_in ? Date.now() + data.expires_in * 1000 : null,
-    };
-  }
+async _tokenRequest(params, label) {
+const body = new URLSearchParams(params).toString();
+try {
+const { data } = await axios.post(this.tokenUrl, body, {
+headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+});
+return this._normalize(data);
+} catch (err) {
+const wire = err.response?.data;
+throw new AuthenticationError(
+`${label} failed: ${wire?.error || err.message}`,
+{ status: err.response?.status, hint: wire?.hint },
+);
+}
+}
+
+// The ONLY place snake_case is allowed.
+_normalize(data) {
+if (!data?.access_token) {
+throw new AuthenticationError('Token response missing access_token');
+}
+return {
+accessToken: data.access_token,
+refreshToken: data.refresh_token ?? null,
+tokenType: data.token_type ?? 'Bearer',
+expiresAt: data.expires_in ? Date.now() + data.expires_in * 1000 : null,
+};
+}
 }
 
 module.exports = { OAuthClient };
@@ -183,18 +184,18 @@ Note: no Playwright. No file I/O. No roles. No global config.
 src/auth/oauth-authorizer.js
 js
 const http = require('http');
-const { chromium } = require('playwright');   // NOT @playwright/test
+const { chromium } = require('playwright'); // NOT @playwright/test
 const { AuthenticationError } = require('./errors');
 
 class OAuthAuthorizer {
-  constructor({ callbackHost, callbackPort, callbackPath }) {
-    this.callbackHost = callbackHost;
-    this.callbackPort = callbackPort;
-    this.callbackPath = callbackPath;
-  }
+constructor({ callbackHost, callbackPort, callbackPath }) {
+this.callbackHost = callbackHost;
+this.callbackPort = callbackPort;
+this.callbackPath = callbackPath;
+}
 
-  async authorize({ authorizationUrl, expectedState, credentials }) {
-    const callback = this._listen(expectedState);   // start BEFORE browser
+async authorize({ authorizationUrl, expectedState, credentials }) {
+const callback = this._listen(expectedState); // start BEFORE browser
 
     const browser = await chromium.launch({ headless: true });
     const context = await browser.newContext();
@@ -221,16 +222,17 @@ class OAuthAuthorizer {
     } finally {
       await browser.close();
     }
-  }
 
-  _listen(expectedState) {
-    return new Promise((resolve, reject) => {
-      let settled = false;
-      const finish = (err, val) => {
-        if (settled) return;
-        settled = true;
-        server.close(() => (err ? reject(err) : resolve(val)));
-      };
+}
+
+_listen(expectedState) {
+return new Promise((resolve, reject) => {
+let settled = false;
+const finish = (err, val) => {
+if (settled) return;
+settled = true;
+server.close(() => (err ? reject(err) : resolve(val)));
+};
 
       const server = http.createServer((req, res) => {
         const url = new URL(req.url, `http://${this.callbackHost}:${this.callbackPort}`);
@@ -255,7 +257,8 @@ class OAuthAuthorizer {
       server.on('error', finish);
       server.listen(this.callbackPort, this.callbackHost);
     });
-  }
+
+}
 }
 
 module.exports = { OAuthAuthorizer };
@@ -267,25 +270,25 @@ const fs = require('fs');
 const path = require('path');
 
 class FileTokenStore {
-  constructor(filePath) { this.filePath = filePath; }
+constructor(filePath) { this.filePath = filePath; }
 
-  load() {
-    try {
-      if (!fs.existsSync(this.filePath)) return null;
-      return JSON.parse(fs.readFileSync(this.filePath, 'utf8'));
-    } catch { return null; }
-  }
+load() {
+try {
+if (!fs.existsSync(this.filePath)) return null;
+return JSON.parse(fs.readFileSync(this.filePath, 'utf8'));
+} catch { return null; }
+}
 
-  save(tokens) {
-    fs.mkdirSync(path.dirname(this.filePath), { recursive: true });
-    fs.writeFileSync(this.filePath, JSON.stringify(tokens, null, 2), {
-      mode: 0o600,
-    });
-  }
+save(tokens) {
+fs.mkdirSync(path.dirname(this.filePath), { recursive: true });
+fs.writeFileSync(this.filePath, JSON.stringify(tokens, null, 2), {
+mode: 0o600,
+});
+}
 
-  clear() {
-    try { fs.unlinkSync(this.filePath); } catch { /* ignore */ }
-  }
+clear() {
+try { fs.unlinkSync(this.filePath); } catch { /* ignore */ }
+}
 }
 
 module.exports = { FileTokenStore };
@@ -296,29 +299,30 @@ js
 const { AuthenticationError } = require('./errors');
 
 class TokenManager {
-  // All collaborators injected. No role. No file path. No config.
-  constructor({ oauth, authorizer, store, credentials, refreshSafetyMs = 60_000 }) {
-    this.oauth = oauth;
-    this.authorizer = authorizer;
-    this.store = store;
-    this.credentials = credentials;
-    this.refreshSafetyMs = refreshSafetyMs;
-    this.inFlight = null;
-  }
+// All collaborators injected. No role. No file path. No config.
+constructor({ oauth, authorizer, store, credentials, refreshSafetyMs = 60_000 }) {
+this.oauth = oauth;
+this.authorizer = authorizer;
+this.store = store;
+this.credentials = credentials;
+this.refreshSafetyMs = refreshSafetyMs;
+this.inFlight = null;
+}
 
-  async getAccessToken() {
-    const cached = this.store.load();
-    if (this._isValid(cached)) return cached.accessToken;
+async getAccessToken() {
+const cached = this.store.load();
+if (this._isValid(cached)) return cached.accessToken;
 
     // Deduplicate concurrent calls
     if (!this.inFlight) {
       this.inFlight = this._acquire().finally(() => { this.inFlight = null; });
     }
     return (await this.inFlight).accessToken;
-  }
 
-  async _acquire() {
-    const cached = this.store.load();
+}
+
+async _acquire() {
+const cached = this.store.load();
 
     if (cached?.refreshToken) {
       try {
@@ -339,15 +343,16 @@ class TokenManager {
     });
     this.store.save(tokens);
     return tokens;
-  }
 
-  _isValid(t) {
-    if (!t?.accessToken) return false;
-    if (!t.expiresAt) return true;
-    return Date.now() + this.refreshSafetyMs < t.expiresAt;
-  }
+}
 
-  clear() { this.store.clear(); }
+_isValid(t) {
+if (!t?.accessToken) return false;
+if (!t.expiresAt) return true;
+return Date.now() + this.refreshSafetyMs < t.expiresAt;
+}
+
+clear() { this.store.clear(); }
 }
 
 module.exports = { TokenManager };
@@ -361,16 +366,16 @@ const path = require('path');
 const AUTH_DIR = path.resolve(__dirname, '../../auth');
 
 module.exports = {
-  admin: {
-    username: process.env.OHRM_ADMIN_USERNAME,
-    password: process.env.OHRM_ADMIN_PASSWORD,
-    tokenFile: path.join(AUTH_DIR, 'admin.token.json'),
-  },
-  ess: {
-    username: process.env.OHRM_ESS_USERNAME,
-    password: process.env.OHRM_ESS_PASSWORD,
-    tokenFile: path.join(AUTH_DIR, 'ess.token.json'),
-  },
+admin: {
+username: process.env.OHRM_ADMIN_USERNAME,
+password: process.env.OHRM_ADMIN_PASSWORD,
+tokenFile: path.join(AUTH_DIR, 'admin.token.json'),
+},
+ess: {
+username: process.env.OHRM_ESS_USERNAME,
+password: process.env.OHRM_ESS_PASSWORD,
+tokenFile: path.join(AUTH_DIR, 'ess.token.json'),
+},
 };
 Roles are a fixture-layer concept. Auth never sees the word "admin."
 
@@ -379,53 +384,54 @@ One file wires everything. This is the only place that constructs concrete colla
 
 js
 require('dotenv').config();
-const { OAuthClient }     = require('../src/auth/oauth-client');
+const { OAuthClient } = require('../src/auth/oauth-client');
 const { OAuthAuthorizer } = require('../src/auth/oauth-authorizer');
-const { FileTokenStore }  = require('../src/auth/token-store');
-const { TokenManager }    = require('../src/auth/token-manager');
-const users               = require('../src/config/users');
+const { FileTokenStore } = require('../src/auth/token-store');
+const { TokenManager } = require('../src/auth/token-manager');
+const users = require('../src/config/users');
 
 async function main(roleName) {
-  const role = users[roleName];
-  if (!role) throw new Error(`Unknown role: ${roleName}`);
+const role = users[roleName];
+if (!role) throw new Error(`Unknown role: ${roleName}`);
 
-  const baseUrl = process.env.OHRM_BASE_URL;
+const baseUrl = process.env.OHRM_BASE_URL;
 
-  const oauth = new OAuthClient({
-    authorizationUrl: `${baseUrl}/web/index.php/oauth2/authorize`,
-    tokenUrl:         `${baseUrl}/web/index.php/oauth2/token`,
-    clientId:         process.env.OHRM_OAUTH_CLIENT_ID,
-    redirectUri:      process.env.OHRM_OAUTH_REDIRECT_URI,
-  });
+const oauth = new OAuthClient({
+authorizationUrl: `${baseUrl}/web/index.php/oauth2/authorize`,
+tokenUrl: `${baseUrl}/web/index.php/oauth2/token`,
+clientId: process.env.OHRM_OAUTH_CLIENT_ID,
+redirectUri: process.env.OHRM_OAUTH_REDIRECT_URI,
+});
 
-  const authorizer = new OAuthAuthorizer({
-    callbackHost: 'localhost',
-    callbackPort: 9876,
-    callbackPath: '/oauth/callback',
-  });
+const authorizer = new OAuthAuthorizer({
+callbackHost: 'localhost',
+callbackPort: 9876,
+callbackPath: '/oauth/callback',
+});
 
-  const store = new FileTokenStore(role.tokenFile);
+const store = new FileTokenStore(role.tokenFile);
 
-  const manager = new TokenManager({
-    oauth, authorizer, store,
-    credentials: { username: role.username, password: role.password },
-  });
+const manager = new TokenManager({
+oauth, authorizer, store,
+credentials: { username: role.username, password: role.password },
+});
 
-  console.log(await manager.getAccessToken());
+console.log(await manager.getAccessToken());
 }
 
 main(process.argv[2] || 'admin').catch(err => {
-  console.error(err);
-  process.exit(1);
+console.error(err);
+process.exit(1);
 });
 Part 8 — Phase 1 Acceptance Criteria
 Write these four specs before moving on. They are your regression net for everything else.
 
-#	Setup	Expected
-1	No token file	Full flow: browser → login → consent → write file
-2	Valid token file (expiresAt far future)	Returns immediately, no browser
-3	Expired token file, valid refresh_token	Calls refresh, writes new file, no browser
-4	Expired token + expired refresh_token	Falls back to full flow
+# Setup Expected
+
+1 No token file Full flow: browser → login → consent → write file
+2 Valid token file (expiresAt far future) Returns immediately, no browser
+3 Expired token file, valid refresh_token Calls refresh, writes new file, no browser
+4 Expired token + expired refresh_token Falls back to full flow
 If all four pass, Phase 1 is done.
 
 Part 9 — Principles You're Actually Applying (Defensible Naming)
@@ -450,22 +456,22 @@ text
 orangehrm-qa/
 ├── scripts/obtain-token.js
 ├── src/
-│   ├── auth/                # Phase 1 (now)
-│   │   ├── pkce.js
-│   │   ├── oauth-client.js
-│   │   ├── oauth-authorizer.js
-│   │   ├── token-store.js
-│   │   ├── token-manager.js
-│   │   └── errors.js
-│   ├── config/              # Phase 1 (now)
-│   │   ├── env.js
-│   │   └── users.js
-│   ├── api/                 # Phase 2
-│   ├── db/                  # Phase 3
-│   ├── ui/                  # Phase 4
-│   ├── data/                # Phase 2+
-│   └── fixtures/            # Phase 4 (Playwright fixtures)
-└── tests/                   # Phase 4+
+│ ├── auth/ # Phase 1 (now)
+│ │ ├── pkce.js
+│ │ ├── oauth-client.js
+│ │ ├── oauth-authorizer.js
+│ │ ├── token-store.js
+│ │ ├── token-manager.js
+│ │ └── errors.js
+│ ├── config/ # Phase 1 (now)
+│ │ ├── env.js
+│ │ └── users.js
+│ ├── api/ # Phase 2
+│ ├── db/ # Phase 3
+│ ├── ui/ # Phase 4
+│ ├── data/ # Phase 2+
+│ └── fixtures/ # Phase 4 (Playwright fixtures)
+└── tests/ # Phase 4+
 Add each folder when the phase begins. Not before.
 
 Part 11 — The Four Guiding Rules You Keep Coming Back To
@@ -521,47 +527,47 @@ Here is the decisive plan.
 Part 1 — The One Decision That Matters
 text
 src/api/
-├── client.js           # HTTP transport + auth + envelope unwrap + error mapping
-├── errors.js           # ApiError taxonomy
-├── envelope.js         # {data, meta, rels} + {error: {...}} normalizers
+├── client.js # HTTP transport + auth + envelope unwrap + error mapping
+├── errors.js # ApiError taxonomy
+├── envelope.js # {data, meta, rels} + {error: {...}} normalizers
 └── endpoints/
-    ├── employees.js
-    ├── users.js
-    ├── leave.js
-    ├── timesheets.js
-    ├── attendance.js
-    ├── recruitment.js
-    ├── claim.js
-    └── admin.js
+├── employees.js
+├── users.js
+├── leave.js
+├── timesheets.js
+├── attendance.js
+├── recruitment.js
+├── claim.js
+└── admin.js
 Six conceptual pieces. Same shape as auth. Same boundaries. Same composition root pattern.
 
 Do not add schemas/, resources/, models/, or contracts/ yet. Those belong to Phase 3 (contract validation) when you actually have a reason to add them.
 
 Part 2 — The Boundaries (This Is the Whole Architecture)
-File	Knows About	MUST NOT Know About
-errors.js	nothing	nothing
-envelope.js	nothing but JS objects	axios, auth, config
-client.js	axios, TokenManager (injected), ./envelope, ./errors, base config	Playwright, DB, tests, roles
-endpoints/*.js	the client, endpoint paths, param shapes	auth, env, axios, envelope shape
+File Knows About MUST NOT Know About
+errors.js nothing nothing
+envelope.js nothing but JS objects axios, auth, config
+client.js axios, TokenManager (injected), ./envelope, ./errors, base config Playwright, DB, tests, roles
+endpoints/*.js the client, endpoint paths, param shapes auth, env, axios, envelope shape
 If you ever want to import TokenManager into endpoints/employees.js, stop. If you ever want to import axios into endpoints/employees.js, stop. The endpoint files speak domain language. The client speaks HTTP.
 
 Part 3 — Data Contracts (Freeze These)
 js
 // client.js — public surface
 {
-  get(path, { params, headers }?)     → Data
-  post(path, body, { headers }?)      → Data
-  put(path, body, { headers }?)       → Data
-  delete(path, body?, { headers }?)   → Data
-  request(opts)                       → Data
-  raw(opts)                           → AxiosResponse (escape hatch, rarely)
+get(path, { params, headers }?) → Data
+post(path, body, { headers }?) → Data
+put(path, body, { headers }?) → Data
+delete(path, body?, { headers }?) → Data
+request(opts) → Data
+raw(opts) → AxiosResponse (escape hatch, rarely)
 }
 
 // Data — what callers receive
 {
-  data: T | T[],     // envelope.data
-  meta: object,      // envelope.meta ({} or { total: N })
-  rels: array        // envelope.rels (usually [])
+data: T | T[], // envelope.data
+meta: object, // envelope.meta ({} or { total: N })
+rels: array // envelope.rels (usually [])
 }
 Critical design choice: the client returns the whole envelope {data, meta, rels}. It does not flatten. Why? Because list endpoints need meta.total for pagination assertions, and hiding it means tests re-fetch. Keep the envelope; make it explicit.
 
@@ -570,27 +576,27 @@ If you want convenience, add getOne() / getAll() on the endpoint layer that pick
 js
 // errors.js
 class ApiError extends Error {
-  constructor(message, { status, code, data, raw } = {}) {
-    super(message);
-    this.name = 'ApiError';
-    this.status = status;   // number | string  (OrangeHRM quirk)
-    this.code = code;       // 'UNAUTHORIZED' | 'FORBIDDEN' | 'NOT_FOUND' | 'VALIDATION' | 'UNKNOWN'
-    this.data = data;       // error.data (invalidParamKeys, etc.)
-    this.raw = raw;
-  }
+constructor(message, { status, code, data, raw } = {}) {
+super(message);
+this.name = 'ApiError';
+this.status = status; // number | string (OrangeHRM quirk)
+this.code = code; // 'UNAUTHORIZED' | 'FORBIDDEN' | 'NOT_FOUND' | 'VALIDATION' | 'UNKNOWN'
+this.data = data; // error.data (invalidParamKeys, etc.)
+this.raw = raw;
+}
 }
 Part 4 — Concrete File Sketches
 src/api/errors.js
 js
 class ApiError extends Error {
-  constructor(message, { status, code, data, raw } = {}) {
-    super(message);
-    this.name = 'ApiError';
-    this.status = status;
-    this.code = code;
-    this.data = data;
-    this.raw = raw;
-  }
+constructor(message, { status, code, data, raw } = {}) {
+super(message);
+this.name = 'ApiError';
+this.status = status;
+this.code = code;
+this.data = data;
+this.raw = raw;
+}
 }
 
 module.exports = { ApiError };
@@ -601,54 +607,54 @@ Pure functions. No axios. No auth. No config.
 
 js
 // OrangeHRM quirks captured here, once:
-//  - success: { data, meta, rels }  (meta is [] for single resources, {} for collections)
-//  - error:   { error: { status, message, data? } }
-//  - status may be number OR string ("422", "404" are strings; 401, 403 are numbers)
-//  - League OAuth errors are a different envelope and never reach here
+// - success: { data, meta, rels } (meta is [] for single resources, {} for collections)
+// - error: { error: { status, message, data? } }
+// - status may be number OR string ("422", "404" are strings; 401, 403 are numbers)
+// - League OAuth errors are a different envelope and never reach here
 
 function normalizeSuccess(body) {
-  return {
-    data: body?.data ?? null,
-    meta: body?.meta ?? {},
-    rels: body?.rels ?? [],
-  };
+return {
+data: body?.data ?? null,
+meta: body?.meta ?? {},
+rels: body?.rels ?? [],
+};
 }
 
 const STATUS_CODE_MAP = {
-  401: 'UNAUTHORIZED',
-  403: 'FORBIDDEN',
-  404: 'NOT_FOUND',
-  422: 'VALIDATION',
-  400: 'BAD_REQUEST',
-  500: 'SERVER_ERROR',
+401: 'UNAUTHORIZED',
+403: 'FORBIDDEN',
+404: 'NOT_FOUND',
+422: 'VALIDATION',
+400: 'BAD_REQUEST',
+500: 'SERVER_ERROR',
 };
 
 function classify(statusNumber, errorBody) {
-  // OrangeHRM uses strings for 404/422 and numbers for 401/403
-  const numeric = Number(statusNumber);
-  return STATUS_CODE_MAP[numeric] ?? 'UNKNOWN';
+// OrangeHRM uses strings for 404/422 and numbers for 401/403
+const numeric = Number(statusNumber);
+return STATUS_CODE_MAP[numeric] ?? 'UNKNOWN';
 }
 
 function normalizeError(axiosError) {
-  const res = axiosError.response;
-  const err = res?.data?.error;
+const res = axiosError.response;
+const err = res?.data?.error;
 
-  // League OAuth shape leaks through only if called via oauth path — not expected here
-  if (res?.data?.error_description) {
-    return {
-      message: res.data.error_description,
-      status: res.status,
-      code: 'OAUTH_ERROR',
-      data: { hint: res.data.hint },
-    };
-  }
+// League OAuth shape leaks through only if called via oauth path — not expected here
+if (res?.data?.error_description) {
+return {
+message: res.data.error_description,
+status: res.status,
+code: 'OAUTH_ERROR',
+data: { hint: res.data.hint },
+};
+}
 
-  return {
-    message: err?.message ?? axiosError.message,
-    status: err?.status ?? res?.status,
-    code: classify(res?.status, err),
-    data: err?.data,
-  };
+return {
+message: err?.message ?? axiosError.message,
+status: err?.status ?? res?.status,
+code: classify(res?.status, err),
+data: err?.data,
+};
 }
 
 module.exports = { normalizeSuccess, normalizeError };
@@ -661,11 +667,11 @@ const { ApiError } = require('./errors');
 const { normalizeSuccess, normalizeError } = require('./envelope');
 
 class ApiClient {
-  // TokenManager is injected. So is baseUrl. So is a logger (optional).
-  constructor({ baseUrl, tokenManager, logger }) {
-    this.baseUrl = baseUrl.replace(/\/$/, '');
-    this.tokenManager = tokenManager;
-    this.logger = logger ?? { debug() {}, info() {}, warn() {}, error() {} };
+// TokenManager is injected. So is baseUrl. So is a logger (optional).
+constructor({ baseUrl, tokenManager, logger }) {
+this.baseUrl = baseUrl.replace(/\/$/, '');
+this.tokenManager = tokenManager;
+this.logger = logger ?? { debug() {}, info() {}, warn() {}, error() {} };
 
     this.http = axios.create({
       baseURL: this.baseUrl,
@@ -680,38 +686,39 @@ class ApiClient {
       this.logger.debug?.({ method: cfg.method, url: cfg.url }, 'api →');
       return cfg;
     });
-  }
 
-  async request(config) {
-    try {
-      const res = await this.http.request(config);
-      return normalizeSuccess(res.data);
-    } catch (err) {
-      const norm = normalizeError(err);
-      throw new ApiError(norm.message, {
-        status: norm.status,
-        code: norm.code,
-        data: norm.data,
-        raw: err.response,
-      });
-    }
-  }
+}
 
-  get(path, { params, headers } = {}) {
-    return this.request({ method: 'GET', url: path, params, headers });
-  }
+async request(config) {
+try {
+const res = await this.http.request(config);
+return normalizeSuccess(res.data);
+} catch (err) {
+const norm = normalizeError(err);
+throw new ApiError(norm.message, {
+status: norm.status,
+code: norm.code,
+data: norm.data,
+raw: err.response,
+});
+}
+}
 
-  post(path, body, { headers } = {}) {
-    return this.request({ method: 'POST', url: path, data: body, headers });
-  }
+get(path, { params, headers } = {}) {
+return this.request({ method: 'GET', url: path, params, headers });
+}
 
-  put(path, body, { headers } = {}) {
-    return this.request({ method: 'PUT', url: path, data: body, headers });
-  }
+post(path, body, { headers } = {}) {
+return this.request({ method: 'POST', url: path, data: body, headers });
+}
 
-  delete(path, body, { headers } = {}) {
-    return this.request({ method: 'DELETE', url: path, data: body, headers });
-  }
+put(path, body, { headers } = {}) {
+return this.request({ method: 'PUT', url: path, data: body, headers });
+}
+
+delete(path, body, { headers } = {}) {
+return this.request({ method: 'DELETE', url: path, data: body, headers });
+}
 }
 
 module.exports = { ApiClient };
@@ -732,27 +739,27 @@ Domain language. No axios. No envelope. No auth.
 
 js
 class EmployeesApi {
-  constructor(client) { this.client = client; }
+constructor(client) { this.client = client; }
 
-  async list(params = {}) {
-    // params: { limit?, offset?, model?, includeEmployees?, name?, ... }
-    return this.client.get('/web/index.php/api/v2/pim/employees', { params });
-  }
+async list(params = {}) {
+// params: { limit?, offset?, model?, includeEmployees?, name?, ... }
+return this.client.get('/web/index.php/api/v2/pim/employees', { params });
+}
 
-  async get(empNumber) {
-    return this.client.get(`/web/index.php/api/v2/pim/employees/${empNumber}`);
-  }
+async get(empNumber) {
+return this.client.get(`/web/index.php/api/v2/pim/employees/${empNumber}`);
+}
 
-  async create({ firstName, lastName, middleName, employeeId }) {
-    return this.client.post('/web/index.php/api/v2/pim/employees', {
-      firstName, lastName, middleName, employeeId,
-    });
-  }
+async create({ firstName, lastName, middleName, employeeId }) {
+return this.client.post('/web/index.php/api/v2/pim/employees', {
+firstName, lastName, middleName, employeeId,
+});
+}
 
-  async delete(empNumbers) {
-    const ids = Array.isArray(empNumbers) ? empNumbers : [empNumbers];
-    return this.client.delete('/web/index.php/api/v2/pim/employees', { ids });
-  }
+async delete(empNumbers) {
+const ids = Array.isArray(empNumbers) ? empNumbers : [empNumbers];
+return this.client.delete('/web/index.php/api/v2/pim/employees', { ids });
+}
 }
 
 module.exports = { EmployeesApi };
@@ -767,22 +774,22 @@ Paths are strings; if they change, you change one file.
 src/api/endpoints/users.js
 js
 class UsersApi {
-  constructor(client) { this.client = client; }
+constructor(client) { this.client = client; }
 
-  list(params = {}) {
-    return this.client.get('/web/index.php/api/v2/admin/users', { params });
-  }
+list(params = {}) {
+return this.client.get('/web/index.php/api/v2/admin/users', { params });
+}
 
-  create({ username, password, status, userRoleId, empNumber }) {
-    return this.client.post('/web/index.php/api/v2/admin/users', {
-      username, password, status, userRoleId, empNumber,
-    });
-  }
+create({ username, password, status, userRoleId, empNumber }) {
+return this.client.post('/web/index.php/api/v2/admin/users', {
+username, password, status, userRoleId, empNumber,
+});
+}
 
-  delete(ids) {
-    const list = Array.isArray(ids) ? ids : [ids];
-    return this.client.delete('/web/index.php/api/v2/admin/users', { ids: list });
-  }
+delete(ids) {
+const list = Array.isArray(ids) ? ids : [ids];
+return this.client.delete('/web/index.php/api/v2/admin/users', { ids: list });
+}
 }
 
 module.exports = { UsersApi };
@@ -798,13 +805,13 @@ const { UsersApi } = require('./endpoints/users');
 // ...import other endpoints here as you build them
 
 function createApi({ baseUrl, tokenManager, logger }) {
-  const client = new ApiClient({ baseUrl, tokenManager, logger });
-  return {
-    employees: new EmployeesApi(client),
-    users: new UsersApi(client),
-    // leave: new LeaveApi(client), ... etc
-    _client: client, // escape hatch for tests that need to hit a path directly
-  };
+const client = new ApiClient({ baseUrl, tokenManager, logger });
+return {
+employees: new EmployeesApi(client),
+users: new UsersApi(client),
+// leave: new LeaveApi(client), ... etc
+_client: client, // escape hatch for tests that need to hit a path directly
+};
 }
 
 module.exports = { createApi };
@@ -826,36 +833,36 @@ const { TokenManager } = require('../src/auth/token-manager');
 const { createApi } = require('../src/api');
 
 async function buildApi(roleName) {
-  const role = users[roleName];
-  const baseUrl = process.env.OHRM_BASE_URL;
+const role = users[roleName];
+const baseUrl = process.env.OHRM_BASE_URL;
 
-  const oauth = new OAuthClient({
-    authorizationUrl: `${baseUrl}/web/index.php/oauth2/authorize`,
-    tokenUrl:         `${baseUrl}/web/index.php/oauth2/token`,
-    clientId:         process.env.OHRM_OAUTH_CLIENT_ID,
-    redirectUri:      process.env.OHRM_OAUTH_REDIRECT_URI,
-  });
+const oauth = new OAuthClient({
+authorizationUrl: `${baseUrl}/web/index.php/oauth2/authorize`,
+tokenUrl: `${baseUrl}/web/index.php/oauth2/token`,
+clientId: process.env.OHRM_OAUTH_CLIENT_ID,
+redirectUri: process.env.OHRM_OAUTH_REDIRECT_URI,
+});
 
-  const authorizer = new OAuthAuthorizer({
-    callbackHost: 'localhost',
-    callbackPort: 9876,
-    callbackPath: '/oauth/callback',
-  });
+const authorizer = new OAuthAuthorizer({
+callbackHost: 'localhost',
+callbackPort: 9876,
+callbackPath: '/oauth/callback',
+});
 
-  const store = new FileTokenStore(role.tokenFile);
+const store = new FileTokenStore(role.tokenFile);
 
-  const tokenManager = new TokenManager({
-    oauth, authorizer, store,
-    credentials: { username: role.username, password: role.password },
-  });
+const tokenManager = new TokenManager({
+oauth, authorizer, store,
+credentials: { username: role.username, password: role.password },
+});
 
-  return createApi({ baseUrl, tokenManager });
+return createApi({ baseUrl, tokenManager });
 }
 
 async function main() {
-  const api = await buildApi('admin');
-  const result = await api.employees.list({ limit: 5 });
-  console.log(JSON.stringify(result, null, 2));
+const api = await buildApi('admin');
+const result = await api.employees.list({ limit: 5 });
+console.log(JSON.stringify(result, null, 2));
 }
 
 main().catch(err => { console.error(err); process.exit(1); });
@@ -864,21 +871,21 @@ Run it. If you see { data: [...], meta: { total: N }, rels: [] }, Phase 2 is wor
 Part 6 — Error Handling You Actually Care About (from your research)
 Because your research docs catalogued OrangeHRM's exact error shapes, the API client's error handling must match them. Here's the mapping you get for free from envelope.js:
 
-Case	ApiError.code	ApiError.status	ApiError.data
-No auth	UNAUTHORIZED	401 (number)	undefined
-Invalid Bearer on POST	UNAUTHORIZED	401	undefined
-ESS POST to admin	FORBIDDEN	403 (number)	undefined
-Lookup miss	NOT_FOUND	"404" (string)	undefined
-Missing param	VALIDATION	"422" (string)	{ invalidParamKeys: [...] }
-Unknown param (strict)	VALIDATION	"422"	{ invalidParamKeys: [...] }
-Server error	SERVER_ERROR	500	(unknown, rare)
+Case ApiError.code ApiError.status ApiError.data
+No auth UNAUTHORIZED 401 (number) undefined
+Invalid Bearer on POST UNAUTHORIZED 401 undefined
+ESS POST to admin FORBIDDEN 403 (number) undefined
+Lookup miss NOT_FOUND "404" (string) undefined
+Missing param VALIDATION "422" (string) { invalidParamKeys: [...] }
+Unknown param (strict) VALIDATION "422" { invalidParamKeys: [...] }
+Server error SERVER_ERROR 500 (unknown, rare)
 Tests then do:
 
 js
 await expect(api.employees.create({ firstName: '' })).rejects.toMatchObject({
-  code: 'VALIDATION',
-  status: '422',
-  data: { invalidParamKeys: expect.arrayContaining(['firstName']) },
+code: 'VALIDATION',
+status: '422',
+data: { invalidParamKeys: expect.arrayContaining(['firstName']) },
 });
 Clean. Explicit. Matches the wire.
 
@@ -902,44 +909,44 @@ Each of these is a "later" that you'll know you need because a test will fail. A
 Part 8 — The Layers as They Now Stand
 text
 ┌─────────────────────────────────────────────────┐
-│  tests/                          (Phase 4+)      │
-│    uses createApi() + TokenManager               │
+│ tests/ (Phase 4+) │
+│ uses createApi() + TokenManager │
 └──────────────────────┬──────────────────────────┘
-                       │
+│
 ┌──────────────────────▼──────────────────────────┐
-│  src/api/index.js    (composition root)          │
-│    createApi({ baseUrl, tokenManager })          │
+│ src/api/index.js (composition root) │
+│ createApi({ baseUrl, tokenManager }) │
 └──────────────────────┬──────────────────────────┘
-                       │
+│
 ┌──────────────────────▼──────────────────────────┐
-│  src/api/endpoints/*.js  (domain language)       │
+│ src/api/endpoints/*.js (domain language) │
 └──────────────────────┬──────────────────────────┘
-                       │
+│
 ┌──────────────────────▼──────────────────────────┐
-│  src/api/client.js       (HTTP + auth + errors)  │
-│    depends on: axios, envelope, errors,          │
-│                tokenManager (injected)           │
+│ src/api/client.js (HTTP + auth + errors) │
+│ depends on: axios, envelope, errors, │
+│ tokenManager (injected) │
 └──────────────────────┬──────────────────────────┘
-                       │
+│
 ┌──────────────────────▼──────────────────────────┐
-│  src/auth/token-manager.js (Phase 1)             │
-│    getAccessToken() → string                     │
+│ src/auth/token-manager.js (Phase 1) │
+│ getAccessToken() → string │
 └──────────────────────┬──────────────────────────┘
-                       │
+│
 ┌──────────────────────▼──────────────────────────┐
-│  OAuthClient │ OAuthAuthorizer │ FileTokenStore  │
+│ OAuthClient │ OAuthAuthorizer │ FileTokenStore │
 └─────────────────────────────────────────────────┘
 The whole stack composes from two roots: scripts/obtain-token.js (auth only) and src/api/index.js (auth + API). No other file constructs anything.
 
 Part 9 — Consistency With Phase 1 (Same Rules, Applied Again)
-Principle from Phase 1	Phase 2 Application
-External representation at the boundary	{data, meta, rels} and {error: {...}} die inside envelope.js
-Camel-case internally	ApiError.code, ApiError.status — never error_description, never invalidParamKeys outside data
-One reason to change per file	Transport, error normalization, envelope normalization, and domain calls are four different files
-No construction outside composition root	Only src/api/index.js builds the client
-Injected dependencies	TokenManager is passed in, never imported by the client
-No speculative generality	No retries, no schemas, no caches until a test fails
-Playwright never in infrastructure	API layer is pure Node + axios; runs in scripts, CI, and tests
+Principle from Phase 1 Phase 2 Application
+External representation at the boundary {data, meta, rels} and {error: {...}} die inside envelope.js
+Camel-case internally ApiError.code, ApiError.status — never error_description, never invalidParamKeys outside data
+One reason to change per file Transport, error normalization, envelope normalization, and domain calls are four different files
+No construction outside composition root Only src/api/index.js builds the client
+Injected dependencies TokenManager is passed in, never imported by the client
+No speculative generality No retries, no schemas, no caches until a test fails
+Playwright never in infrastructure API layer is pure Node + axios; runs in scripts, CI, and tests
 Part 10 — What To Do Right Now
 Write src/api/errors.js — 30 seconds.
 
@@ -987,7 +994,7 @@ The layers compose naturally:
 
 js
 // In any test:
-const api = await buildApiForRole('admin');   // wires auth + api
+const api = await buildApiForRole('admin'); // wires auth + api
 const { data, meta } = await api.employees.list({ limit: 5 });
 You will never think about axios, access_token, Content-Type, or the {error: {status, message, data}} shape again. That is the entire point.
 
@@ -1008,28 +1015,28 @@ Here's the decisive plan.
 Part 1 — The One Decision That Matters
 text
 src/db/
-├── pool.js             # mysql2 pool + connection lifecycle
-├── client.js           # query interface (select/insert/update/delete + tx)
-├── errors.js           # DbError taxonomy
-├── row.js              # row shape helpers (camelCase conversion, null handling)
+├── pool.js # mysql2 pool + connection lifecycle
+├── client.js # query interface (select/insert/update/delete + tx)
+├── errors.js # DbError taxonomy
+├── row.js # row shape helpers (camelCase conversion, null handling)
 └── repositories/
-    ├── employees.js
-    ├── users.js
-    ├── leave.js
-    ├── timesheets.js
-    ├── attendance.js
-    └── permissions.js
+├── employees.js
+├── users.js
+├── leave.js
+├── timesheets.js
+├── attendance.js
+└── permissions.js
 Six files, same flat shape as auth/ and api/. Same composition-root discipline. Same boundary-translation rule.
 
 Do not add migrations/, models/, entities/, schemas/, or orm/. OrangeHRM owns the schema. Your job is to read and write the subset that tests require.
 
 Part 2 — The Boundaries (This Is the Whole Architecture)
-File	Knows About	MUST NOT Know About
-errors.js	nothing	nothing
-row.js	nothing but JS objects	mysql2, config, auth
-pool.js	mysql2/promise, DB config object	queries, repositories, business meaning
-client.js	the pool, ./errors	business meaning, table names, endpoint paths
-repositories/*.js	the client, table/column names	auth, API, HTTP, pool lifecycle, tests
+File Knows About MUST NOT Know About
+errors.js nothing nothing
+row.js nothing but JS objects mysql2, config, auth
+pool.js mysql2/promise, DB config object queries, repositories, business meaning
+client.js the pool, ./errors business meaning, table names, endpoint paths
+repositories/*.js the client, table/column names auth, API, HTTP, pool lifecycle, tests
 Repositories speak SQL and table names. The client speaks SQL and parameters. The pool speaks connections.
 
 If you ever want to import the API client into a repository, stop. If you ever want to import TokenManager, stop. DB is a leaf layer. It has no downstream dependencies on auth or API.
@@ -1042,19 +1049,19 @@ createPool({ host, port, user, password, database, connectionLimit }) → mysql2
 
 // client.js — public surface
 {
-  select(sql, params?)          → Row[]
-  selectOne(sql, params?)       → Row | null
-  selectValue(sql, params?)     → any
-  execute(sql, params?)         → { affectedRows, insertId, changedRows }
-  transaction(fn)               → any    // fn receives a scoped client
-  close()                       → void
+select(sql, params?) → Row[]
+selectOne(sql, params?) → Row | null
+selectValue(sql, params?) → any
+execute(sql, params?) → { affectedRows, insertId, changedRows }
+transaction(fn) → any // fn receives a scoped client
+close() → void
 }
 
 // Row — plain JS objects with column names as-is (snake_case)
 {
-  emp_number: 1,
-  emp_firstname: 'Admin',
-  purged_at: null
+emp_number: 1,
+emp_firstname: 'Admin',
+purged_at: null
 }
 Critical design choice: rows come back with snake_case column names, matching MySQL. Why? Because that's what SQL returns, and hiding it forces you to maintain a naming map for 150+ tables. Repositories translate only when a query is actually used. Tests that need camelCase do it in one line.
 
@@ -1063,16 +1070,16 @@ This is different from the API layer, where the wire is small and stable. The DB
 js
 // errors.js
 class DbError extends Error {
-  constructor(message, { code, sqlState, sqlMessage, sql, params, raw } = {}) {
-    super(message);
-    this.name = 'DbError';
-    this.code = code;             // 'CONN_REFUSED' | 'ER_DUP_ENTRY' | 'ER_NO_REFERENCED_ROW' | 'UNKNOWN'
-    this.sqlState = sqlState;
-    this.sqlMessage = sqlMessage; // MySQL's message
-    this.sql = sql;               // the offending statement, truncated
-    this.params = params;         // the parameter array
-    this.raw = raw;
-  }
+constructor(message, { code, sqlState, sqlMessage, sql, params, raw } = {}) {
+super(message);
+this.name = 'DbError';
+this.code = code; // 'CONN_REFUSED' | 'ER_DUP_ENTRY' | 'ER_NO_REFERENCED_ROW' | 'UNKNOWN'
+this.sqlState = sqlState;
+this.sqlMessage = sqlMessage; // MySQL's message
+this.sql = sql; // the offending statement, truncated
+this.params = params; // the parameter array
+this.raw = raw;
+}
 }
 The sql, params, sqlState, and sqlMessage fields are what make DB failures diagnosable. Do not skip them.
 
@@ -1080,41 +1087,41 @@ Part 4 — Concrete File Sketches
 src/db/errors.js
 js
 const MYSQL_CODE_MAP = {
-  ECONNREFUSED:  'CONN_REFUSED',
-  ER_ACCESS_DENIED_ERROR: 'AUTH_FAILED',
-  ER_BAD_DB_ERROR: 'NO_DATABASE',
-  ER_DUP_ENTRY: 'DUPLICATE_KEY',
-  ER_NO_REFERENCED_ROW: 'FK_MISSING',
-  ER_NO_REFERENCED_ROW_2: 'FK_MISSING',
-  ER_ROW_IS_REFERENCED: 'FK_IN_USE',
-  ER_ROW_IS_REFERENCED_2: 'FK_IN_USE',
-  ER_LOCK_WAIT_TIMEOUT: 'LOCK_TIMEOUT',
-  ER_LOCK_DEADLOCK: 'DEADLOCK',
+ECONNREFUSED: 'CONN_REFUSED',
+ER_ACCESS_DENIED_ERROR: 'AUTH_FAILED',
+ER_BAD_DB_ERROR: 'NO_DATABASE',
+ER_DUP_ENTRY: 'DUPLICATE_KEY',
+ER_NO_REFERENCED_ROW: 'FK_MISSING',
+ER_NO_REFERENCED_ROW_2: 'FK_MISSING',
+ER_ROW_IS_REFERENCED: 'FK_IN_USE',
+ER_ROW_IS_REFERENCED_2: 'FK_IN_USE',
+ER_LOCK_WAIT_TIMEOUT: 'LOCK_TIMEOUT',
+ER_LOCK_DEADLOCK: 'DEADLOCK',
 };
 
 class DbError extends Error {
-  constructor(message, { code, sqlState, sqlMessage, sql, params, raw } = {}) {
-    super(message);
-    this.name = 'DbError';
-    this.code = code;
-    this.sqlState = sqlState;
-    this.sqlMessage = sqlMessage;
-    this.sql = sql ? String(sql).slice(0, 500) : undefined;
-    this.params = params;
-    this.raw = raw;
-  }
+constructor(message, { code, sqlState, sqlMessage, sql, params, raw } = {}) {
+super(message);
+this.name = 'DbError';
+this.code = code;
+this.sqlState = sqlState;
+this.sqlMessage = sqlMessage;
+this.sql = sql ? String(sql).slice(0, 500) : undefined;
+this.params = params;
+this.raw = raw;
+}
 
-  static fromMysql(err, sql, params) {
-    const code = MYSQL_CODE_MAP[err.code] ?? 'UNKNOWN';
-    return new DbError(err.message, {
-      code,
-      sqlState: err.sqlState,
-      sqlMessage: err.sqlMessage,
-      sql,
-      params,
-      raw: err,
-    });
-  }
+static fromMysql(err, sql, params) {
+const code = MYSQL_CODE_MAP[err.code] ?? 'UNKNOWN';
+return new DbError(err.message, {
+code,
+sqlState: err.sqlState,
+sqlMessage: err.sqlMessage,
+sql,
+params,
+raw: err,
+});
+}
 }
 
 module.exports = { DbError };
@@ -1126,24 +1133,24 @@ const mysql = require('mysql2/promise');
 const { DbError } = require('./errors');
 
 function createPool({ host, port, user, password, database, connectionLimit = 10 }) {
-  const pool = mysql.createPool({
-    host,
-    port,
-    user,
-    password,
-    database,
-    connectionLimit,
-    waitForConnections: true,
-    namedPlaceholders: false,  // we use ? placeholders only
-    timezone: 'Z',              // always read/write UTC
-    dateStrings: false,         // return Date objects, not strings
-    multipleStatements: false,  // safety
-  });
+const pool = mysql.createPool({
+host,
+port,
+user,
+password,
+database,
+connectionLimit,
+waitForConnections: true,
+namedPlaceholders: false, // we use ? placeholders only
+timezone: 'Z', // always read/write UTC
+dateStrings: false, // return Date objects, not strings
+multipleStatements: false, // safety
+});
 
-  // A single health check at construction is enough. Don't ping per query.
-  pool.on('connection', () => {}); // reserved for future logging
+// A single health check at construction is enough. Don't ping per query.
+pool.on('connection', () => {}); // reserved for future logging
 
-  return pool;
+return pool;
 }
 
 module.exports = { createPool };
@@ -1160,72 +1167,72 @@ js
 const { DbError } = require('./errors');
 
 class DbClient {
-  constructor(pool) {
-    this.pool = pool;
-  }
+constructor(pool) {
+this.pool = pool;
+}
 
-  async select(sql, params = []) {
-    return this._run(sql, params, async (conn) => {
-      const [rows] = await conn.execute(sql, params);
-      return rows;
-    });
-  }
+async select(sql, params = []) {
+return this._run(sql, params, async (conn) => {
+const [rows] = await conn.execute(sql, params);
+return rows;
+});
+}
 
-  async selectOne(sql, params = []) {
-    const rows = await this.select(sql, params);
-    return rows[0] ?? null;
-  }
+async selectOne(sql, params = []) {
+const rows = await this.select(sql, params);
+return rows[0] ?? null;
+}
 
-  async selectValue(sql, params = []) {
-    const row = await this.selectOne(sql, params);
-    if (!row) return null;
-    // First column of first row
-    return Object.values(row)[0] ?? null;
-  }
+async selectValue(sql, params = []) {
+const row = await this.selectOne(sql, params);
+if (!row) return null;
+// First column of first row
+return Object.values(row)[0] ?? null;
+}
 
-  async execute(sql, params = []) {
-    return this._run(sql, params, async (conn) => {
-      const [result] = await conn.execute(sql, params);
-      return {
-        affectedRows: result.affectedRows ?? 0,
-        insertId: result.insertId ?? null,
-        changedRows: result.changedRows ?? 0,
-      };
-    });
-  }
+async execute(sql, params = []) {
+return this._run(sql, params, async (conn) => {
+const [result] = await conn.execute(sql, params);
+return {
+affectedRows: result.affectedRows ?? 0,
+insertId: result.insertId ?? null,
+changedRows: result.changedRows ?? 0,
+};
+});
+}
 
-  // fn receives a client bound to one connection so all queries are in one tx
-  async transaction(fn) {
-    const conn = await this.pool.getConnection();
-    try {
-      await conn.beginTransaction();
-      const scoped = new DbClient({ getConnection: async () => conn, _isScoped: true });
-      const result = await fn(scoped);
-      await conn.commit();
-      return result;
-    } catch (err) {
-      try { await conn.rollback(); } catch { /* ignore */ }
-      throw err;
-    } finally {
-      conn.release();
-    }
-  }
+// fn receives a client bound to one connection so all queries are in one tx
+async transaction(fn) {
+const conn = await this.pool.getConnection();
+try {
+await conn.beginTransaction();
+const scoped = new DbClient({ getConnection: async () => conn, _isScoped: true });
+const result = await fn(scoped);
+await conn.commit();
+return result;
+} catch (err) {
+try { await conn.rollback(); } catch { /* ignore */ }
+throw err;
+} finally {
+conn.release();
+}
+}
 
-  async close() {
-    await this.pool.end();
-  }
+async close() {
+await this.pool.end();
+}
 
-  async _run(sql, params, fn) {
-    let conn;
-    try {
-      conn = await this.pool.getConnection();
-      return await fn(conn);
-    } catch (err) {
-      throw DbError.fromMysql(err, sql, params);
-    } finally {
-      if (conn) conn.release();
-    }
-  }
+async _run(sql, params, fn) {
+let conn;
+try {
+conn = await this.pool.getConnection();
+return await fn(conn);
+} catch (err) {
+throw DbError.fromMysql(err, sql, params);
+} finally {
+if (conn) conn.release();
+}
+}
 }
 
 module.exports = { DbClient };
@@ -1248,21 +1255,21 @@ js
 // Convert snake_case keys to camelCase. Non-recursive.
 // Do NOT do this by default — only when a repository wants it.
 function toCamel(row) {
-  if (!row) return row;
-  const out = {};
-  for (const [k, v] of Object.entries(row)) {
-    out[k.replace(/_([a-z])/g, (_, c) => c.toUpperCase())] = v;
-  }
-  return out;
+if (!row) return row;
+const out = {};
+for (const [k, v] of Object.entries(row)) {
+out[k.replace(/_([a-z])/g, (_, c) => c.toUpperCase())] = v;
+}
+return out;
 }
 
 // Camel to snake. Same idea.
 function toSnake(obj) {
-  const out = {};
-  for (const [k, v] of Object.entries(obj)) {
-    out[k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`)] = v;
-  }
-  return out;
+const out = {};
+for (const [k, v] of Object.entries(obj)) {
+out[k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`)] = v;
+}
+return out;
 }
 
 module.exports = { toCamel, toSnake };
@@ -1271,52 +1278,52 @@ That's it. No Row class. No getters. No proxies. Just two functions.
 src/db/repositories/employees.js
 js
 class EmployeesRepository {
-  constructor(client) { this.client = client; }
+constructor(client) { this.client = client; }
 
-  async findById(empNumber) {
-    return this.client.selectOne(
-      `SELECT emp_number, employee_id, emp_firstname, emp_lastname,
+async findById(empNumber) {
+return this.client.selectOne(
+`SELECT emp_number, employee_id, emp_firstname, emp_lastname,
               emp_middle_name, purged_at
          FROM hs_hr_employee
         WHERE emp_number = ?`,
-      [empNumber],
-    );
-  }
+[empNumber],
+);
+}
 
-  async findByEmployeeId(employeeId) {
-    return this.client.selectOne(
-      `SELECT emp_number, employee_id, emp_firstname, emp_lastname
+async findByEmployeeId(employeeId) {
+return this.client.selectOne(
+`SELECT emp_number, employee_id, emp_firstname, emp_lastname
          FROM hs_hr_employee
         WHERE employee_id = ? AND purged_at IS NULL`,
-      [employeeId],
-    );
-  }
+[employeeId],
+);
+}
 
-  async countAll() {
-    return this.client.selectValue(
-      `SELECT COUNT(*) AS n FROM hs_hr_employee WHERE purged_at IS NULL`,
-    );
-  }
+async countAll() {
+return this.client.selectValue(
+`SELECT COUNT(*) AS n FROM hs_hr_employee WHERE purged_at IS NULL`,
+);
+}
 
-  // NOTE: This is a HARD delete. Research doc §7.1 confirms DELETE cascades
-  // leave but NOT timesheet. Cleanup scripts must handle orphans explicitly.
-  async deleteById(empNumber) {
-    return this.client.execute(
-      `DELETE FROM hs_hr_employee WHERE emp_number = ?`,
-      [empNumber],
-    );
-  }
+// NOTE: This is a HARD delete. Research doc §7.1 confirms DELETE cascades
+// leave but NOT timesheet. Cleanup scripts must handle orphans explicitly.
+async deleteById(empNumber) {
+return this.client.execute(
+`DELETE FROM hs_hr_employee WHERE emp_number = ?`,
+[empNumber],
+);
+}
 
-  // Explicit orphan check — used only by cleanup and cascade tests.
-  async findOrphanedTimesheets(empNumber) {
-    return this.client.select(
-      `SELECT timesheet_id, employee_id, state
+// Explicit orphan check — used only by cleanup and cascade tests.
+async findOrphanedTimesheets(empNumber) {
+return this.client.select(
+`SELECT timesheet_id, employee_id, state
          FROM ohrm_timesheet
         WHERE employee_id = ?
           AND employee_id NOT IN (SELECT emp_number FROM hs_hr_employee)`,
-      [empNumber],
-    );
-  }
+[empNumber],
+);
+}
 }
 module.exports = { EmployeesRepository };
 Notes:
@@ -1334,18 +1341,18 @@ The permission tables are read-only from the framework's perspective. This repos
 
 js
 class PermissionsRepository {
-  constructor(client) { this.client = client; }
+constructor(client) { this.client = client; }
 
-  async dataGroupIdForApi(apiClass) {
-    return this.client.selectValue(
-      `SELECT data_group_id FROM ohrm_api_permission WHERE api_name = ?`,
-      [apiClass],
-    );
-  }
+async dataGroupIdForApi(apiClass) {
+return this.client.selectValue(
+`SELECT data_group_id FROM ohrm_api_permission WHERE api_name = ?`,
+[apiClass],
+);
+}
 
-  async rolePermissionsForApi(apiClass) {
-    return this.client.select(
-      `SELECT ur.id   AS user_role_id,
+async rolePermissionsForApi(apiClass) {
+return this.client.select(
+`SELECT ur.id   AS user_role_id,
               ur.name AS user_role_name,
               urdg.can_read, urdg.can_create, urdg.can_update, urdg.can_delete,
               urdg.self
@@ -1354,18 +1361,18 @@ class PermissionsRepository {
          JOIN ohrm_user_role ur               ON ur.id = urdg.user_role_id
         WHERE ap.api_name = ?
         ORDER BY ur.id`,
-      [apiClass],
-    );
-  }
+[apiClass],
+);
+}
 
-  async isActionAllowed(workflow, state, role, action) {
-    const n = await this.client.selectValue(
-      `SELECT COUNT(*) FROM ohrm_workflow_state_machine
+async isActionAllowed(workflow, state, role, action) {
+const n = await this.client.selectValue(
+`SELECT COUNT(*) FROM ohrm_workflow_state_machine
         WHERE workflow = ? AND state = ? AND role = ? AND action = ?`,
-      [String(workflow), state, role, String(action)],
-    );
-    return Number(n) > 0;
-  }
+[String(workflow), state, role, String(action)],
+);
+return Number(n) > 0;
+}
 }
 module.exports = { PermissionsRepository };
 Notes:
@@ -1381,21 +1388,21 @@ js
 const { createPool } = require('./pool');
 const { DbClient } = require('./client');
 const { EmployeesRepository } = require('./repositories/employees');
-const { UsersRepository } from './repositories/users';      // when you build it
+const { UsersRepository } from './repositories/users'; // when you build it
 const { PermissionsRepository } = require('./repositories/permissions');
 
 function createDb({ host, port, user, password, database, connectionLimit }) {
-  const pool = createPool({ host, port, user, password, database, connectionLimit });
-  const client = new DbClient(pool);
+const pool = createPool({ host, port, user, password, database, connectionLimit });
+const client = new DbClient(pool);
 
-  return {
-    client,
-    employees: new EmployeesRepository(client),
-    users: new UsersRepository(client),
-    permissions: new PermissionsRepository(client),
-    // leave: new LeaveRepository(client), ... etc, as you build them
-    async close() { await client.close(); },
-  };
+return {
+client,
+employees: new EmployeesRepository(client),
+users: new UsersRepository(client),
+permissions: new PermissionsRepository(client),
+// leave: new LeaveRepository(client), ... etc, as you build them
+async close() { await client.close(); },
+};
 }
 
 module.exports = { createDb };
@@ -1404,34 +1411,35 @@ One function. One pool. One client. Repositories hang off it.
 Part 5 — Composition Root (the whole framework so far)
 text
 scripts/
-├── obtain-token.js       # Phase 1 composition root (auth only)
-├── api-smoke.js          # Phase 2 composition root (auth + api)
-└── db-smoke.js           # Phase 3 composition root (db only)
+├── obtain-token.js # Phase 1 composition root (auth only)
+├── api-smoke.js # Phase 2 composition root (auth + api)
+└── db-smoke.js # Phase 3 composition root (db only)
 scripts/db-smoke.js
 js
 require('dotenv').config();
 const { createDb } = require('../src/db');
 
 async function main() {
-  const db = createDb({
-    host:     process.env.OHRM_DB_HOST,
-    port:     Number(process.env.OHRM_DB_PORT),
-    user:     process.env.OHRM_DB_USER,
-    password: process.env.OHRM_DB_PASSWORD,
-    database: process.env.OHRM_DB_NAME,
-  });
+const db = createDb({
+host: process.env.OHRM_DB_HOST,
+port: Number(process.env.OHRM_DB_PORT),
+user: process.env.OHRM_DB_USER,
+password: process.env.OHRM_DB_PASSWORD,
+database: process.env.OHRM_DB_NAME,
+});
 
-  try {
-    const n = await db.employees.countAll();
-    console.log('employees:', n);
+try {
+const n = await db.employees.countAll();
+console.log('employees:', n);
 
     const perms = await db.permissions.rolePermissionsForApi(
       'OrangeHRM\\Pim\\Api\\EmployeeAPI',
     );
     console.log(perms);
-  } finally {
-    await db.close();
-  }
+
+} finally {
+await db.close();
+}
 }
 
 main().catch(err => { console.error(err); process.exit(1); });
@@ -1464,18 +1472,18 @@ const { createDb } = require('../db');
 const { buildApi } = require('../support/build-api'); // your composition helper
 
 const test = base.test.extend({
-  // API is available whenever a test needs it
-  api: async ({}, use) => {
-    const api = await buildApi('admin');
-    await use(api);
-  },
+// API is available whenever a test needs it
+api: async ({}, use) => {
+const api = await buildApi('admin');
+await use(api);
+},
 
-  // DB is NOT available by default. Tests must opt in.
-  db: [async ({}, use) => {
-    const db = createDb({ /* from env */ });
-    await use(db);
-    await db.close();
-  }, { scope: 'worker' }],
+// DB is NOT available by default. Tests must opt in.
+db: [async ({}, use) => {
+const db = createDb({ /* from env */ });
+await use(db);
+await db.close();
+}, { scope: 'worker' }],
 });
 
 module.exports = { test, expect: base.expect };
@@ -1507,46 +1515,46 @@ Each of these is a "later" that a test will earn for you.
 Part 8 — The Layers as They Now Stand
 text
 ┌──────────────────────────────────────────────────┐
-│  tests/                            (Phase 4+)    │
-│    { api }    ← default, always available        │
-│    { db }     ← opt-in, explicit at call site    │
+│ tests/ (Phase 4+) │
+│ { api } ← default, always available │
+│ { db } ← opt-in, explicit at call site │
 └────────────────┬─────────────────┬───────────────┘
-                 │                 │
-        ┌────────▼───────┐  ┌──────▼──────────────┐
-        │ src/api/index  │  │ src/db/index        │
-        │ createApi()    │  │ createDb()          │
-        └────────┬───────┘  └──────┬──────────────┘
-                 │                 │
-        ┌────────▼───────┐  ┌──────▼──────────────┐
-        │ api/endpoints  │  │ db/repositories     │
-        └────────┬───────┘  └──────┬──────────────┘
-                 │                 │
-        ┌────────▼───────┐  ┌──────▼──────────────┐
-        │ api/client     │  │ db/client           │
-        │ + envelope     │  │ + row               │
-        │ + errors       │  │ + errors            │
-        └────────┬───────┘  └──────┬──────────────┘
-                 │                 │
-        ┌────────▼───────┐  ┌──────▼──────────────┐
-        │ TokenManager   │  │ mysql2 Pool         │
-        │ (Phase 1)      │  │                     │
-        └────────┬───────┘  └─────────────────────┘
-                 │
-        ┌────────▼──────────────────────────────────┐
-        │ OAuthClient │ OAuthAuthorizer │ Store      │
-        └────────────────────────────────────────────┘
+│ │
+┌────────▼───────┐ ┌──────▼──────────────┐
+│ src/api/index │ │ src/db/index │
+│ createApi() │ │ createDb() │
+└────────┬───────┘ └──────┬──────────────┘
+│ │
+┌────────▼───────┐ ┌──────▼──────────────┐
+│ api/endpoints │ │ db/repositories │
+└────────┬───────┘ └──────┬──────────────┘
+│ │
+┌────────▼───────┐ ┌──────▼──────────────┐
+│ api/client │ │ db/client │
+│ + envelope │ │ + row │
+│ + errors │ │ + errors │
+└────────┬───────┘ └──────┬──────────────┘
+│ │
+┌────────▼───────┐ ┌──────▼──────────────┐
+│ TokenManager │ │ mysql2 Pool │
+│ (Phase 1) │ │ │
+└────────┬───────┘ └─────────────────────┘
+│
+┌────────▼──────────────────────────────────┐
+│ OAuthClient │ OAuthAuthorizer │ Store │
+└────────────────────────────────────────────┘
 Two independent leaf stacks. API depends on auth. DB depends on nothing but mysql2. UI (Phase 4) depends on both. That is the whole architecture.
 
 Part 9 — Consistency Across the Three Phases
-Principle	Auth (Phase 1)	API (Phase 2)	DB (Phase 3)
-One reason to change per file	✅	✅	✅
-Boundary translation once	✅ snake_case in _normalize	✅ envelope in envelope.js	✅ toCamel opt-in
-Injected dependencies	✅ TokenManager	✅ TokenManager in client	✅ Pool in client
-Composition root	✅ obtain-token.js	✅ api/index.js	✅ db/index.js
-No speculative abstraction	✅ 6 files	✅ 6 files	✅ 6 files
-Playwright-free	✅ (authorizer imports playwright, not @playwright/test)	✅	✅
-Error taxonomy	✅ AuthenticationError	✅ ApiError	✅ DbError
-No hidden deps in tests	n/a	✅	✅ (explicit opt-in)
+Principle Auth (Phase 1) API (Phase 2) DB (Phase 3)
+One reason to change per file ✅ ✅ ✅
+Boundary translation once ✅ snake_case in _normalize ✅ envelope in envelope.js ✅ toCamel opt-in
+Injected dependencies ✅ TokenManager ✅ TokenManager in client ✅ Pool in client
+Composition root ✅ obtain-token.js ✅ api/index.js ✅ db/index.js
+No speculative abstraction ✅ 6 files ✅ 6 files ✅ 6 files
+Playwright-free ✅ (authorizer imports playwright, not @playwright/test) ✅ ✅
+Error taxonomy ✅ AuthenticationError ✅ ApiError ✅ DbError
+No hidden deps in tests n/a ✅ ✅ (explicit opt-in)
 That table is the whole point of doing this in phases: the shape repeats, so the mental model transfers. You solved auth once, and now API and DB are the same problem with different payloads.
 
 Part 10 — What To Do Right Now
@@ -1615,40 +1623,40 @@ Here's the plan.
 Part 1 — The One Decision That Matters
 text
 src/ui/
-├── selectors.js             # one file: every stable selector string, keyed by name
-├── base-page.js             # thin base class: navigation + OXD-wide behaviors
-├── components/              # one file per *interaction pattern*, not per OXD component
-│   ├── oxd-table.js         # the row/checkbox/action pattern (used by every list page)
-│   ├── oxd-select.js        # the select + multiselect + autocomplete pattern
-│   ├── oxd-date-picker.js   # the date + time input pattern
-│   ├── oxd-dialog.js        # overlay + confirm/cancel pattern
-│   ├── oxd-toast.js         # the notification pattern (assertable)
-│   └── oxd-form.js          # the label-lookup + validation-message pattern
-├── pages/                   # one file per *screen*, not per DOM element
-│   ├── login-page.js
-│   ├── dashboard-page.js
-│   ├── employee-list-page.js
-│   ├── add-employee-page.js
-│   ├── leave-list-page.js
-│   └── admin-users-page.js
-├── workflows/               # multi-page business flows
-│   ├── login.js
-│   ├── create-employee.js
-│   ├── apply-leave.js
-│   └── create-user.js
-└── index.js                 # composition root
+├── selectors.js # one file: every stable selector string, keyed by name
+├── base-page.js # thin base class: navigation + OXD-wide behaviors
+├── components/ # one file per _interaction pattern_, not per OXD component
+│ ├── oxd-table.js # the row/checkbox/action pattern (used by every list page)
+│ ├── oxd-select.js # the select + multiselect + autocomplete pattern
+│ ├── oxd-date-picker.js # the date + time input pattern
+│ ├── oxd-dialog.js # overlay + confirm/cancel pattern
+│ ├── oxd-toast.js # the notification pattern (assertable)
+│ └── oxd-form.js # the label-lookup + validation-message pattern
+├── pages/ # one file per _screen_, not per DOM element
+│ ├── login-page.js
+│ ├── dashboard-page.js
+│ ├── employee-list-page.js
+│ ├── add-employee-page.js
+│ ├── leave-list-page.js
+│ └── admin-users-page.js
+├── workflows/ # multi-page business flows
+│ ├── login.js
+│ ├── create-employee.js
+│ ├── apply-leave.js
+│ └── create-user.js
+└── index.js # composition root
 Not oxd-input.js, oxd-button.js, oxd-icon.js, oxd-checkbox.js. Those are OXD components; wrapping them 1:1 produces no value — Playwright's own locators already handle them. Wrap them only when a reusable interaction pattern exists that would otherwise be duplicated.
 
 Six components, six pages, four workflows. That's a Phase 4 that stays small enough to be honest.
 
 Part 2 — The Boundaries (This Is the Whole Architecture)
-File	Knows About	MUST NOT Know About
-selectors.js	OXD DOM classes, roles, data-* attributes from the frontend doc	pages, workflows, business meaning, HTTP
-base-page.js	page, selectors	API, DB, auth, other pages
-components/*.js	page, selectors, other components	pages, workflows, API, DB, auth
-pages/*.js	page, components, selectors	workflows, API, DB, auth
-workflows/*.js	pages, components	API, DB, auth (unless the workflow is explicitly cross-layer)
-index.js	everything (composition root)	nothing — it constructs
+File Knows About MUST NOT Know About
+selectors.js OXD DOM classes, roles, data-* attributes from the frontend doc pages, workflows, business meaning, HTTP
+base-page.js page, selectors API, DB, auth, other pages
+components/_.js page, selectors, other components pages, workflows, API, DB, auth
+pages/_.js page, components, selectors workflows, API, DB, auth
+workflows/*.js pages, components API, DB, auth (unless the workflow is explicitly cross-layer)
+index.js everything (composition root) nothing — it constructs
 Rule of thumb that will save you: components never import pages. Pages never import workflows. Workflows import pages and components. If a page starts importing another page, you have a workflow that hasn't been named yet.
 
 And: no UI file imports src/api/ or src/db/. UI speaks DOM. Cross-layer coordination belongs in a cross-layer workflow — a small, explicit, opt-in construct you'll add in Phase 5 if you actually need it. Not in page objects.
@@ -1657,59 +1665,59 @@ Part 3 — Data Contracts (Freeze These)
 js
 // components/oxd-table.js
 {
-  rowCount()                          → number
-  rowByText(text)                     → Locator
-  checkboxInRow(text)                 → Locator
-  actionInRow(text, actionName)       → Locator
-  clickAction(text, actionName)       → Promise<void>
-  selectAllCheckbox()                 → Locator
-  sortBy(columnName, 'asc' | 'desc')  → Promise<void>
-  waitForLoad()                       → Promise<void>
+rowCount() → number
+rowByText(text) → Locator
+checkboxInRow(text) → Locator
+actionInRow(text, actionName) → Locator
+clickAction(text, actionName) → Promise<void>
+selectAllCheckbox() → Locator
+sortBy(columnName, 'asc' | 'desc') → Promise<void>
+waitForLoad() → Promise<void>
 }
 
 // components/oxd-select.js
 {
-  open(labelText)                     → Promise<void>
-  choose(labelText, optionText)       → Promise<void>
-  select(labelText, optionText)       → Promise<void>   // open + choose
-  selectedValue(labelText)            → Promise<string>
+open(labelText) → Promise<void>
+choose(labelText, optionText) → Promise<void>
+select(labelText, optionText) → Promise<void> // open + choose
+selectedValue(labelText) → Promise<string>
 }
 
 // components/oxd-date-picker.js
 {
-  set(labelText, date)                → Promise<void>   // 'YYYY-MM-DD'
-  clear(labelText)                    → Promise<void>
-  open(labelText)                     → Promise<void>
+set(labelText, date) → Promise<void> // 'YYYY-MM-DD'
+clear(labelText) → Promise<void>
+open(labelText) → Promise<void>
 }
 
 // components/oxd-dialog.js
 {
-  confirm()                           → Promise<void>
-  cancel()                            → Promise<void>
-  text()                              → Promise<string>
+confirm() → Promise<void>
+cancel() → Promise<void>
+text() → Promise<string>
 }
 
 // components/oxd-toast.js
 {
-  waitForSuccess(text?)               → Promise<void>
-  waitForError(text?)                 → Promise<void>
-  text()                              → Promise<string>
-  dismiss()                           → Promise<void>
+waitForSuccess(text?) → Promise<void>
+waitForError(text?) → Promise<void>
+text() → Promise<string>
+dismiss() → Promise<void>
 }
 
 // components/oxd-form.js
 {
-  fieldByLabel(labelText)             → Locator           // the actual input/textarea
-  fillByLabel(labelText, value)       → Promise<void>
-  errorFor(labelText)                 → Promise<string | null>
-  submit()                            → Promise<void>
-  reset()                             → Promise<void>
+fieldByLabel(labelText) → Locator // the actual input/textarea
+fillByLabel(labelText, value) → Promise<void>
+errorFor(labelText) → Promise<string | null>
+submit() → Promise<void>
+reset() → Promise<void>
 }
 
 // pages/*.js — freeform but always:
 {
-  goto()                              → Promise<void>
-  ...page-specific methods
+goto() → Promise<void>
+...page-specific methods
 }
 Every component's return values are either a Promise<void>, a Locator, or a primitive. Nothing returns raw DOM. Nothing returns an ElementHandle. That rule is what keeps the UI layer replaceable.
 
@@ -1722,73 +1730,73 @@ js
 // When OXD changes, only this file changes.
 
 const SELECTORS = {
-  // --- Navigation ---
-  sidepanel:           'aside.oxd-sidepanel',
-  sidepanelNav:        'nav[aria-label="Sidepanel"]',
-  mainMenuItem:        '.oxd-main-menu-item',
-  mainMenuItemName:    '.oxd-main-menu-item--name',
-  topbarNav:           'nav[aria-label="Topbar Menu"]',
-  topbarTabItem:       '.oxd-topbar-body-nav-tab-item',
-  topbarTabLink:       '.oxd-topbar-body-nav-tab-link',
+// --- Navigation ---
+sidepanel: 'aside.oxd-sidepanel',
+sidepanelNav: 'nav[aria-label="Sidepanel"]',
+mainMenuItem: '.oxd-main-menu-item',
+mainMenuItemName: '.oxd-main-menu-item--name',
+topbarNav: 'nav[aria-label="Topbar Menu"]',
+topbarTabItem: '.oxd-topbar-body-nav-tab-item',
+topbarTabLink: '.oxd-topbar-body-nav-tab-link',
 
-  // --- Form ---
-  form:                'form.oxd-form',
-  formLoader:          '.oxd-form-loader',
-  inputGroup:          '.oxd-input-group',
-  inputGroupLabel:     '.oxd-input-group__label',
-  inputFieldError:     '.oxd-input-field-error-message',
-  input:               'input.oxd-input',
-  textarea:            'textarea.oxd-textarea',
-  formActions:         '.oxd-form-actions',
+// --- Form ---
+form: 'form.oxd-form',
+formLoader: '.oxd-form-loader',
+inputGroup: '.oxd-input-group',
+inputGroupLabel: '.oxd-input-group__label',
+inputFieldError: '.oxd-input-field-error-message',
+input: 'input.oxd-input',
+textarea: 'textarea.oxd-textarea',
+formActions: '.oxd-form-actions',
 
-  // --- Select / MultiSelect / Autocomplete ---
-  selectTrigger:       '.oxd-select-text-input',
-  selectDropdown:      '.oxd-select-dropdown',
-  selectOption:        '.oxd-select-option',
-  multiselectChips:    '.oxd-multiselect-chips-area',
-  autocompleteInput:   '.oxd-autocomplete-text-input input',
-  autocompleteDropdown:'.oxd-autocomplete-dropdown',
+// --- Select / MultiSelect / Autocomplete ---
+selectTrigger: '.oxd-select-text-input',
+selectDropdown: '.oxd-select-dropdown',
+selectOption: '.oxd-select-option',
+multiselectChips: '.oxd-multiselect-chips-area',
+autocompleteInput: '.oxd-autocomplete-text-input input',
+autocompleteDropdown:'.oxd-autocomplete-dropdown',
 
-  // --- Date / Time ---
-  dateWrapper:         '.oxd-date-wrapper',
-  dateInput:           '.oxd-date-input input.oxd-input',
-  dateCalendar:        '.oxd-calendar-wrapper',
-  dateShortcutToday:   '.oxd-date-input-links a:has-text("Today")',
-  dateShortcutClear:   '.oxd-date-input-links a:has-text("Clear")',
+// --- Date / Time ---
+dateWrapper: '.oxd-date-wrapper',
+dateInput: '.oxd-date-input input.oxd-input',
+dateCalendar: '.oxd-calendar-wrapper',
+dateShortcutToday: '.oxd-date-input-links a:has-text("Today")',
+dateShortcutClear: '.oxd-date-input-links a:has-text("Clear")',
 
-  // --- Card table ---
-  cardTable:           '.oxd-table',
-  cardTableHeaderCell: '.oxd-table-header-cell',
-  cardTableCard:       '.oxd-table-card',
-  cardTableRow:        '.oxd-table-row',
-  cardTableCell:       '.oxd-table-cell',
-  cardTableActions:    '.oxd-table-cell-actions',
-  cardTableCheckbox:   '.oxd-table-card-cell-checkbox',
-  cardTableLoader:     '.oxd-table-loader',
-  cardTableSortDropdown: '.oxd-table-header-sort-dropdown',
+// --- Card table ---
+cardTable: '.oxd-table',
+cardTableHeaderCell: '.oxd-table-header-cell',
+cardTableCard: '.oxd-table-card',
+cardTableRow: '.oxd-table-row',
+cardTableCell: '.oxd-table-cell',
+cardTableActions: '.oxd-table-cell-actions',
+cardTableCheckbox: '.oxd-table-card-cell-checkbox',
+cardTableLoader: '.oxd-table-loader',
+cardTableSortDropdown: '.oxd-table-header-sort-dropdown',
 
-  // --- Dialog / Overlay ---
-  overlay:             '.oxd-overlay[role="dialog"]',
-  dialogSheet:         '.oxd-dialog-sheet',
-  dialogClose:         '.oxd-dialog-close-button',
+// --- Dialog / Overlay ---
+overlay: '.oxd-overlay[role="dialog"]',
+dialogSheet: '.oxd-dialog-sheet',
+dialogClose: '.oxd-dialog-close-button',
 
-  // --- Toast / Alert ---
-  toastContainer:      '.oxd-toast-container',
-  toast:               '.oxd-toast',
-  toastSuccess:        '.oxd-toast--success',
-  toastError:          '.oxd-toast--error',
-  alert:               '.oxd-alert[role="alert"]',
+// --- Toast / Alert ---
+toastContainer: '.oxd-toast-container',
+toast: '.oxd-toast',
+toastSuccess: '.oxd-toast--success',
+toastError: '.oxd-toast--error',
+alert: '.oxd-alert[role="alert"]',
 
-  // --- Loading ---
-  spinner:             '.oxd-loading-spinner',
+// --- Loading ---
+spinner: '.oxd-loading-spinner',
 
-  // --- Pagination ---
-  pagination:          '.oxd-pagination',
+// --- Pagination ---
+pagination: '.oxd-pagination',
 };
 
 // Dynamic helpers — need interpolation, kept separate so they stand out
 const byLabelText = (label) =>
-  `${SELECTORS.inputGroup}:has(${SELECTORS.inputGroupLabel}:text-is("${label}"))`;
+`${SELECTORS.inputGroup}:has(${SELECTORS.inputGroupLabel}:text-is("${label}"))`;
 
 const iconButton = (biName) => `.oxd-icon.bi-${biName}`;
 
@@ -1800,44 +1808,44 @@ js
 const { SELECTORS } = require('./selectors');
 
 class BasePage {
-  constructor(page, baseUrl) {
-    this.page = page;
-    this.baseUrl = baseUrl.replace(/\/$/, '');
-  }
+constructor(page, baseUrl) {
+this.page = page;
+this.baseUrl = baseUrl.replace(/\/$/, '');
+}
 
-  async goto(path) {
-    // Every OrangeHRM navigation is a full page load.
-    // Research doc §3.3: navigate() sets window.location.href.
-    await this.page.goto(`${this.baseUrl}${path}`, { waitUntil: 'domcontentloaded' });
-    await this.waitForReady();
-  }
+async goto(path) {
+// Every OrangeHRM navigation is a full page load.
+// Research doc §3.3: navigate() sets window.location.href.
+await this.page.goto(`${this.baseUrl}${path}`, { waitUntil: 'domcontentloaded' });
+await this.waitForReady();
+}
 
-  async waitForReady() {
-    // The sidepanel only exists after the Vue shell mounts.
-    await this.page.locator(SELECTORS.sidepanel).waitFor({ state: 'attached' });
-  }
+async waitForReady() {
+// The sidepanel only exists after the Vue shell mounts.
+await this.page.locator(SELECTORS.sidepanel).waitFor({ state: 'attached' });
+}
 
-  async navigateSidebar(label) {
-    await this.page
-      .locator(SELECTORS.sidepanelNav)
-      .getByRole('link', { name: label, exact: true })
-      .click();
-    // Full page load — wait for URL change and shell remount.
-    await this.page.waitForLoadState('domcontentloaded');
-    await this.waitForReady();
-  }
+async navigateSidebar(label) {
+await this.page
+.locator(SELECTORS.sidepanelNav)
+.getByRole('link', { name: label, exact: true })
+.click();
+// Full page load — wait for URL change and shell remount.
+await this.page.waitForLoadState('domcontentloaded');
+await this.waitForReady();
+}
 
-  async navigateTopbar(label) {
-    await this.page
-      .locator(SELECTORS.topbarNav)
-      .getByRole('link', { name: label, exact: true })
-      .click();
-    await this.page.waitForLoadState('domcontentloaded');
-    await this.waitForReady();
-  }
+async navigateTopbar(label) {
+await this.page
+.locator(SELECTORS.topbarNav)
+.getByRole('link', { name: label, exact: true })
+.click();
+await this.page.waitForLoadState('domcontentloaded');
+await this.waitForReady();
+}
 
-  async currentUrl() { return this.page.url(); }
-  async title() { return this.page.title(); }
+async currentUrl() { return this.page.url(); }
+async title() { return this.page.title(); }
 }
 
 module.exports = { BasePage };
@@ -1856,55 +1864,55 @@ js
 const { SELECTORS, byLabelText } = require('../selectors');
 
 class OxdForm {
-  constructor(page) { this.page = page; }
+constructor(page) { this.page = page; }
 
-  // Returns the container for a labeled field: label + input + error
-  group(labelText) {
-    return this.page.locator(byLabelText(labelText));
-  }
+// Returns the container for a labeled field: label + input + error
+group(labelText) {
+return this.page.locator(byLabelText(labelText));
+}
 
-  // Returns the actual input element for a labeled field.
-  // Handles: text input, textarea, native select, and the custom select trigger.
-  fieldByLabel(labelText) {
-    const group = this.group(labelText);
-    // Prefer a real input/textarea if present; otherwise fall back to
-    // the OXD select trigger (div.oxd-select-text-input) — also the
-    // shape used by multiselect and autocomplete's wrapper.
-    return group.locator(
-      `input.oxd-input, textarea.oxd-textarea, ${SELECTORS.selectTrigger}`,
-    ).first();
-  }
+// Returns the actual input element for a labeled field.
+// Handles: text input, textarea, native select, and the custom select trigger.
+fieldByLabel(labelText) {
+const group = this.group(labelText);
+// Prefer a real input/textarea if present; otherwise fall back to
+// the OXD select trigger (div.oxd-select-text-input) — also the
+// shape used by multiselect and autocomplete's wrapper.
+return group.locator(
+`input.oxd-input, textarea.oxd-textarea, ${SELECTORS.selectTrigger}`,
+).first();
+}
 
-  async fillByLabel(labelText, value) {
-    const field = this.fieldByLabel(labelText);
-    await field.scrollIntoViewIfNeeded();
-    await field.fill(value);
-  }
+async fillByLabel(labelText, value) {
+const field = this.fieldByLabel(labelText);
+await field.scrollIntoViewIfNeeded();
+await field.fill(value);
+}
 
-  async errorFor(labelText) {
-    const group = this.group(labelText);
-    const err = group.locator(SELECTORS.inputFieldError);
-    if (await err.count() === 0) return null;
-    return (await err.first().innerText()).trim();
-  }
+async errorFor(labelText) {
+const group = this.group(labelText);
+const err = group.locator(SELECTORS.inputFieldError);
+if (await err.count() === 0) return null;
+return (await err.first().innerText()).trim();
+}
 
-  async submit() {
-    await this.page
-      .locator(SELECTORS.formActions)
-      .getByRole('button', { name: /save|search|submit/i })
-      .click();
-  }
+async submit() {
+await this.page
+.locator(SELECTORS.formActions)
+.getByRole('button', { name: /save|search|submit/i })
+.click();
+}
 
-  async reset() {
-    await this.page
-      .locator(SELECTORS.formActions)
-      .getByRole('button', { name: /reset/i })
-      .click();
-  }
+async reset() {
+await this.page
+.locator(SELECTORS.formActions)
+.getByRole('button', { name: /reset/i })
+.click();
+}
 
-  async waitForLoad() {
-    await this.page.locator(SELECTORS.formLoader).waitFor({ state: 'detached' });
-  }
+async waitForLoad() {
+await this.page.locator(SELECTORS.formLoader).waitFor({ state: 'detached' });
+}
 }
 
 module.exports = { OxdForm };
@@ -1923,47 +1931,47 @@ js
 const { SELECTORS, byLabelText } = require('../selectors');
 
 class OxdSelect {
-  constructor(page) { this.page = page; }
+constructor(page) { this.page = page; }
 
-  trigger(labelText) {
-    return this.page.locator(byLabelText(labelText)).locator(SELECTORS.selectTrigger);
-  }
+trigger(labelText) {
+return this.page.locator(byLabelText(labelText)).locator(SELECTORS.selectTrigger);
+}
 
-  async open(labelText) {
-    await this.trigger(labelText).click();
-    // Dropdown is v-if — it does not exist until opened.
-    await this.page.locator(SELECTORS.selectDropdown).waitFor({ state: 'visible' });
-  }
+async open(labelText) {
+await this.trigger(labelText).click();
+// Dropdown is v-if — it does not exist until opened.
+await this.page.locator(SELECTORS.selectDropdown).waitFor({ state: 'visible' });
+}
 
-  async choose(labelText, optionText) {
-    await this.page
-      .locator(SELECTORS.selectDropdown)
-      .getByRole('option', { name: optionText, exact: true })
-      .click();
-  }
+async choose(labelText, optionText) {
+await this.page
+.locator(SELECTORS.selectDropdown)
+.getByRole('option', { name: optionText, exact: true })
+.click();
+}
 
-  async select(labelText, optionText) {
-    await this.open(labelText);
-    await this.choose(labelText, optionText);
-  }
+async select(labelText, optionText) {
+await this.open(labelText);
+await this.choose(labelText, optionText);
+}
 
-  async selectedValue(labelText) {
-    return (await this.trigger(labelText).innerText()).trim();
-  }
+async selectedValue(labelText) {
+return (await this.trigger(labelText).innerText()).trim();
+}
 
-  // --- Autocomplete variant: 800ms debounce per research doc §3.9 ---
-  async autocomplete(labelText, query, optionText) {
-    const input = this.page
-      .locator(byLabelText(labelText))
-      .locator(SELECTORS.autocompleteInput);
-    await input.click();
-    await input.fill(query);
-    await this.page
-      .locator(`${SELECTORS.autocompleteDropdown} [role="option"]`)
-      .filter({ hasText: optionText })
-      .first()
-      .click();
-  }
+// --- Autocomplete variant: 800ms debounce per research doc §3.9 ---
+async autocomplete(labelText, query, optionText) {
+const input = this.page
+.locator(byLabelText(labelText))
+.locator(SELECTORS.autocompleteInput);
+await input.click();
+await input.fill(query);
+await this.page
+.locator(`${SELECTORS.autocompleteDropdown} [role="option"]`)
+.filter({ hasText: optionText })
+.first()
+.click();
+}
 }
 
 module.exports = { OxdSelect };
@@ -1982,65 +1990,65 @@ js
 const { SELECTORS } = require('../selectors');
 
 class OxdTable {
-  constructor(page) { this.page = page; }
+constructor(page) { this.page = page; }
 
-  root() { return this.page.locator(SELECTORS.cardTable); }
-  rows() { return this.page.locator(SELECTORS.cardTableCard); }
+root() { return this.page.locator(SELECTORS.cardTable); }
+rows() { return this.page.locator(SELECTORS.cardTableCard); }
 
-  async rowCount() { return this.rows().count(); }
+async rowCount() { return this.rows().count(); }
 
-  rowByText(text) {
-    return this.rows().filter({ hasText: text }).first();
-  }
+rowByText(text) {
+return this.rows().filter({ hasText: text }).first();
+}
 
-  checkboxInRow(text) {
-    return this.rowByText(text)
-      .locator(SELECTORS.cardTableCheckbox)
-      .getByRole('checkbox');
-  }
+checkboxInRow(text) {
+return this.rowByText(text)
+.locator(SELECTORS.cardTableCheckbox)
+.getByRole('checkbox');
+}
 
-  actionInRow(text, biName) {
-    return this.rowByText(text)
-      .locator(SELECTORS.cardTableActions)
-      .locator(`.oxd-icon.bi-${biName}`);
-  }
+actionInRow(text, biName) {
+return this.rowByText(text)
+.locator(SELECTORS.cardTableActions)
+.locator(`.oxd-icon.bi-${biName}`);
+}
 
-  async clickAction(text, biName) {
-    await this.actionInRow(text, biName).click();
-  }
+async clickAction(text, biName) {
+await this.actionInRow(text, biName).click();
+}
 
-  selectAllCheckbox() {
-    // The select-all checkbox lives in the header only at lg/xl.
-    // Research doc §3.18: header renders only at viewport ≥ 1000px.
-    return this.page
-      .locator(SELECTORS.cardTableHeaderCell)
-      .getByRole('checkbox')
-      .first();
-  }
+selectAllCheckbox() {
+// The select-all checkbox lives in the header only at lg/xl.
+// Research doc §3.18: header renders only at viewport ≥ 1000px.
+return this.page
+.locator(SELECTORS.cardTableHeaderCell)
+.getByRole('checkbox')
+.first();
+}
 
-  async sortBy(columnName, direction = 'asc') {
-    // Sort uses a dropdown — menu items are "Ascending" / "Descending".
-    const header = this.page
-      .locator(SELECTORS.cardTableHeaderCell)
-      .filter({ hasText: columnName });
-    await header.locator(SELECTORS.cardTableSortDropdown).click();
-    await this.page
-      .getByRole('menuitem', {
-        name: new RegExp(direction === 'asc' ? 'Ascending' : 'Descending', 'i'),
-      })
-      .click();
-  }
+async sortBy(columnName, direction = 'asc') {
+// Sort uses a dropdown — menu items are "Ascending" / "Descending".
+const header = this.page
+.locator(SELECTORS.cardTableHeaderCell)
+.filter({ hasText: columnName });
+await header.locator(SELECTORS.cardTableSortDropdown).click();
+await this.page
+.getByRole('menuitem', {
+name: new RegExp(direction === 'asc' ? 'Ascending' : 'Descending', 'i'),
+})
+.click();
+}
 
-  async waitForLoad() {
-    await this.page.locator(SELECTORS.cardTableLoader).waitFor({ state: 'detached' });
-  }
+async waitForLoad() {
+await this.page.locator(SELECTORS.cardTableLoader).waitFor({ state: 'detached' });
+}
 
-  async waitForRowCount(n) {
-    await this.page.waitForFunction(
-      ({ sel, n }) => document.querySelectorAll(sel).length === n,
-      { sel: SELECTORS.cardTableCard, n },
-    );
-  }
+async waitForRowCount(n) {
+await this.page.waitForFunction(
+({ sel, n }) => document.querySelectorAll(sel).length === n,
+{ sel: SELECTORS.cardTableCard, n },
+);
+}
 }
 
 module.exports = { OxdTable };
@@ -2057,33 +2065,33 @@ js
 const { SELECTORS, byLabelText } = require('../selectors');
 
 class OxdDatePicker {
-  constructor(page) { this.page = page; }
+constructor(page) { this.page = page; }
 
-  input(labelText) {
-    return this.page
-      .locator(byLabelText(labelText))
-      .locator('input.oxd-input');
-  }
+input(labelText) {
+return this.page
+.locator(byLabelText(labelText))
+.locator('input.oxd-input');
+}
 
-  async set(labelText, isoDate) {
-    // The date input is a native text input. Playwright fill works.
-    // But the underlying picker also writes a formatted value; we bypass
-    // the picker and set the input directly, then blur to commit.
-    const input = this.input(labelText);
-    await input.click();
-    await input.fill(isoDate);
-    await input.press('Tab');
-  }
+async set(labelText, isoDate) {
+// The date input is a native text input. Playwright fill works.
+// But the underlying picker also writes a formatted value; we bypass
+// the picker and set the input directly, then blur to commit.
+const input = this.input(labelText);
+await input.click();
+await input.fill(isoDate);
+await input.press('Tab');
+}
 
-  async clear(labelText) {
-    await this.input(labelText).fill('');
-    await this.input(labelText).press('Tab');
-  }
+async clear(labelText) {
+await this.input(labelText).fill('');
+await this.input(labelText).press('Tab');
+}
 
-  async open(labelText) {
-    await this.input(labelText).click();
-    await this.page.locator(SELECTORS.dateCalendar).waitFor({ state: 'visible' });
-  }
+async open(labelText) {
+await this.input(labelText).click();
+await this.page.locator(SELECTORS.dateCalendar).waitFor({ state: 'visible' });
+}
 }
 
 module.exports = { OxdDatePicker };
@@ -2098,35 +2106,35 @@ js
 const { SELECTORS } = require('../selectors');
 
 class OxdDialog {
-  constructor(page) { this.page = page; }
+constructor(page) { this.page = page; }
 
-  root() { return this.page.locator(SELECTORS.overlay); }
+root() { return this.page.locator(SELECTORS.overlay); }
 
-  async waitFor() {
-    await this.root().waitFor({ state: 'visible' });
-  }
+async waitFor() {
+await this.root().waitFor({ state: 'visible' });
+}
 
-  async text() {
-    return (await this.root().innerText()).trim();
-  }
+async text() {
+return (await this.root().innerText()).trim();
+}
 
-  async confirm() {
-    // Confirmation dialogs use a primary button whose label comes from i18n
-    // (general.yes_delete, general.yes_save, etc.). Anchor on role + visible.
-    await this.root()
-      .locator('button.oxd-button--secondary, button.oxd-button--label-danger')
-      .last()
-      .click();
-    await this.root().waitFor({ state: 'detached' });
-  }
+async confirm() {
+// Confirmation dialogs use a primary button whose label comes from i18n
+// (general.yes_delete, general.yes_save, etc.). Anchor on role + visible.
+await this.root()
+.locator('button.oxd-button--secondary, button.oxd-button--label-danger')
+.last()
+.click();
+await this.root().waitFor({ state: 'detached' });
+}
 
-  async cancel() {
-    await this.root()
-      .locator('button.oxd-button--ghost')
-      .first()
-      .click();
-    await this.root().waitFor({ state: 'detached' });
-  }
+async cancel() {
+await this.root()
+.locator('button.oxd-button--ghost')
+.first()
+.click();
+await this.root().waitFor({ state: 'detached' });
+}
 }
 
 module.exports = { OxdDialog };
@@ -2141,33 +2149,33 @@ js
 const { SELECTORS } = require('../selectors');
 
 class OxdToast {
-  constructor(page) { this.page = page; }
+constructor(page) { this.page = page; }
 
-  last() { return this.page.locator(SELECTORS.toast).last(); }
+last() { return this.page.locator(SELECTORS.toast).last(); }
 
-  async waitForSuccess(text) {
-    const toast = this.page.locator(SELECTORS.toastSuccess).last();
-    await toast.waitFor({ state: 'visible' });
-    if (text) {
-      await toast.getByText(text).waitFor({ state: 'visible' });
-    }
-  }
+async waitForSuccess(text) {
+const toast = this.page.locator(SELECTORS.toastSuccess).last();
+await toast.waitFor({ state: 'visible' });
+if (text) {
+await toast.getByText(text).waitFor({ state: 'visible' });
+}
+}
 
-  async waitForError(text) {
-    const toast = this.page.locator(SELECTORS.toastError).last();
-    await toast.waitFor({ state: 'visible' });
-    if (text) {
-      await toast.getByText(text).waitFor({ state: 'visible' });
-    }
-  }
+async waitForError(text) {
+const toast = this.page.locator(SELECTORS.toastError).last();
+await toast.waitFor({ state: 'visible' });
+if (text) {
+await toast.getByText(text).waitFor({ state: 'visible' });
+}
+}
 
-  async text() {
-    return (await this.last().innerText()).trim();
-  }
+async text() {
+return (await this.last().innerText()).trim();
+}
 
-  async dismiss() {
-    await this.last().click();
-  }
+async dismiss() {
+await this.last().click();
+}
 }
 
 module.exports = { OxdToast };
@@ -2189,39 +2197,39 @@ const { OxdDialog } = require('../components/oxd-dialog');
 const { OxdToast } = require('../components/oxd-toast');
 
 class EmployeeListPage extends BasePage {
-  constructor(page, baseUrl) {
-    super(page, baseUrl);
-    this.table = new OxdTable(page);
-    this.dialog = new OxdDialog(page);
-    this.toast = new OxdToast(page);
-  }
+constructor(page, baseUrl) {
+super(page, baseUrl);
+this.table = new OxdTable(page);
+this.dialog = new OxdDialog(page);
+this.toast = new OxdToast(page);
+}
 
-  async goto() { await super.goto('/web/index.php/pim/viewEmployeeList'); }
+async goto() { await super.goto('/web/index.php/pim/viewEmployeeList'); }
 
-  async addEmployee() {
-    await this.page.getByRole('link', { name: 'Add' }).click();
-    await this.page.waitForLoadState('domcontentloaded');
-  }
+async addEmployee() {
+await this.page.getByRole('link', { name: 'Add' }).click();
+await this.page.waitForLoadState('domcontentloaded');
+}
 
-  async searchByName(name) {
-    await this.page
-      .locator(this.sel.inputGroup)
-      .filter({ hasText: 'Employee Name' })
-      .locator('input.oxd-input')
-      .fill(name);
-    await this.page.getByRole('button', { name: 'Search' }).click();
-    await this.table.waitForLoad();
-  }
+async searchByName(name) {
+await this.page
+.locator(this.sel.inputGroup)
+.filter({ hasText: 'Employee Name' })
+.locator('input.oxd-input')
+.fill(name);
+await this.page.getByRole('button', { name: 'Search' }).click();
+await this.table.waitForLoad();
+}
 
-  async deleteEmployeeByName(name) {
-    await this.table.clickAction(name, 'trash');
-    await this.dialog.waitFor();
-    await this.dialog.confirm();
-    await this.toast.waitForSuccess();
-  }
+async deleteEmployeeByName(name) {
+await this.table.clickAction(name, 'trash');
+await this.dialog.waitFor();
+await this.dialog.confirm();
+await this.toast.waitForSuccess();
+}
 
-  async rowCount() { return this.table.rowCount(); }
-  async hasRow(text) { return (await this.table.rowByText(text).count()) > 0; }
+async rowCount() { return this.table.rowCount(); }
+async hasRow(text) { return (await this.table.rowByText(text).count()) > 0; }
 }
 
 module.exports = { EmployeeListPage };
@@ -2238,21 +2246,21 @@ Workflows wire pages and components without knowing about API or DB.
 
 js
 const { EmployeeListPage } = require('../pages/employee-list-page');
-const { AddEmployeePage }  = require('../pages/add-employee-page');
-const { OxdToast }         = require('../components/oxd-toast');
+const { AddEmployeePage } = require('../pages/add-employee-page');
+const { OxdToast } = require('../components/oxd-toast');
 
 async function createEmployee(page, baseUrl, { firstName, lastName, employeeId }) {
-  const list = new EmployeeListPage(page, baseUrl);
-  const toast = new OxdToast(page);
+const list = new EmployeeListPage(page, baseUrl);
+const toast = new OxdToast(page);
 
-  await list.goto();
-  await list.addEmployee();
+await list.goto();
+await list.addEmployee();
 
-  const form = new AddEmployeePage(page, baseUrl);
-  await form.fill({ firstName, lastName, employeeId });
-  await form.save();
+const form = new AddEmployeePage(page, baseUrl);
+await form.fill({ firstName, lastName, employeeId });
+await form.save();
 
-  await toast.waitForSuccess();
+await toast.waitForSuccess();
 }
 
 module.exports = { createEmployee };
@@ -2278,8 +2286,8 @@ const { AdminUsersPage } = require('./pages/admin-users-page');
 // Everything constructible from (page, baseUrl).
 // No module-level state. No singletons. No globals.
 function createUi(page, baseUrl) {
-  return {
-    base: new BasePage(page, baseUrl),
+return {
+base: new BasePage(page, baseUrl),
 
     components: {
       form:     new OxdForm(page),
@@ -2298,7 +2306,8 @@ function createUi(page, baseUrl) {
       leave:      new LeaveListPage(page, baseUrl),
       users:      new AdminUsersPage(page, baseUrl),
     },
-  };
+
+};
 }
 
 module.exports = { createUi };
@@ -2322,30 +2331,30 @@ Wrapping a component is justified only when at least two pages share the interac
 
 Concretely:
 
-Component	First motivated by	Second confirmed by
-OxdForm	Login page	Every form on every page
-OxdSelect	Admin Users page (role dropdown)	Leave (type), PIM (job title), etc.
-OxdTable	Employee List	Leave List, Admin Users, Recruitment
-OxdDatePicker	Add Employee (DOB)	Leave (dates), Timesheet
-OxdDialog	Delete confirmation	Every confirm in the app
-OxdToast	Every action	Every action
+Component First motivated by Second confirmed by
+OxdForm Login page Every form on every page
+OxdSelect Admin Users page (role dropdown) Leave (type), PIM (job title), etc.
+OxdTable Employee List Leave List, Admin Users, Recruitment
+OxdDatePicker Add Employee (DOB) Leave (dates), Timesheet
+OxdDialog Delete confirmation Every confirm in the app
+OxdToast Every action Every action
 You add the seventh component only when the second concrete use case appears. Until then, put the method on the page that needs it.
 
 Part 6 — The Frontend-Doc Quirks, Handled Once and Only Once
 Your frontend research doc catalogued these. Each one lives in exactly one place in this framework. That's the point.
 
-Quirk	Handled In
-OxdLabel has no for → getByLabel() fails	selectors.js → byLabelText(), used only by OxdForm and OxdSelect
-OxdSelectInput is not a native <select>	OxdSelect uses .oxd-select-text-input + .oxd-select-option
-Autocomplete debounce is 800ms	OxdSelect.autocomplete() — Playwright auto-waits on the option; no explicit sleep
-Card table rows are .oxd-table-card, <tr> may be hoisted	OxdTable anchors on .oxd-table-card exclusively
-Header renders only at ≥1000px	Documented in OxdTable.selectAllCheckbox(); viewport locked at ≥1200 in Playwright config
-Row checkbox uses @click.stop	OxdTable.checkboxInRow() targets the checkbox wrapper, not the row
-v-if vs v-show for menu items, dropdowns, toasts	Each component's open/close waits on visible/detached correctly
-401 → full page reload	base-page.js uses waitForLoadState + waitForReady after every navigation
-Navigation is always full page load	BasePage.goto and navigateSidebar do waitForLoadState
-unselectableEmpNumbers hides the checkbox	Documented; test asserts on presence, never on disabled state
-Only first error per field shown	OxdForm.errorFor() returns a single string or null
+Quirk Handled In
+OxdLabel has no for → getByLabel() fails selectors.js → byLabelText(), used only by OxdForm and OxdSelect
+OxdSelectInput is not a native <select> OxdSelect uses .oxd-select-text-input + .oxd-select-option
+Autocomplete debounce is 800ms OxdSelect.autocomplete() — Playwright auto-waits on the option; no explicit sleep
+Card table rows are .oxd-table-card, <tr> may be hoisted OxdTable anchors on .oxd-table-card exclusively
+Header renders only at ≥1000px Documented in OxdTable.selectAllCheckbox(); viewport locked at ≥1200 in Playwright config
+Row checkbox uses @click.stop OxdTable.checkboxInRow() targets the checkbox wrapper, not the row
+v-if vs v-show for menu items, dropdowns, toasts Each component's open/close waits on visible/detached correctly
+401 → full page reload base-page.js uses waitForLoadState + waitForReady after every navigation
+Navigation is always full page load BasePage.goto and navigateSidebar do waitForLoadState
+unselectableEmpNumbers hides the checkbox Documented; test asserts on presence, never on disabled state
+Only first error per field shown OxdForm.errorFor() returns a single string or null
 Each quirk is one place. If OXD changes, you update one entry in selectors.js or one method in a component. That's the whole point of the layer.
 
 Part 7 — What Phase 4 Does NOT Do (Yet)
@@ -2372,41 +2381,41 @@ Each of these is a "later" that a specific test earns for you.
 Part 8 — The Full Framework as It Now Stands
 text
 scripts/
-├── obtain-token.js        # Phase 1
-├── api-smoke.js           # Phase 2
-└── db-smoke.js            # Phase 3
+├── obtain-token.js # Phase 1
+├── api-smoke.js # Phase 2
+└── db-smoke.js # Phase 3
 
 src/
-├── auth/                  # Phase 1
-│   ├── pkce.js
-│   ├── oauth-client.js
-│   ├── oauth-authorizer.js
-│   ├── token-store.js
-│   ├── token-manager.js
-│   └── errors.js
-├── api/                   # Phase 2
-│   ├── client.js
-│   ├── envelope.js
-│   ├── errors.js
-│   ├── index.js
-│   └── endpoints/*.js
-├── db/                    # Phase 3
-│   ├── pool.js
-│   ├── client.js
-│   ├── row.js
-│   ├── errors.js
-│   ├── index.js
-│   └── repositories/*.js
-├── ui/                    # Phase 4
-│   ├── selectors.js
-│   ├── base-page.js
-│   ├── index.js
-│   ├── components/*.js
-│   ├── pages/*.js
-│   └── workflows/*.js
+├── auth/ # Phase 1
+│ ├── pkce.js
+│ ├── oauth-client.js
+│ ├── oauth-authorizer.js
+│ ├── token-store.js
+│ ├── token-manager.js
+│ └── errors.js
+├── api/ # Phase 2
+│ ├── client.js
+│ ├── envelope.js
+│ ├── errors.js
+│ ├── index.js
+│ └── endpoints/_.js
+├── db/ # Phase 3
+│ ├── pool.js
+│ ├── client.js
+│ ├── row.js
+│ ├── errors.js
+│ ├── index.js
+│ └── repositories/_.js
+├── ui/ # Phase 4
+│ ├── selectors.js
+│ ├── base-page.js
+│ ├── index.js
+│ ├── components/_.js
+│ ├── pages/_.js
+│ └── workflows/*.js
 └── config/
-    ├── env.js
-    └── users.js
+├── env.js
+└── users.js
 Four independent composition roots, one per layer. Each layer is replaceable. Each layer is testable in isolation. Each layer's boundary is a single file:
 
 Auth's boundary: _normalize() in oauth-client.js
@@ -2420,15 +2429,15 @@ UI's boundary: selectors.js
 Change OXD → touch one file. Change envelope → touch one file. Change auth wire format → touch one file. That is the whole architecture.
 
 Part 9 — Consistency Across the Four Phases
-Principle	Auth	API	DB	UI
-One reason to change per file	✅	✅	✅	✅
-Boundary translation once	✅	✅	✅	✅ selectors.js
-Injected dependencies	✅	✅	✅	✅ (page, baseUrl)
-Composition root	✅	✅	✅	✅ createUi
-No speculative abstraction	✅	✅	✅	✅ six components
-Playwright only where justified	✅ authorizer	✗ never	✗ never	✅ everywhere
-Error taxonomy	✅	✅	✅	✗ (Playwright's native errors suffice)
-Named for the question they answer	✅	✅	✅	✅ page/workflow methods
+Principle Auth API DB UI
+One reason to change per file ✅ ✅ ✅ ✅
+Boundary translation once ✅ ✅ ✅ ✅ selectors.js
+Injected dependencies ✅ ✅ ✅ ✅ (page, baseUrl)
+Composition root ✅ ✅ ✅ ✅ createUi
+No speculative abstraction ✅ ✅ ✅ ✅ six components
+Playwright only where justified ✅ authorizer ✗ never ✗ never ✅ everywhere
+Error taxonomy ✅ ✅ ✅ ✗ (Playwright's native errors suffice)
+Named for the question they answer ✅ ✅ ✅ ✅ page/workflow methods
 The same shape repeats four times. If you can hold one of these layers in your head, you can hold all four.
 
 Part 10 — What To Do Right Now
@@ -2462,11 +2471,11 @@ const { test, expect } = require('@playwright/test');
 const { createUi } = require('../../src/ui');
 
 test('admin sees the employee list', async ({ page }) => {
-  const ui = createUi(page, process.env.OHRM_BASE_URL);
-  await ui.pages.login.loginAs('admin');
-  await ui.pages.employees.goto();
-  await ui.components.table.waitForLoad();
-  expect(await ui.components.table.rowCount()).toBeGreaterThan(0);
+const ui = createUi(page, process.env.OHRM_BASE_URL);
+await ui.pages.login.loginAs('admin');
+await ui.pages.employees.goto();
+await ui.components.table.waitForLoad();
+expect(await ui.components.table.rowCount()).toBeGreaterThan(0);
 });
 Run it. If it passes, Phase 4 is working.
 
@@ -2505,9 +2514,9 @@ UI: What does the user see?
 Each has one composition root. Each has one boundary file. Each hides exactly the things the layer above should not see. Test code composes them:
 
 js
-const api = await buildApi('admin');             // Phase 1 + 2
-const db  = createDb({ /* from env */ });        // Phase 3
-const ui  = createUi(page, baseUrl);             // Phase 4
+const api = await buildApi('admin'); // Phase 1 + 2
+const db = createDb({ /* from env */ }); // Phase 3
+const ui = createUi(page, baseUrl); // Phase 4
 
 // Verify a cross-layer workflow without coupling any layer to another
 const created = await api.employees.create({ firstName: 'X', lastName: 'Y' });

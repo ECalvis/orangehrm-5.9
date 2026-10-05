@@ -1,29 +1,16 @@
-require('dotenv').config();
-require('dotenv-expand').expand({ parsed: process.env });
+const dotenv = require('dotenv');
+const dotenvExpand = require('dotenv-expand');
+
+dotenvExpand.expand(dotenv.config());
 
 const { OAuthClient } = require('../src/auth/oauth-client');
 const { OAuthAuthorizer } = require('../src/auth/oauth-authorizer');
 const { FileTokenStore } = require('../src/auth/token-store');
 const { TokenManager } = require('../src/auth/token-manager');
+const env = require('../src/config/env');
 const users = require('../src/config/users');
 
-function requireEnv(name) {
-  const value = process.env[name];
-
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
-  }
-
-  // Detect the common dotenv-expand failure mode where ${VAR} is left literal.
-  if (value.includes('${')) {
-    throw new Error(
-      `Environment variable ${name} contains an unexpanded \${...} reference: "${value}". ` +
-        `Did you install dotenv-expand and call expand() at the top of this script?`,
-    );
-  }
-
-  return value;
-}
+/* eslint-disable no-console */
 
 async function main(roleName) {
   const role = users[roleName];
@@ -34,23 +21,18 @@ async function main(roleName) {
     );
   }
 
-  const baseUrl = requireEnv('OHRM_BASE_URL');
-  const clientId = requireEnv('OHRM_OAUTH_CLIENT_ID');
-  const redirectUri = requireEnv('OHRM_OAUTH_REDIRECT_URI');
-
   const oauth = new OAuthClient({
-    authorizationUrl:
-      process.env.OHRM_OAUTH_AUTH_URL || `${baseUrl}/web/index.php/oauth2/authorize`,
-    tokenUrl: process.env.OHRM_OAUTH_TOKEN_URL || `${baseUrl}/web/index.php/oauth2/token`,
-    clientId,
-    redirectUri,
+    authorizationUrl: env.oauthAuthUrl,
+    tokenUrl: env.oauthTokenUrl,
+    clientId: env.oauthClientId,
+    redirectUri: env.oauthRedirectUri,
   });
 
   const authorizer = new OAuthAuthorizer({
-    callbackHost: 'localhost',
-    callbackPort: Number(process.env.OHRM_AUTH_REDIRECT_PORT || 9876),
-    callbackPath: '/oauth/callback',
-    timeoutMs: 120_000, // browser + login + consent can exceed 60s on cold containers
+    callbackHost: env.callbackHost,
+    callbackPort: env.callbackPort,
+    callbackPath: env.callbackPath,
+    timeoutMs: 120_000,
   });
 
   const store = new FileTokenStore(role.tokenFile);

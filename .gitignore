@@ -4,4 +4,7 @@ node_modules/
 auth/*.token.json
 
 oauth-debug.png
+oauth-debug-*.png
 *.log
+
+test-results

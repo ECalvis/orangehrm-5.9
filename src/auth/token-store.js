@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
+const TOKEN_FILE_MODE = 0o600;
+
 class FileTokenStore {
   constructor(filePath) {
     if (!filePath) {
@@ -11,12 +13,22 @@ class FileTokenStore {
   }
 
   load() {
+    let contents;
+
     try {
-      if (!fs.existsSync(this.filePath)) {
+      contents = fs.readFileSync(this.filePath, 'utf8');
+    } catch (err) {
+      if (err.code === 'ENOENT') {
         return null;
       }
 
-      const contents = fs.readFileSync(this.filePath, 'utf8');
+      // Permission errors, I/O errors, and anything else should not be
+      // silently swallowed — they mean the store cannot be trusted and the
+      // caller needs to know.
+      throw err;
+    }
+
+    try {
       const token = JSON.parse(contents);
 
       if (!token || typeof token !== 'object') {
@@ -25,6 +37,8 @@ class FileTokenStore {
 
       return token;
     } catch {
+      // Malformed JSON is treated as absent. The file is left on disk for
+      // forensics; callers will re-authenticate and overwrite it.
       return null;
     }
   }
@@ -40,8 +54,12 @@ class FileTokenStore {
 
     fs.writeFileSync(this.filePath, JSON.stringify(token, null, 2), {
       encoding: 'utf8',
-      mode: 0o600,
+      mode: TOKEN_FILE_MODE,
     });
+
+    // mode only applies when the file is created. chmod ensures an existing
+    // file that was previously written with looser permissions is tightened.
+    fs.chmodSync(this.filePath, TOKEN_FILE_MODE);
   }
 
   clear() {

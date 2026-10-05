@@ -25,7 +25,9 @@ OrangeHRM 5.9 is a PHP application with a Vue.js 3 SPA frontend that stores all 
 UI (Vue/OXD) → REST API v2 (PHP) → Service → DAO → Doctrine ORM → MariaDB
 
 ```text
+
 ```
+
 The database is not merely a storage target; it encodes business rules, workflow states, permissions, and soft-deletion semantics that the application relies on. For QA, it is both a verification oracle and a source of controlled test data.
 
 ---
@@ -101,14 +103,14 @@ The database is not merely a storage target; it encodes business rules, workflow
 
 ### 4.3 The UI → API → Service → ORM → DB Boundary
 
-| Layer | Responsibility | Example |
-|-------|---------------|---------|
-| UI (Vue/OXD 2.0.3) | Renders and sends HTTP | `GET /web/index.php/api/v2/pim/employees?...` |
-| API Endpoint | Validates params, applies permissions, calls service | `OrangeHRM\Pim\Api\EmployeeAPI` |
-| Service | Orchestrates business logic, may coordinate multiple DAOs | `EmployeeService` |
-| DAO | Uses `EntityManager` for queries/persists | `EmployeeDao` |
-| Entity | Doctrine-mapped PHP class | `Employee.php` |
-| DB | InnoDB tables | `hs_hr_employee` |
+| Layer              | Responsibility                                            | Example                                       |
+| ------------------ | --------------------------------------------------------- | --------------------------------------------- |
+| UI (Vue/OXD 2.0.3) | Renders and sends HTTP                                    | `GET /web/index.php/api/v2/pim/employees?...` |
+| API Endpoint       | Validates params, applies permissions, calls service      | `OrangeHRM\Pim\Api\EmployeeAPI`               |
+| Service            | Orchestrates business logic, may coordinate multiple DAOs | `EmployeeService`                             |
+| DAO                | Uses `EntityManager` for queries/persists                 | `EmployeeDao`                                 |
+| Entity             | Doctrine-mapped PHP class                                 | `Employee.php`                                |
+| DB                 | InnoDB tables                                             | `hs_hr_employee`                              |
 
 **Direct DB testing is appropriate when:**
 
@@ -133,13 +135,15 @@ The database is not merely a storage target; it encodes business rules, workflow
 id, name, unit_id, description, lft, rgt, level
 
 ```text
+
 ```
+
 Live data confirms the pattern:
 
-| id | name | lft | rgt | level |
-|----|------|-----|-----|-------|
-| 1 | ECalvis | 1 | 4 | 0 |
-| 2 | United Orgy | 2 | 3 | 1 |
+| id  | name        | lft | rgt | level |
+| --- | ----------- | --- | --- | ----- |
+| 1   | ECalvis     | 1   | 4   | 0     |
+| 2   | United Orgy | 2   | 3   | 1     |
 
 `level` is used instead of the `depth` column name referenced in earlier secondary sources. QA should **not** manually manipulate `lft`/`rgt`/`level` — use the application's NestedSet helper (`lib/orm/NestedSet/`) or the Admin UI.
 
@@ -149,7 +153,9 @@ Live data confirms the pattern:
 id, workflow, state, role, action, resulting_state, roles_to_notify, priority
 
 ```text
+
 ```
+
 - `workflow` stores the flow ID as a string (`'0'`–`'7'`)
 - `action` stores integer IDs as strings for most flows, but action names for Leave (`workflow 4`)
 - `roles_to_notify` is a comma-separated role list (used by Leave and Claim)
@@ -171,9 +177,9 @@ There is no single convention. QA must inspect each table individually.
 
 `hs_hr_unique_id` tracks the last-used ID per `(table, field)`:
 
-| id | last_id | table_name | field_name |
-|----|---------|------------|------------|
-| 1 | 4 | `hs_hr_employee` | `emp_number` |
+| id  | last_id | table_name       | field_name   |
+| --- | ------- | ---------------- | ------------ |
+| 1   | 4       | `hs_hr_employee` | `emp_number` |
 
 This means the next employee created will receive `emp_number = 5`, **not** `max(emp_number) + 1`. Do not assume auto-increment continuity for `hs_hr_employee` even though the column has `AUTO_INCREMENT`.
 
@@ -193,14 +199,14 @@ This means the next employee created will receive `emp_number = 5`, **not** `max
 
 ### 6.1 Employee
 
-| Property | Value |
-|----------|-------|
-| Table | `hs_hr_employee` |
-| Entity | `OrangeHRM\Pim\entity\Employee` (`plugins/orangehrmPimPlugin/entity/Employee.php`) |
-| PK | `emp_number int(11) AUTO_INCREMENT` |
-| Columns | 47 (verified via `DESCRIBE`) |
-| Engine | InnoDB |
-| Purpose | Core employee record |
+| Property | Value                                                                              |
+| -------- | ---------------------------------------------------------------------------------- |
+| Table    | `hs_hr_employee`                                                                   |
+| Entity   | `OrangeHRM\Pim\entity\Employee` (`plugins/orangehrmPimPlugin/entity/Employee.php`) |
+| PK       | `emp_number int(11) AUTO_INCREMENT`                                                |
+| Columns  | 47 (verified via `DESCRIBE`)                                                       |
+| Engine   | InnoDB                                                                             |
+| Purpose  | Core employee record                                                               |
 
 **Key fields:**
 
@@ -208,14 +214,14 @@ This means the next employee created will receive `emp_number = 5`, **not** `max
 
 **Foreign keys (all `ON DELETE SET NULL`, `ON UPDATE RESTRICT`):**
 
-| Column | References |
-|--------|------------|
-| `work_station` | `ohrm_subunit.id` |
-| `nation_code` | `ohrm_nationality.id` |
-| `job_title_code` | `ohrm_job_title.id` |
-| `emp_status` | `ohrm_employment_status.id` |
-| `eeo_cat_code` | `ohrm_job_category.id` |
-| `termination_id` | `ohrm_emp_termination.id` |
+| Column           | References                  |
+| ---------------- | --------------------------- |
+| `work_station`   | `ohrm_subunit.id`           |
+| `nation_code`    | `ohrm_nationality.id`       |
+| `job_title_code` | `ohrm_job_title.id`         |
+| `emp_status`     | `ohrm_employment_status.id` |
+| `eeo_cat_code`   | `ohrm_job_category.id`      |
+| `termination_id` | `ohrm_emp_termination.id`   |
 
 - **API resource:** `/api/v2/pim/employees` (class `OrangeHRM\Pim\Api\EmployeeAPI`, data_group_id 96)
 - **UI feature:** PIM → Employee List / Add Employee / My Info
@@ -223,11 +229,11 @@ This means the next employee created will receive `emp_number = 5`, **not** `max
 
 ### 6.2 User
 
-| Property | Value |
-|----------|-------|
-| Table | `ohrm_user` |
-| PK | `id int(10) AUTO_INCREMENT` |
-| Purpose | System user account |
+| Property | Value                       |
+| -------- | --------------------------- |
+| Table    | `ohrm_user`                 |
+| PK       | `id int(10) AUTO_INCREMENT` |
+| Purpose  | System user account         |
 
 **Key fields:** `id`, `user_role_id int(10) NOT NULL`, `emp_number int(13) NULL`, `user_name varchar(40) NULL`, `user_password varchar(255) NULL`, `deleted tinyint(1) NOT NULL DEFAULT 0`, `status tinyint(1) NOT NULL DEFAULT 1`, `date_entered`, `date_modified`, `modified_user_id`, `created_by`
 
@@ -251,23 +257,23 @@ This means the next employee created will receive `emp_number = 5`, **not** `max
 
 ### 6.3 UserRole
 
-| Property | Value |
-|----------|-------|
-| Table | `ohrm_user_role` |
-| PK | `id int(10) AUTO_INCREMENT` |
+| Property   | Value                                                                                                                                     |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Table      | `ohrm_user_role`                                                                                                                          |
+| PK         | `id int(10) AUTO_INCREMENT`                                                                                                               |
 | Key fields | `id`, `name varchar(255) UNIQUE`, `display_name varchar(255)`, `is_assignable tinyint(1) DEFAULT 0`, `is_predefined tinyint(1) DEFAULT 0` |
 
 **Live rows (7):**
 
-| id | name | display_name | is_assignable | is_predefined |
-|----|------|--------------|---------------|---------------|
-| 1 | Admin | Admin | 1 | 1 |
-| 2 | ESS | ESS | 1 | 1 |
-| 3 | Supervisor | Supervisor | 0 | 1 |
-| 4 | ProjectAdmin | ProjectAdmin | 0 | 1 |
-| 5 | Interviewer | Interviewer | 0 | 1 |
-| 6 | HiringManager | HiringManager | 0 | 1 |
-| 7 | Reviewer | Reviewer | 0 | 1 |
+| id  | name          | display_name  | is_assignable | is_predefined |
+| --- | ------------- | ------------- | ------------- | ------------- |
+| 1   | Admin         | Admin         | 1             | 1             |
+| 2   | ESS           | ESS           | 1             | 1             |
+| 3   | Supervisor    | Supervisor    | 0             | 1             |
+| 4   | ProjectAdmin  | ProjectAdmin  | 0             | 1             |
+| 5   | Interviewer   | Interviewer   | 0             | 1             |
+| 6   | HiringManager | HiringManager | 0             | 1             |
+| 7   | Reviewer      | Reviewer      | 0             | 1             |
 
 Only Admin and ESS are assignable. The other five are derived roles computed at runtime.
 
@@ -275,27 +281,27 @@ Only Admin and ESS are assignable. The other five are derived roles computed at 
 
 ### 6.4 DataGroup and UserRoleDataGroup
 
-| Property | Value |
-|----------|-------|
-| Table | `ohrm_data_group` |
-| Live row count | 280 |
-| Key fields | `id`, `name UNIQUE`, `description`, `can_read`, `can_create`, `can_update`, `can_delete` |
+| Property       | Value                                                                                    |
+| -------------- | ---------------------------------------------------------------------------------------- |
+| Table          | `ohrm_data_group`                                                                        |
+| Live row count | 280                                                                                      |
+| Key fields     | `id`, `name UNIQUE`, `description`, `can_read`, `can_create`, `can_update`, `can_delete` |
 
 **Key rows:**
 
-| id | name | can_read | can_create | can_update | can_delete |
-|----|------|----------|------------|------------|------------|
-| 96 | `apiv2_pim_employee` | 1 | 1 | 0 | 1 |
-| 81 | `apiv2_admin_user` | 1 | 1 | 1 | 1 |
-| 128 | `apiv2_pim_update_password` | 0 | 0 | 1 | 0 |
-| 130 | `apiv2_leave_holiday` | 1 | 1 | 1 | 1 |
-| 139 | `apiv2_leave_leave_balance` | 1 | 0 | 0 | 0 |
+| id  | name                        | can_read | can_create | can_update | can_delete |
+| --- | --------------------------- | -------- | ---------- | ---------- | ---------- |
+| 96  | `apiv2_pim_employee`        | 1        | 1          | 0          | 1          |
+| 81  | `apiv2_admin_user`          | 1        | 1          | 1          | 1          |
+| 128 | `apiv2_pim_update_password` | 0        | 0          | 1          | 0          |
+| 130 | `apiv2_leave_holiday`       | 1        | 1          | 1          | 1          |
+| 139 | `apiv2_leave_leave_balance` | 1        | 0          | 0          | 0          |
 
-| Property | Value |
-|----------|-------|
-| Table | `ohrm_user_role_data_group` |
-| Live row count | 673 (earlier Architecture doc said 717 — actual count is 673) |
-| Key fields | `id`, `user_role_id`, `data_group_id`, `can_read`, `can_create`, `can_update`, `can_delete`, `self` |
+| Property       | Value                                                                                               |
+| -------------- | --------------------------------------------------------------------------------------------------- |
+| Table          | `ohrm_user_role_data_group`                                                                         |
+| Live row count | 673 (earlier Architecture doc said 717 — actual count is 673)                                       |
+| Key fields     | `id`, `user_role_id`, `data_group_id`, `can_read`, `can_create`, `can_update`, `can_delete`, `self` |
 
 **Semantics:** For a given `(user_role_id, data_group_id)`, the four flags plus `self` determine effective permissions. The `self` flag scopes access to the logged-in user's own records.
 
@@ -309,55 +315,55 @@ Only Admin and ESS are assignable. The other five are derived roles computed at 
 
 ### 6.5 ApiPermission
 
-| Property | Value |
-|----------|-------|
-| Table | `ohrm_api_permission` |
-| Live row count | 191 |
-| Key fields | `id`, `module_id` → `ohrm_module.id`, `data_group_id` → `ohrm_data_group.id`, `api_name varchar(255) UNIQUE` |
+| Property       | Value                                                                                                        |
+| -------------- | ------------------------------------------------------------------------------------------------------------ |
+| Table          | `ohrm_api_permission`                                                                                        |
+| Live row count | 191                                                                                                          |
+| Key fields     | `id`, `module_id` → `ohrm_module.id`, `data_group_id` → `ohrm_data_group.id`, `api_name varchar(255) UNIQUE` |
 
 **Maps each API endpoint class to a data group. Examples:**
 
-| api_name | data_group_id |
-|----------|---------------|
-| `OrangeHRM\Pim\Api\EmployeeAPI` | 96 |
-| `OrangeHRM\Admin\Api\UserAPI` | 81 |
-| `OrangeHRM\Leave\Api\LeaveEntitlementAPI` | 138 |
-| `OrangeHRM\Time\Api\MyTimesheetAPI` | 162 |
-| `OrangeHRM\Attendance\Api\MyAttendanceRecordAPI` | 179 |
-| `OrangeHRM\Recruitment\Api\CandidateAPI` | 210 |
-| `OrangeHRM\Claim\Api\ClaimEventAPI` | 265 |
-| `OrangeHRM\OAuth\Api\OAuthClientAPI` | 83 |
+| api_name                                         | data_group_id |
+| ------------------------------------------------ | ------------- |
+| `OrangeHRM\Pim\Api\EmployeeAPI`                  | 96            |
+| `OrangeHRM\Admin\Api\UserAPI`                    | 81            |
+| `OrangeHRM\Leave\Api\LeaveEntitlementAPI`        | 138           |
+| `OrangeHRM\Time\Api\MyTimesheetAPI`              | 162           |
+| `OrangeHRM\Attendance\Api\MyAttendanceRecordAPI` | 179           |
+| `OrangeHRM\Recruitment\Api\CandidateAPI`         | 210           |
+| `OrangeHRM\Claim\Api\ClaimEventAPI`              | 265           |
+| `OrangeHRM\OAuth\Api\OAuthClientAPI`             | 83            |
 
 ### 6.6 WorkflowStateMachine
 
-| Property | Value |
-|----------|-------|
-| Table | `ohrm_workflow_state_machine` |
-| Live row count | 138 |
-| Key fields | `id bigint PK`, `workflow varchar(255)`, `state varchar(255)`, `role varchar(255)`, `action varchar(255)`, `resulting_state varchar(255)`, `roles_to_notify text NULL`, `priority int NOT NULL DEFAULT 0` |
+| Property       | Value                                                                                                                                                                                                     |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Table          | `ohrm_workflow_state_machine`                                                                                                                                                                             |
+| Live row count | 138                                                                                                                                                                                                       |
+| Key fields     | `id bigint PK`, `workflow varchar(255)`, `state varchar(255)`, `role varchar(255)`, `action varchar(255)`, `resulting_state varchar(255)`, `roles_to_notify text NULL`, `priority int NOT NULL DEFAULT 0` |
 
 **Distribution by workflow:**
 
-| Workflow | ID | Rows | Action encoding |
-|----------|----|------|-----------------|
-| Timesheet | 0 | 32 | Integer ID as string |
-| Attendance | 1 | 15 | Integer ID as string |
-| Recruitment | 2 | 33 | Integer ID as string |
-| Employee | 3 | 5 | Integer ID as string |
-| Leave | 4 | 21 | Action names |
-| Review | 5 | 12 | Integer ID as string |
-| Self Review | 6 | 8 | Integer ID as string |
-| Claim | 7 | 12 | Integer ID as string |
+| Workflow    | ID  | Rows | Action encoding      |
+| ----------- | --- | ---- | -------------------- |
+| Timesheet   | 0   | 32   | Integer ID as string |
+| Attendance  | 1   | 15   | Integer ID as string |
+| Recruitment | 2   | 33   | Integer ID as string |
+| Employee    | 3   | 5    | Integer ID as string |
+| Leave       | 4   | 21   | Action names         |
+| Review      | 5   | 12   | Integer ID as string |
+| Self Review | 6   | 8    | Integer ID as string |
+| Claim       | 7   | 12   | Integer ID as string |
 
 **Employee flow (workflow 3) — complete:**
 
-| state | role | action | resulting_state |
-|-------|------|--------|-----------------|
-| NOT_EXIST | ADMIN | 1 | ACTIVE |
-| ACTIVE | ADMIN | 2 | NOT_EXIST |
-| ACTIVE | ADMIN | 3 | TERMINATED |
-| TERMINATED | ADMIN | 4 | ACTIVE |
-| TERMINATED | ADMIN | 5 | NOT_EXIST |
+| state      | role  | action | resulting_state |
+| ---------- | ----- | ------ | --------------- |
+| NOT_EXIST  | ADMIN | 1      | ACTIVE          |
+| ACTIVE     | ADMIN | 2      | NOT_EXIST       |
+| ACTIVE     | ADMIN | 3      | TERMINATED      |
+| TERMINATED | ADMIN | 4      | ACTIVE          |
+| TERMINATED | ADMIN | 5      | NOT_EXIST       |
 
 **Leave flow (workflow 4) — state names:**
 
@@ -389,11 +395,11 @@ INITIAL, PUNCHED IN, PUNCHED OUT, N/A
 
 ### 6.7 Leave
 
-| Property | Value |
-|----------|-------|
-| Table | `ohrm_leave` |
-| PK | `id int(11) AUTO_INCREMENT` |
-| Purpose | Individual leave day |
+| Property | Value                       |
+| -------- | --------------------------- |
+| Table    | `ohrm_leave`                |
+| PK       | `id int(11) AUTO_INCREMENT` |
+| Purpose  | Individual leave day        |
 
 **Key fields:** `id`, `date date NULL`, `length_hours decimal(6,2) unsigned NULL`, `length_days decimal(6,4) unsigned NULL`, `status smallint NULL`, `leave_request_id int(10) unsigned NOT NULL`, `leave_type_id int(10) unsigned NOT NULL`, `emp_number int(7) NOT NULL`, `start_time time NULL`, `end_time time NULL`, `duration_type tinyint NOT NULL DEFAULT 0`
 
@@ -404,46 +410,46 @@ INITIAL, PUNCHED IN, PUNCHED OUT, N/A
 
 **Status codes (from `ohrm_leave_status`):**
 
-| status | name |
-|--------|------|
-| -1 | REJECTED |
-| 0 | CANCELLED |
-| 1 | PENDING APPROVAL |
-| 2 | SCHEDULED |
-| 3 | TAKEN |
-| 4 | WEEKEND |
-| 5 | HOLIDAY |
+| status | name             |
+| ------ | ---------------- |
+| -1     | REJECTED         |
+| 0      | CANCELLED        |
+| 1      | PENDING APPROVAL |
+| 2      | SCHEDULED        |
+| 3      | TAKEN            |
+| 4      | WEEKEND          |
+| 5      | HOLIDAY          |
 
 **Live data (6 rows):** All `emp_number = 1` or `4` or `5`, all `leave_type_id = 1`, statuses 1 (PENDING APPROVAL) and 2 (SCHEDULED). Weekend days have `length_hours = 0.00`, `length_days = 0.0000`, `status = 4`.
 
-| Property | Value |
-|----------|-------|
-| Table | `ohrm_leave_request` |
-| PK | `id int(10) unsigned AUTO_INCREMENT` |
-| Key fields | `id`, `leave_type_id`, `date_applied date NOT NULL`, `emp_number int(7) NOT NULL` |
-| FKs | `emp_number` → `hs_hr_employee.emp_number` `ON DELETE CASCADE`; `leave_type_id` → `ohrm_leave_type.id` `ON DELETE CASCADE` |
-| Live rows | 3 (ids 3, 4, 5) |
+| Property   | Value                                                                                                                      |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Table      | `ohrm_leave_request`                                                                                                       |
+| PK         | `id int(10) unsigned AUTO_INCREMENT`                                                                                       |
+| Key fields | `id`, `leave_type_id`, `date_applied date NOT NULL`, `emp_number int(7) NOT NULL`                                          |
+| FKs        | `emp_number` → `hs_hr_employee.emp_number` `ON DELETE CASCADE`; `leave_type_id` → `ohrm_leave_type.id` `ON DELETE CASCADE` |
+| Live rows  | 3 (ids 3, 4, 5)                                                                                                            |
 
-| Property | Value |
-|----------|-------|
-| Table | `ohrm_leave_entitlement` |
-| PK | `id int(10) unsigned AUTO_INCREMENT` |
+| Property   | Value                                                                                                                                                                                                                                                      |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Table      | `ohrm_leave_entitlement`                                                                                                                                                                                                                                   |
+| PK         | `id int(10) unsigned AUTO_INCREMENT`                                                                                                                                                                                                                       |
 | Key fields | `id`, `emp_number`, `no_of_days decimal(19,15) NOT NULL`, `days_used decimal(8,4) NOT NULL DEFAULT 0.0000`, `leave_type_id`, `from_date`, `to_date`, `credited_date`, `note`, `entitlement_type`, `deleted tinyint(1) NOT NULL DEFAULT 0`, `created_by_id` |
-| FKs | `leave_type_id`, `emp_number`, `entitlement_type`, `created_by_id` — all `ON DELETE CASCADE` (except `created_by_id` → `SET NULL`) |
+| FKs        | `leave_type_id`, `emp_number`, `entitlement_type`, `created_by_id` — all `ON DELETE CASCADE` (except `created_by_id` → `SET NULL`)                                                                                                                         |
 
-| Property | Value |
-|----------|-------|
-| Table | `ohrm_leave_type` |
-| PK | `id int(10) unsigned AUTO_INCREMENT` |
-| Key fields | `id`, `name varchar(50)`, `deleted tinyint(1) NOT NULL DEFAULT 0`, `exclude_in_reports_if_no_entitlement tinyint(1) NOT NULL DEFAULT 0`, `operational_country_id int(10) unsigned NULL` |
-| Soft delete | `deleted` flag |
+| Property    | Value                                                                                                                                                                                   |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Table       | `ohrm_leave_type`                                                                                                                                                                       |
+| PK          | `id int(10) unsigned AUTO_INCREMENT`                                                                                                                                                    |
+| Key fields  | `id`, `name varchar(50)`, `deleted tinyint(1) NOT NULL DEFAULT 0`, `exclude_in_reports_if_no_entitlement tinyint(1) NOT NULL DEFAULT 0`, `operational_country_id int(10) unsigned NULL` |
+| Soft delete | `deleted` flag                                                                                                                                                                          |
 
-| Property | Value |
-|----------|-------|
-| Table | `ohrm_leave_status` |
-| PK | `id int(11) AUTO_INCREMENT` |
+| Property   | Value                                                          |
+| ---------- | -------------------------------------------------------------- |
+| Table      | `ohrm_leave_status`                                            |
+| PK         | `id int(11) AUTO_INCREMENT`                                    |
 | Key fields | `id`, `status smallint NOT NULL`, `name varchar(100) NOT NULL` |
-| Live rows | 7 (see status codes above) |
+| Live rows  | 7 (see status codes above)                                     |
 
 **API resources:** `/api/v2/leave/leave-requests`, `/api/v2/leave/leave-types`, `/api/v2/leave/leave-entitlements`, `/api/v2/leave/leave-balance`
 
@@ -453,26 +459,26 @@ INITIAL, PUNCHED IN, PUNCHED OUT, N/A
 
 ### 6.8 Timesheet
 
-| Property | Value |
-|----------|-------|
-| Table | `ohrm_timesheet` |
-| PK | `timesheet_id bigint AUTO_INCREMENT` |
-| Key fields | `timesheet_id`, `state varchar(255)`, `start_date date NOT NULL`, `end_date date NOT NULL`, `employee_id bigint NOT NULL` |
-| No FK on `employee_id` | Timesheet rows are orphaned when an employee is deleted. |
+| Property               | Value                                                                                                                     |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Table                  | `ohrm_timesheet`                                                                                                          |
+| PK                     | `timesheet_id bigint AUTO_INCREMENT`                                                                                      |
+| Key fields             | `timesheet_id`, `state varchar(255)`, `start_date date NOT NULL`, `end_date date NOT NULL`, `employee_id bigint NOT NULL` |
+| No FK on `employee_id` | Timesheet rows are orphaned when an employee is deleted.                                                                  |
 
-| Property | Value |
-|----------|-------|
-| Table | `ohrm_timesheet_item` |
-| PK | `timesheet_item_id bigint AUTO_INCREMENT` |
+| Property   | Value                                                                                                                 |
+| ---------- | --------------------------------------------------------------------------------------------------------------------- |
+| Table      | `ohrm_timesheet_item`                                                                                                 |
+| PK         | `timesheet_item_id bigint AUTO_INCREMENT`                                                                             |
 | Key fields | `timesheet_item_id`, `timesheet_id`, `date`, `duration bigint`, `comment`, `project_id`, `employee_id`, `activity_id` |
-| FK | `activity_id` → `ohrm_project_activity.activity_id`; no FK on `employee_id` |
+| FK         | `activity_id` → `ohrm_project_activity.activity_id`; no FK on `employee_id`                                           |
 
-| Property | Value |
-|----------|-------|
-| Table | `ohrm_timesheet_action_log` |
-| PK | `timesheet_action_log_id bigint AUTO_INCREMENT` |
+| Property   | Value                                                                                       |
+| ---------- | ------------------------------------------------------------------------------------------- |
+| Table      | `ohrm_timesheet_action_log`                                                                 |
+| PK         | `timesheet_action_log_id bigint AUTO_INCREMENT`                                             |
 | Key fields | `timesheet_action_log_id`, `comment`, `action`, `date_time`, `performed_by`, `timesheet_id` |
-| FKs | `performed_by` → `ohrm_user.id` `SET NULL`; `timesheet_id` → `ohrm_timesheet.timesheet_id` |
+| FKs        | `performed_by` → `ohrm_user.id` `SET NULL`; `timesheet_id` → `ohrm_timesheet.timesheet_id`  |
 
 **Live data:** 2 rows — employee 1 `NOT SUBMITTED`, employee 3 `SUBMITTED` (both 2026-09-28 to 2026-10-04).
 
@@ -484,12 +490,12 @@ INITIAL, PUNCHED IN, PUNCHED OUT, N/A
 
 ### 6.9 Attendance
 
-| Property | Value |
-|----------|-------|
-| Table | `ohrm_attendance_record` |
-| PK | `id bigint AUTO_INCREMENT` |
-| Key fields | `id`, `employee_id bigint NOT NULL`, `punch_in_utc_time`, `punch_in_note`, `punch_in_time_offset`, `punch_in_user_time`, `punch_out_utc_time`, `punch_out_note`, `punch_out_time_offset`, `punch_out_user_time`, `state varchar(255) NOT NULL`, `punch_in_timezone_name`, `punch_out_timezone_name` |
-| No FK on `employee_id` | Attendance rows are orphaned on employee delete. |
+| Property               | Value                                                                                                                                                                                                                                                                                               |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Table                  | `ohrm_attendance_record`                                                                                                                                                                                                                                                                            |
+| PK                     | `id bigint AUTO_INCREMENT`                                                                                                                                                                                                                                                                          |
+| Key fields             | `id`, `employee_id bigint NOT NULL`, `punch_in_utc_time`, `punch_in_note`, `punch_in_time_offset`, `punch_in_user_time`, `punch_out_utc_time`, `punch_out_note`, `punch_out_time_offset`, `punch_out_user_time`, `state varchar(255) NOT NULL`, `punch_in_timezone_name`, `punch_out_timezone_name` |
+| No FK on `employee_id` | Attendance rows are orphaned on employee delete.                                                                                                                                                                                                                                                    |
 
 **State values:** `PUNCHED IN`, `PUNCHED OUT`
 
@@ -503,48 +509,48 @@ INITIAL, PUNCHED IN, PUNCHED OUT, N/A
 
 ### 6.10 Recruitment
 
-| Property | Value |
-|----------|-------|
-| Table | `ohrm_job_candidate` |
-| PK | `id int(11) AUTO_INCREMENT` |
+| Property   | Value                                                                                                                                                                                                                                                                                                                                                                  |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Table      | `ohrm_job_candidate`                                                                                                                                                                                                                                                                                                                                                   |
+| PK         | `id int(11) AUTO_INCREMENT`                                                                                                                                                                                                                                                                                                                                            |
 | Key fields | `id`, `first_name varchar(30)`, `middle_name varchar(30) NULL`, `last_name varchar(30)`, `email varchar(100)`, `contact_number varchar(30) NULL`, `status int(4)`, `comment`, `mode_of_application int(4)`, `date_of_application date`, `cv_file_id`, `cv_text_version`, `keywords`, `added_person int(13) NULL`, `consent_to_keep_data tinyint(1) NOT NULL DEFAULT 0` |
-| FK | `added_person` → `hs_hr_employee.emp_number` `ON DELETE SET NULL` |
-| Live rows | 7 (ids 1–7) |
+| FK         | `added_person` → `hs_hr_employee.emp_number` `ON DELETE SET NULL`                                                                                                                                                                                                                                                                                                      |
+| Live rows  | 7 (ids 1–7)                                                                                                                                                                                                                                                                                                                                                            |
 
-| Property | Value |
-|----------|-------|
-| Table | `ohrm_job_candidate_vacancy` |
-| PK | Composite `(candidate_id, vacancy_id)` with a separate UNIQUE `id` |
-| Key fields | `id`, `candidate_id`, `vacancy_id`, `status varchar(100)`, `applied_date date` |
-| FKs | `candidate_id` → `ohrm_job_candidate.id` CASCADE; `vacancy_id` → `ohrm_job_vacancy.id` CASCADE |
-| Live rows | 0 at time of first check; not re-queried after candidate creation |
+| Property   | Value                                                                                          |
+| ---------- | ---------------------------------------------------------------------------------------------- |
+| Table      | `ohrm_job_candidate_vacancy`                                                                   |
+| PK         | Composite `(candidate_id, vacancy_id)` with a separate UNIQUE `id`                             |
+| Key fields | `id`, `candidate_id`, `vacancy_id`, `status varchar(100)`, `applied_date date`                 |
+| FKs        | `candidate_id` → `ohrm_job_candidate.id` CASCADE; `vacancy_id` → `ohrm_job_vacancy.id` CASCADE |
+| Live rows  | 0 at time of first check; not re-queried after candidate creation                              |
 
-| Property | Value |
-|----------|-------|
-| Table | `ohrm_job_vacancy` |
-| PK | `id int(11) AUTO_INCREMENT` |
+| Property   | Value                                                                                                                                                                                                                                             |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Table      | `ohrm_job_vacancy`                                                                                                                                                                                                                                |
+| PK         | `id int(11) AUTO_INCREMENT`                                                                                                                                                                                                                       |
 | Key fields | `id`, `job_title_code int(4)`, `hiring_manager_id int(13) NULL`, `name varchar(100)`, `description`, `no_of_positions`, `status tinyint(1) NOT NULL DEFAULT 1`, `published_in_feed tinyint(1) NOT NULL DEFAULT 0`, `defined_time`, `updated_time` |
-| FKs | `job_title_code` → `ohrm_job_title.id` CASCADE; `hiring_manager_id` → `hs_hr_employee.emp_number` SET NULL |
+| FKs        | `job_title_code` → `ohrm_job_title.id` CASCADE; `hiring_manager_id` → `hs_hr_employee.emp_number` SET NULL                                                                                                                                        |
 
-| Property | Value |
-|----------|-------|
-| Table | `ohrm_job_candidate_history` |
-| PK | `id int(13) AUTO_INCREMENT` |
+| Property   | Value                                                                                                                                                                           |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Table      | `ohrm_job_candidate_history`                                                                                                                                                    |
+| PK         | `id int(13) AUTO_INCREMENT`                                                                                                                                                     |
 | Key fields | `id`, `candidate_id`, `vacancy_id NULL`, `candidate_vacancy_name`, `interview_id NULL`, `action int(4)`, `performed_by NULL`, `performed_date datetime`, `note`, `interviewers` |
-| FKs | `candidate_id` CASCADE; `vacancy_id` SET NULL; `interview_id` SET NULL; `performed_by` SET NULL |
+| FKs        | `candidate_id` CASCADE; `vacancy_id` SET NULL; `interview_id` SET NULL; `performed_by` SET NULL                                                                                 |
 
-| Property | Value |
-|----------|-------|
-| Table | `ohrm_job_interview` |
-| PK | `id int(13) AUTO_INCREMENT` |
+| Property   | Value                                                                                                                                                 |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Table      | `ohrm_job_interview`                                                                                                                                  |
+| PK         | `id int(13) AUTO_INCREMENT`                                                                                                                           |
 | Key fields | `id`, `candidate_vacancy_id NULL`, `candidate_id NULL`, `interview_name varchar(100)`, `interview_date date NULL`, `interview_time time NULL`, `note` |
-| FKs | `candidate_vacancy_id` → `ohrm_job_candidate_vacancy.id` SET NULL; `candidate_id` → `ohrm_job_candidate.id` CASCADE |
+| FKs        | `candidate_vacancy_id` → `ohrm_job_candidate_vacancy.id` SET NULL; `candidate_id` → `ohrm_job_candidate.id` CASCADE                                   |
 
-| Property | Value |
-|----------|-------|
-| Table | `ohrm_job_interview_interviewer` |
-| PK | Composite `(interview_id, interviewer_id)` |
-| FKs | `interview_id` CASCADE; `interviewer_id` → `hs_hr_employee.emp_number` CASCADE |
+| Property | Value                                                                          |
+| -------- | ------------------------------------------------------------------------------ |
+| Table    | `ohrm_job_interview_interviewer`                                               |
+| PK       | Composite `(interview_id, interviewer_id)`                                     |
+| FKs      | `interview_id` CASCADE; `interviewer_id` → `hs_hr_employee.emp_number` CASCADE |
 
 **API resources:** `/api/v2/recruitment/vacancies`, `/api/v2/recruitment/candidates`, `/api/v2/recruitment/candidates/{id}/history`, etc.
 
@@ -554,19 +560,19 @@ INITIAL, PUNCHED IN, PUNCHED OUT, N/A
 
 ### 6.11 Organization / Configuration
 
-| Table | PK | Purpose | Live state |
-|-------|----|---------|------------|
-| `ohrm_subunit` | `id int(6)` | NestedSet org tree | 2 rows (`ECalvis` 1–4, `United Orgy` 2–3) |
-| `ohrm_job_title` | `id int(13)` | Job titles | 1 row; `is_deleted` soft delete |
-| `ohrm_location` | `id int(11)` | Office locations | 1 row; FK to `hs_hr_country.cou_code` |
-| `ohrm_nationality` | `id int(6)` | Nationalities | 193 rows (seeded) |
-| `hs_hr_country` | `cou_code char(2)` | ISO countries | 81 rows |
-| `hs_hr_currency_type` | `currency_id varchar(3)` | Currencies | 159 rows |
-| `ohrm_employment_status` | `id int(11)` | Employment statuses | 2 rows |
-| `hs_hr_config` | `name varchar(100)` | Key/value settings | 46 rows |
-| `ohrm_organization_gen_info` | `id int(4)` | Company info | 1 row (`name=ECalvis`, `country=PH`) |
-| `ohrm_work_week` | `id int(10) unsigned` | Weekly hours config | 1 row (Sat=8, Sun=8, weekdays=0) |
-| `ohrm_theme` | `theme_id int(11)` | Branding | 1 row (default theme) |
+| Table                        | PK                       | Purpose             | Live state                                |
+| ---------------------------- | ------------------------ | ------------------- | ----------------------------------------- |
+| `ohrm_subunit`               | `id int(6)`              | NestedSet org tree  | 2 rows (`ECalvis` 1–4, `United Orgy` 2–3) |
+| `ohrm_job_title`             | `id int(13)`             | Job titles          | 1 row; `is_deleted` soft delete           |
+| `ohrm_location`              | `id int(11)`             | Office locations    | 1 row; FK to `hs_hr_country.cou_code`     |
+| `ohrm_nationality`           | `id int(6)`              | Nationalities       | 193 rows (seeded)                         |
+| `hs_hr_country`              | `cou_code char(2)`       | ISO countries       | 81 rows                                   |
+| `hs_hr_currency_type`        | `currency_id varchar(3)` | Currencies          | 159 rows                                  |
+| `ohrm_employment_status`     | `id int(11)`             | Employment statuses | 2 rows                                    |
+| `hs_hr_config`               | `name varchar(100)`      | Key/value settings  | 46 rows                                   |
+| `ohrm_organization_gen_info` | `id int(4)`              | Company info        | 1 row (`name=ECalvis`, `country=PH`)      |
+| `ohrm_work_week`             | `id int(10) unsigned`    | Weekly hours config | 1 row (Sat=8, Sun=8, weekdays=0)          |
+| `ohrm_theme`                 | `theme_id int(11)`       | Branding            | 1 row (default theme)                     |
 
 **`hs_hr_config` notable keys:**
 
@@ -587,12 +593,12 @@ INITIAL, PUNCHED IN, PUNCHED OUT, N/A
 
 ### 6.12 OAuth2
 
-| Table | PK | Key fields | FKs |
-|-------|----|------------|-----|
-| `ohrm_oauth2_client` | `id bigint` | `name`, `client_id UNIQUE`, `client_secret NULL`, `redirect_uri`, `is_confidential tinyint(1)`, `enabled tinyint(1)` | — |
-| `ohrm_oauth2_access_token` | `id bigint` | `access_token UNIQUE`, `client_id bigint`, `user_id int`, `expiry_date_time_utc datetime`, `revoked tinyint(1)` | `client_id` → `ohrm_oauth2_client.id` CASCADE |
-| `ohrm_oauth2_authorization_code` | `id bigint` | `authorization_code UNIQUE`, `client_id`, `user_id`, `redirect_uri`, `expiry_date_time_utc`, `revoked` | `client_id` → CASCADE |
-| `ohrm_oauth2_refresh_token` | `id bigint` | `refresh_token UNIQUE`, `access_token`, `expiry_date_time_utc`, `revoked` | `access_token` → `ohrm_oauth2_access_token.access_token` CASCADE |
+| Table                            | PK          | Key fields                                                                                                           | FKs                                                              |
+| -------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `ohrm_oauth2_client`             | `id bigint` | `name`, `client_id UNIQUE`, `client_secret NULL`, `redirect_uri`, `is_confidential tinyint(1)`, `enabled tinyint(1)` | —                                                                |
+| `ohrm_oauth2_access_token`       | `id bigint` | `access_token UNIQUE`, `client_id bigint`, `user_id int`, `expiry_date_time_utc datetime`, `revoked tinyint(1)`      | `client_id` → `ohrm_oauth2_client.id` CASCADE                    |
+| `ohrm_oauth2_authorization_code` | `id bigint` | `authorization_code UNIQUE`, `client_id`, `user_id`, `redirect_uri`, `expiry_date_time_utc`, `revoked`               | `client_id` → CASCADE                                            |
+| `ohrm_oauth2_refresh_token`      | `id bigint` | `refresh_token UNIQUE`, `access_token`, `expiry_date_time_utc`, `revoked`                                            | `access_token` → `ohrm_oauth2_access_token.access_token` CASCADE |
 
 **Live counts:** client=2, access_token=9, authorization_code=8, refresh_token=9.
 
@@ -614,29 +620,29 @@ A `Select-String` for `ohrm_oauth_client|ohrm_oauth_access_token|...` across all
 
 ### 6.14 Login Audit
 
-| Table | PK | Key fields |
-|-------|----|------------|
+| Table        | PK           | Key fields                                                                                                                                                                          |
+| ------------ | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ohrm_login` | `id int(11)` | `id`, `user_id bigint`, `user_name varchar(255) NULL`, `user_role_name text NOT NULL`, `user_role_predefined tinyint(1) NOT NULL`, `login_time timestamp DEFAULT CURRENT_TIMESTAMP` |
 
 **Live rows:** 21. No FK to `ohrm_user` — `user_id` is a loose reference.
 
 ### 6.15 Soft-Delete Inventory (Complete)
 
-| Table | Column | Type | Default |
-|-------|--------|------|---------|
-| `hs_hr_employee` | `purged_at` | datetime NULL | NULL |
-| `ohrm_claim_event` | `is_deleted` | tinyint(1) NOT NULL | 0 |
-| `ohrm_claim_request` | `is_deleted` | smallint(6) NOT NULL | (none) |
-| `ohrm_customer` | `is_deleted` | tinyint(1) NULL | 0 |
-| `ohrm_expense` | `is_deleted` | tinyint(1) NOT NULL | 0 |
-| `ohrm_expense_type` | `is_deleted` | tinyint(1) NOT NULL | 0 |
-| `ohrm_job_title` | `is_deleted` | tinyint(1) NULL | 0 |
-| `ohrm_kpi` | `deleted_at` | datetime NULL | NULL |
-| `ohrm_leave_entitlement` | `deleted` | tinyint(1) NOT NULL | 0 |
-| `ohrm_leave_type` | `deleted` | tinyint(1) NOT NULL | 0 |
-| `ohrm_project` | `is_deleted` | tinyint(1) NULL | 0 |
-| `ohrm_project_activity` | `is_deleted` | tinyint(1) NULL | 0 |
-| `ohrm_user` | `deleted` | tinyint(1) NOT NULL | 0 |
+| Table                    | Column       | Type                 | Default |
+| ------------------------ | ------------ | -------------------- | ------- |
+| `hs_hr_employee`         | `purged_at`  | datetime NULL        | NULL    |
+| `ohrm_claim_event`       | `is_deleted` | tinyint(1) NOT NULL  | 0       |
+| `ohrm_claim_request`     | `is_deleted` | smallint(6) NOT NULL | (none)  |
+| `ohrm_customer`          | `is_deleted` | tinyint(1) NULL      | 0       |
+| `ohrm_expense`           | `is_deleted` | tinyint(1) NOT NULL  | 0       |
+| `ohrm_expense_type`      | `is_deleted` | tinyint(1) NOT NULL  | 0       |
+| `ohrm_job_title`         | `is_deleted` | tinyint(1) NULL      | 0       |
+| `ohrm_kpi`               | `deleted_at` | datetime NULL        | NULL    |
+| `ohrm_leave_entitlement` | `deleted`    | tinyint(1) NOT NULL  | 0       |
+| `ohrm_leave_type`        | `deleted`    | tinyint(1) NOT NULL  | 0       |
+| `ohrm_project`           | `is_deleted` | tinyint(1) NULL      | 0       |
+| `ohrm_project_activity`  | `is_deleted` | tinyint(1) NULL      | 0       |
+| `ohrm_user`              | `deleted`    | tinyint(1) NOT NULL  | 0       |
 
 Three naming conventions, no consistency. Tests must inspect each table individually.
 
@@ -901,4 +907,4 @@ Prefer API for setup when the API exists; fall back to DB for bulk or low-level 
 
 ---
 
-*End of document.*
+_End of document._

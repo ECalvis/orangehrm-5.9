@@ -42,16 +42,16 @@ The architecture was introduced in OrangeHRM 5.0 and is shared by all 5.x versio
 
 ### 3.1 Technology stack (FACT)
 
-| Technology | Version | Source |
-|------------|---------|--------|
-| Vue.js | `^3.2.45` | `@ohrm/oxd package.json` |
-| TypeScript | `~4.7.4` (dev) | `@ohrm/oxd package.json` |
-| OXD | `2.0.3` | `@ohrm/oxd package.json` |
-| Axios | (imported by main app) | `APIService` source |
-| date-fns | `^2.29.3` | `@ohrm/oxd package.json` |
-| nanoid | `^4.0.0` | `@ohrm/oxd package.json` |
-| mitt | `^3.0.0` | `@ohrm/oxd package.json` |
-| SASS | `^1.57.1` (dev) | `@ohrm/oxd package.json` |
+| Technology | Version                | Source                   |
+| ---------- | ---------------------- | ------------------------ |
+| Vue.js     | `^3.2.45`              | `@ohrm/oxd package.json` |
+| TypeScript | `~4.7.4` (dev)         | `@ohrm/oxd package.json` |
+| OXD        | `2.0.3`                | `@ohrm/oxd package.json` |
+| Axios      | (imported by main app) | `APIService` source      |
+| date-fns   | `^2.29.3`              | `@ohrm/oxd package.json` |
+| nanoid     | `^4.0.0`               | `@ohrm/oxd package.json` |
+| mitt       | `^3.0.0`               | `@ohrm/oxd package.json` |
+| SASS       | `^1.57.1` (dev)        | `@ohrm/oxd package.json` |
 
 **Notable absences from OXD 2.0.3:**
 
@@ -75,14 +75,16 @@ src/client/src/
 │ └── pages/ # Module page components
 
 ```text
+
 ```
+
 Modules follow the naming pattern `orangehrmPimPlugin`, `orangehrmLeavePlugin`, `orangehrmAdminPlugin`, `orangehrmClaimPlugin`, `orangehrmRecruitmentPlugin`, `orangehrmTimePlugin`, `orangehrmPerformancePlugin`, `orangehrmAuthenticationPlugin`, `orangehrmBuzzPlugin`, `orangehrmDashboardPlugin`.
 
 ### 3.3 Routing (FACT)
 
 Routes are defined **server-side** in Symfony `routes.yaml` files (one per plugin). Each route maps a URL path to a PHP controller method. That controller (typically extending `AbstractVueController`) sets the Vue component to render:
 
-```php
+````php
 $component = new Component('x-widget-list');
 $this->setComponent($component);
 The Vue page component lives at src/client/src/orangehrm{X}Plugin/pages/widget-list/WidgetList.vue and is registered in src/client/src/pages.ts.
@@ -473,7 +475,8 @@ Browser
         └── REST API Controllers (JSON responses)
 4.2 Page lifecycle
 Browser requests a page URL (e.g. /web/index.php/pim/viewEmployeeList).
-```
+````
+
 Symfony router matches routes.yaml entry.
 
 Page controller (AbstractVueController subclass) executes:
@@ -523,26 +526,26 @@ Row clicks, checkbox changes, select-all, and sort all emit through the mitt eve
 CardTable.vue listens to the bus and re-emits as public Vue events (update:selected, update:order, click, clickCheckbox, update:selectAll).
 
 5. Important Concepts
-Concept	Description
-OXD	Orange eXperience Design — the Vue 3 component library used throughout the app.
-AbstractVueController	PHP base class for page controllers. Sets the Vue component to render.
-APIService	Centralized Axios wrapper for all API calls.
-Screen permission	DB-backed (role × screen × CRUD). Controls page access and menu visibility. Enforced server-side on page load.
-$can global	Frontend permission object with methods like .create(screen), .delete(screen). Gates UI element rendering.
-unselectableEmpNumbers	Server-provided prop listing empNumbers whose per-row delete is blocked.
-useFormValidation	Form-level state manager providing formKey.
-useField	Field-level registration, validation, and reset.
-errorbag	Array of {cid, errors} entries managed by the form.
-cid	nanoid() identifier assigned per field; used to look up errors.
-tableProps	Injection key providing table configuration to header/body/cell components.
-screenState	Injection key providing responsive screen type to components.
-Event bus (mitt)	Internal table communication bus, scoped by tableId.
-Toast types	default, success, warn, error, info.
-navigate()	Full-page navigation helper.
-reloadPage()	Full page reload — invoked on any 401.
+   Concept Description
+   OXD Orange eXperience Design — the Vue 3 component library used throughout the app.
+   AbstractVueController PHP base class for page controllers. Sets the Vue component to render.
+   APIService Centralized Axios wrapper for all API calls.
+   Screen permission DB-backed (role × screen × CRUD). Controls page access and menu visibility. Enforced server-side on page load.
+   $can global Frontend permission object with methods like .create(screen), .delete(screen). Gates UI element rendering.
+   unselectableEmpNumbers Server-provided prop listing empNumbers whose per-row delete is blocked.
+   useFormValidation Form-level state manager providing formKey.
+   useField Field-level registration, validation, and reset.
+   errorbag Array of {cid, errors} entries managed by the form.
+   cid nanoid() identifier assigned per field; used to look up errors.
+   tableProps Injection key providing table configuration to header/body/cell components.
+   screenState Injection key providing responsive screen type to components.
+   Event bus (mitt) Internal table communication bus, scoped by tableId.
+   Toast types default, success, warn, error, info.
+   navigate() Full-page navigation helper.
+   reloadPage() Full page reload — invoked on any 401.
 6. Important Objects / Components / Endpoints / Entities
-6.1 OXD component export list (2.0.3)
-Full public export list from src/index.ts:
+   6.1 OXD component export list (2.0.3)
+   Full public export list from src/index.ts:
 
 Components: OxdAlert, OxdButton, OxdIconButton, OxdGlassButton, OxdBuzzPostInput, OxdCalendar, OxdCardTable, OxdTableDropdown, OxdBarChart, OxdLegend, OxdPieChart, OxdChip, OxdDialog, OxdOverlay, OxdDivider, OxdDropdownMenu, OxdForm, OxdFormRow, OxdFormActions, OxdGrid, OxdGridItem, OxdIcon, OxdInputField, OxdInputGroup, OxdLabel, OxdLayout, OxdSpinner, OxdPageItem, OxdPagination, OxdProgressbar, OxdReportTable, OxdMultilineCell, OxdSheet, OxdSidePanel, OxdTabPanel, OxdTabContainer, OxdClassicTable, OxdTableFilter, OxdText, OxdToast, OxdToastContainer, OxdTopbar, OxdUserDropdown, OxdNotificationDropdown, OxdTreeView, OxdInput, OxdFileInput, OxdDateInput, OxdRadioInput, OxdSwitchInput, OxdTimeInput, OxdTextarea, OxdPasswordInput, OxdCheckboxInput, OxdColorInput, OxdSelectInput, OxdMultiSelectInput, OxdMultiSelectChips, OxdAutocompleteInput.
 
@@ -557,16 +560,16 @@ employee-autocomplete, delete-confirmation, table-header, jobtitle-dropdown, sub
 oxd-input, oxd-textarea, oxd-file-input, oxd-date-input, oxd-time-input, oxd-radio-input, oxd-select-input, oxd-switch-input, oxd-password-input, oxd-checkbox-input, oxd-color-input, oxd-multiselect-input, oxd-autocomplete-input.
 
 6.4 Cell types (from CardTable/Cell/)
-cellType	Component	Notes
-oxd-table-cell-default	Default.vue	Plain text; <div>{{item}}</div> on desktop
-oxd-table-cell-actions	Actions.vue	<div class="oxd-table-cell-actions"> with per-action buttons
-oxd-table-cell-checkbox	Checkbox.vue	.oxd-table-card-cell-checkbox with OxdCheckboxInput
-oxd-table-cell-truncate	Truncate.vue	Truncates at 50 chars with show more/less toggle
+cellType Component Notes
+oxd-table-cell-default Default.vue Plain text; <div>{{item}}</div> on desktop
+oxd-table-cell-actions Actions.vue <div class="oxd-table-cell-actions"> with per-action buttons
+oxd-table-cell-checkbox Checkbox.vue .oxd-table-card-cell-checkbox with OxdCheckboxInput
+oxd-table-cell-truncate Truncate.vue Truncates at 50 chars with show more/less toggle
 6.5 Card header config
 CardHeader interface: {name, title, slot?, cellType?, cellConfig?, sortField?, cellRenderer?}. Order values: 'ASC' | 'DESC' | 'DEFAULT'. RowItem supports isSelectable? and isDisabled?.
 
 7. Relationships to Other OrangeHRM Layers
-Frontend → API: every data operation goes through APIService → /api/v2/.... There is no direct DB access.
+   Frontend → API: every data operation goes through APIService → /api/v2/.... There is no direct DB access.
 
 Frontend → Database (indirect): state reflects what the API returns. The frontend has no schema knowledge.
 
@@ -581,8 +584,8 @@ OXD → Everything: every visual element is an OXD component. Version is pinned 
 Auth → Frontend: session cookie for browser SPA; OAuth Bearer for API clients. On session loss, APIService triggers reloadPage() which redirects to the login page.
 
 8. Testing Implications
-8.1 Navigation
-Every navigation triggers a full page load (window.location.href or window.location.replace). Playwright must use waitForURL or waitForLoadState, not just DOM assertions.
+   8.1 Navigation
+   Every navigation triggers a full page load (window.location.href or window.location.replace). Playwright must use waitForURL or waitForLoadState, not just DOM assertions.
 
 reloadPage() on 401 causes the SPA to reload → redirect to login. Playwright should expect this on session loss.
 
@@ -643,7 +646,7 @@ APIService uses the same endpoints Playwright can hit directly. Test setup via A
 The frontend has no DB layer. To verify persisted state, either re-fetch via API or reload the page and assert UI state.
 
 9. Known Quirks / Gotchas
-OxdLabel has no for attribute — getByLabel() fails for OXD form fields.
+   OxdLabel has no for attribute — getByLabel() fails for OXD form fields.
 
 OxdSelectInput is not a native <select> — selectOption() does not work.
 
@@ -684,7 +687,7 @@ ETag caching is disabled in development mode.
 usePaginate strips null and '' from query params — an empty filter value does not appear in the request.
 
 10. Version-Specific Notes
-OrangeHRM version: 5.9.0 (hs_hr_config.instance.version = 5.9.0).
+    OrangeHRM version: 5.9.0 (hs_hr_config.instance.version = 5.9.0).
 
 OXD version: 2.0.3 (from @ohrm/oxd package.json).
 
@@ -700,11 +703,11 @@ No Vue Router, no Vuex/Pinia, no vue-i18n, no axios are bundled in OXD 2.0.3. Th
 
 5.9 release notes list Workspace Notifications (Slack/Google Chat) as the primary new feature; it is a backend/configuration feature. The frontend framework architecture is unchanged from 5.0 through 5.9.
 
-Legacy OAuth tables (ohrm_oauth_*) exist in the DB but are unreferenced; the active OAuth2 tables are ohrm_oauth2_*.
+Legacy OAuth tables (ohrm_oauth__) exist in the DB but are unreferenced; the active OAuth2 tables are ohrm_oauth2__.
 
 11. Facts vs Inferences vs Assumptions
-FACT (traceable to a specific file, DB row, HTTP response, or app.js trace)
-Technology & project structure:
+    FACT (traceable to a specific file, DB row, HTTP response, or app.js trace)
+    Technology & project structure:
 
 Frontend is Vue 3 SPA with TypeScript, Axios, OXD 2.0.3, SASS.
 
@@ -890,7 +893,7 @@ Toast auto-dismiss timing.
 useToast (if it exists as a distinct composable in the main app).
 
 12. Sources
-OXD 2.0.3 files (pasted during research):
+    OXD 2.0.3 files (pasted during research):
 
 Barrel and metadata:
 

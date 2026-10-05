@@ -1,5 +1,6 @@
 import js from '@eslint/js';
 import prettier from 'eslint-config-prettier';
+import globals from 'globals';
 
 export default [
   {
@@ -10,6 +11,10 @@ export default [
       'coverage/**',
       'dist/**',
       'build/**',
+      '.vscode/**',
+      '.prettierrc',
+      'compose.yml',
+      'docs/**',
     ],
   },
 
@@ -19,7 +24,8 @@ export default [
     files: ['**/*.js'],
     languageOptions: {
       ecmaVersion: 'latest',
-      sourceType: 'module',
+      sourceType: 'commonjs',
+      globals: globals.node,
     },
     rules: {
       'no-console': 'warn',

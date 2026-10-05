@@ -1,4 +1,4 @@
-const { AuthenticationError } = require('./errors');
+const { AuthenticationError, OAuthRejectedError } = require('./errors');
 
 class TokenManager {
   constructor({ oauth, authorizer, store, credentials, refreshSafetyMs = 60_000 }) {
@@ -39,9 +39,19 @@ class TokenManager {
     const cached = this.store.load();
 
     if (cached?.refreshToken) {
-      try {
-        const refreshed = await this.oauth.refresh(cached.refreshToken);
+      let refreshed;
 
+      try {
+        refreshed = await this.oauth.refresh(cached.refreshToken);
+      } catch (err) {
+        if (!this._isRefreshTokenRejection(err)) {
+          throw err;
+        }
+
+        refreshed = null;
+      }
+
+      if (refreshed) {
         // OrangeHRM may or may not rotate the refresh token. If the new
         // response omits it, keep the old one — otherwise the next refresh
         // attempt has nothing to send and we fall back to the full browser
@@ -53,9 +63,6 @@ class TokenManager {
 
         this.store.save(merged);
         return merged;
-      } catch {
-        // Refresh failed (revoked, expired, server error). Fall through to
-        // the full authorization-code flow.
       }
     }
 
@@ -80,13 +87,28 @@ class TokenManager {
     return tokens;
   }
 
+  _isRefreshTokenRejection(err) {
+    if (!(err instanceof OAuthRejectedError)) {
+      return false;
+    }
+
+    // OrangeHRM currently reports an undecryptable refresh token as a 401
+    // invalid_request with this hint; other OAuth rejections must surface.
+    return (
+      err.oauthError === 'invalid_grant' ||
+      (err.status === 401 &&
+        err.oauthError === 'invalid_request' &&
+        /cannot decrypt the refresh token/i.test(err.hint || ''))
+    );
+  }
+
   _isValid(token) {
     if (!token?.accessToken) {
       return false;
     }
 
     if (token.expiresAt == null) {
-      return true;
+      return false;
     }
 
     const expiresAt = Number(token.expiresAt);
