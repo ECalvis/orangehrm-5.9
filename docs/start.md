@@ -2449,46 +2449,17 @@ Error taxonomy ✅ ✅ ✅ ✗ (Playwright's native errors suffice)
 Named for the question they answer ✅ ✅ ✅ ✅ page/workflow methods
 The same shape repeats four times. If you can hold one of these layers in your head, you can hold all four.
 
-Part 10 — What To Do Right Now
-Write src/ui/selectors.js — 30 minutes. Copy every stable selector from your frontend research doc. This is the file most worth getting right.
+Part 10 — Phase 4 Implementation and Verification
+The Phase 4 UI layer is implemented under src/ui/: centralized selectors, a navigation base page, six reusable OXD interaction components, six page objects, four UI-only workflows, and the createUi composition root. Playwright fixtures are in tests/fixtures/ui.js, and the viewport is fixed at 1280×900 so desktop OXD table headers are available.
 
-Write src/ui/base-page.js — 15 minutes.
+The isolated UI regression suite covers selector construction, page navigation, each component's public interactions, all page/workflow entry points, and invalid-input behavior without requiring a running OrangeHRM server:
 
-Write src/ui/components/oxd-form.js — 30 minutes. fieldByLabel is the load-bearing method.
+sh
+npm test -- tests/ui.spec.js
+npx eslint src/ui tests/ui.spec.js tests/fixtures/ui.js playwright.config.js
+npx prettier src/ui tests/ui.spec.js tests/fixtures/ui.js playwright.config.js --check
 
-Write src/ui/components/oxd-table.js — 30 minutes.
-
-Write src/ui/components/oxd-toast.js — 10 minutes.
-
-Write src/ui/components/oxd-dialog.js — 10 minutes.
-
-Write src/ui/components/oxd-select.js — 20 minutes.
-
-Write src/ui/components/oxd-date-picker.js — 10 minutes.
-
-Write src/ui/pages/login-page.js — 20 minutes.
-
-Write src/ui/pages/employee-list-page.js — 30 minutes.
-
-Write src/ui/index.js — 10 minutes.
-
-Write a single Playwright test:
-
-js
-// tests/ui/employees.spec.js
-const { test, expect } = require('@playwright/test');
-const { createUi } = require('../../src/ui');
-
-test('admin sees the employee list', async ({ page }) => {
-const ui = createUi(page, process.env.OHRM_BASE_URL);
-await ui.pages.login.loginAs('admin');
-await ui.pages.employees.goto();
-await ui.components.table.waitForLoad();
-expect(await ui.components.table.rowCount()).toBeGreaterThan(0);
-});
-Run it. If it passes, Phase 4 is working.
-
-Stop. Do not add pages, components, or workflows until you write a test that needs them.
+For environment-backed end-to-end tests, import { test, expect } from tests/fixtures/ui.js and use the injected ui fixture. Set OHRM_BASE_URL and the role credentials in .env before navigating to the local instance. These tests are intentionally separate from the isolated regression suite so running the latter does not require a deployed application.
 
 Part 11 — Naming the Whole Thing (for Your Own Defense)
 SRP — selectors, base navigation, one component per interaction pattern, one page per screen, one workflow per business flow.
