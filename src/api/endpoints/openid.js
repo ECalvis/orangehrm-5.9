@@ -1,13 +1,15 @@
 const { createRouteGroup } = require('../resource');
 
+const route = (method, path) => ({ method, path });
+
 function createOpenIdApi(client) {
   return createRouteGroup(client, {
     providers: {
-      list: { method: 'GET', path: '/auth/openid-providers' },
-      create: { method: 'POST', path: '/auth/openid-providers' },
-      delete: { method: 'DELETE', path: '/auth/openid-providers' },
-      get: { method: 'GET', path: '/auth/openid-providers/{id}' },
-      update: { method: 'PUT', path: '/auth/openid-providers/{id}' },
+      list: route('GET', '/auth/openid-providers'),
+      create: route('POST', '/auth/openid-providers'),
+      delete: route('DELETE', '/auth/openid-providers'),
+      get: route('GET', '/auth/openid-providers/{id}'),
+      update: route('PUT', '/auth/openid-providers/{id}'),
     },
   });
 }

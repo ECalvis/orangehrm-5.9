@@ -1,17 +1,19 @@
 const { createRouteGroup } = require('../resource');
 
+const route = (method, path) => ({ method, path });
+
 function createLdapApi(client) {
   return createRouteGroup(client, {
     configuration: {
-      get: { method: 'GET', path: '/admin/ldap-config' },
-      update: { method: 'PUT', path: '/admin/ldap-config' },
+      get: route('GET', '/admin/ldap-config'),
+      update: route('PUT', '/admin/ldap-config'),
     },
     testConnection: {
-      create: { method: 'POST', path: '/admin/ldap-test-connection' },
+      create: route('POST', '/admin/ldap-test-connection'),
     },
     userSync: {
-      get: { method: 'GET', path: '/admin/ldap/user-sync' },
-      create: { method: 'POST', path: '/admin/ldap/user-sync' },
+      get: route('GET', '/admin/ldap/user-sync'),
+      create: route('POST', '/admin/ldap/user-sync'),
     },
   });
 }

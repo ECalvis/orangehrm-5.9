@@ -276,7 +276,7 @@ test.describe('API client and endpoint facade', () => {
         },
       });
 
-      const result = await api.employees.list({ limit: 5, offset: 0 });
+      const result = await api.pim.employees.list({ limit: 5, offset: 0 });
       expect(result).toEqual({
         data: [{ empNumber: 7 }],
         meta: { total: 1 },
@@ -288,7 +288,7 @@ test.describe('API client and endpoint facade', () => {
         authorization: 'Bearer access-token',
       });
 
-      await api.users.create({
+      await api.admin.users.create({
         username: 'qa-user',
         password: 'not-a-real-password',
         status: 1,
@@ -308,11 +308,11 @@ test.describe('API client and endpoint facade', () => {
         }),
       });
 
-      await api.employees.get(7);
-      await api.employees.create({ firstName: 'Test', lastName: 'Employee' });
-      await api.employees.delete([7, 8]);
-      await api.users.list({ limit: 2 });
-      await api.users.delete(9);
+      await api.pim.employees.get(7);
+      await api.pim.employees.create({ firstName: 'Test', lastName: 'Employee' });
+      await api.pim.employees.delete([7, 8]);
+      await api.admin.users.list({ limit: 2 });
+      await api.admin.users.delete(9);
       await api._client.put('/test/7', { enabled: true });
       await api._client.delete('/test/7', { ids: [7] });
       const raw = await api._client.raw({ method: 'GET', url: '/raw' });
@@ -438,6 +438,6 @@ test.describe('API client and endpoint facade', () => {
       },
     });
 
-    await expect(api.employees.list()).rejects.toBe(authenticationError);
+    await expect(api.pim.employees.list()).rejects.toBe(authenticationError);
   });
 });

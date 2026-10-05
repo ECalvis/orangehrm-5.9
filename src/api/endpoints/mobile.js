@@ -1,9 +1,11 @@
 const { createRouteGroup } = require('../resource');
 
+const route = (method, path) => ({ method, path });
+
 function createMobileApi(client) {
   return createRouteGroup(client, {
     menus: {
-      list: { method: 'GET', path: '/mobile/menus' },
+      list: route('GET', '/mobile/menus'),
     },
   });
 }

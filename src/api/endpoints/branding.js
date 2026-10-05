@@ -1,14 +1,16 @@
 const { createRouteGroup } = require('../resource');
 
+const route = (method, path) => ({ method, path });
+
 function createBrandingApi(client) {
   return createRouteGroup(client, {
     theme: {
-      get: { method: 'GET', path: '/admin/theme' },
-      update: { method: 'PUT', path: '/admin/theme' },
-      delete: { method: 'DELETE', path: '/admin/theme' },
+      get: route('GET', '/admin/theme'),
+      update: route('PUT', '/admin/theme'),
+      delete: route('DELETE', '/admin/theme'),
     },
     preview: {
-      create: { method: 'POST', path: '/admin/theme/preview' },
+      create: route('POST', '/admin/theme/preview'),
     },
   });
 }

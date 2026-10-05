@@ -1,12 +1,11 @@
 const { createRouteGroup } = require('../resource');
 
+const route = (method, path) => ({ method, path });
+
 function createAuthenticationApi(client) {
   return createRouteGroup(client, {
     validatePassword: {
-      create: {
-        method: 'POST',
-        path: '/auth/public/validation/password',
-      },
+      create: route('POST', '/auth/public/validation/password'),
     },
   });
 }
