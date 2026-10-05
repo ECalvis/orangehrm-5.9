@@ -1,0 +1,40 @@
+const { BasePage } = require('../base-page');
+const { OxdTable } = require('../components/oxd-table');
+const { OxdForm } = require('../components/oxd-form');
+const { OxdSelect } = require('../components/oxd-select');
+const { OxdDatePicker } = require('../components/oxd-date-picker');
+
+class LeaveListPage extends BasePage {
+  constructor(page, baseUrl) {
+    super(page, baseUrl);
+    this.table = new OxdTable(page);
+    this.form = new OxdForm(page);
+    this.select = new OxdSelect(page);
+    this.date = new OxdDatePicker(page);
+  }
+
+  async goto() {
+    await super.goto('/web/index.php/leave/viewLeaveList');
+  }
+
+  async applyLeave({ leaveType, fromDate, toDate, comment = '' }) {
+    await super.goto('/web/index.php/leave/applyLeave');
+    await this.select.select('Leave Type', leaveType);
+    await this.date.set('From Date', fromDate);
+    await this.date.set('To Date', toDate);
+    if (comment) {
+      await this.form.fillByLabel('Comments', comment);
+    }
+    await this.page.getByRole('button', { name: 'Apply', exact: true }).click();
+  }
+
+  async rowCount() {
+    return this.table.rowCount();
+  }
+
+  async hasRow(text) {
+    return (await this.table.rowByText(text).count()) > 0;
+  }
+}
+
+module.exports = { LeaveListPage };
