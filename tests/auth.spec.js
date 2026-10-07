@@ -117,6 +117,7 @@ test.describe('OAuth client', () => {
         authorizationUrl: 'http://localhost/authorize',
         tokenUrl: `http://127.0.0.1:${server.address().port}/token`,
         clientId: 'automation-client',
+        clientSecret: 'client-secret',
         redirectUri: 'http://localhost:9876/oauth/callback',
       });
 
@@ -126,6 +127,7 @@ test.describe('OAuth client', () => {
       expect(receivedBody.get('grant_type')).toBe('authorization_code');
       expect(receivedBody.get('code')).toBe('auth-code');
       expect(receivedBody.get('client_id')).toBe('automation-client');
+      expect(receivedBody.get('client_secret')).toBe('client-secret');
       expect(receivedBody.get('redirect_uri')).toBe('http://localhost:9876/oauth/callback');
       expect(receivedBody.get('code_verifier')).toBe('pkce-verifier');
       expect(token).toMatchObject({

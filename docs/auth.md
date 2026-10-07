@@ -15,7 +15,7 @@ Does **not** design a test framework. Authentication and authorization are treat
 
 ## Local OAuth token helper
 
-Register an OAuth client in OrangeHRM and set its client ID, registered redirect URI, and admin or ESS credentials in `.env` (see `.env.example`). Then run `npm run token:admin` or `npm run token:ess`. The helper caches each role's token pair in `auth/<role>.token.json`; these files contain bearer credentials and must remain untracked.
+Register an OAuth client in OrangeHRM and set its client ID, registered redirect URI, and admin or ESS credentials in `.env` (see `.env.example`). Confidential clients can also set `OHRM_OAUTH_CLIENT_SECRET`; the token helper sends it with authorization-code and refresh-token requests. Then run `npm run token:admin` or `npm run token:ess`. The helper caches each role's token pair in `auth/<role>.token.json`; these files contain bearer credentials and must remain untracked.
 
 On a failed run, check that the registered redirect URI exactly matches `OHRM_OAUTH_REDIRECT_URI`, that its local callback port is available, and that the client ID and role credentials are correct. The browser authorizer writes a screenshot to the operating system temporary directory if the expected consent button is missing.
 

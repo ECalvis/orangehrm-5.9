@@ -24,6 +24,7 @@
     "api:smoke": "node scripts/api-smoke.js",
     "db:smoke": "node scripts/db-smoke.js",
     "env:up": "docker compose up -d",
+    "env:install": "npm run env:up && node scripts/env-install.js",
     "env:down": "docker compose down",
     "env:reset": "docker compose down -v --rmi local",
     "env:rebuild": "docker compose build --no-cache",
