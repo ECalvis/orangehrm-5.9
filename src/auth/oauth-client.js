@@ -4,7 +4,14 @@ const { createVerifier, createChallenge, createState } = require('./pkce');
 const { AuthenticationError, OAuthRejectedError } = require('./errors');
 
 class OAuthClient {
-  constructor({ authorizationUrl, tokenUrl, clientId, redirectUri, timeoutMs = 30_000 }) {
+  constructor({
+    authorizationUrl,
+    tokenUrl,
+    clientId,
+    clientSecret,
+    redirectUri,
+    timeoutMs = 30_000,
+  }) {
     if (!authorizationUrl) throw new TypeError('authorizationUrl is required');
     if (!tokenUrl) throw new TypeError('tokenUrl is required');
     if (!clientId) throw new TypeError('clientId is required');
@@ -16,6 +23,7 @@ class OAuthClient {
     this.authorizationUrl = authorizationUrl;
     this.tokenUrl = tokenUrl;
     this.clientId = clientId;
+    this.clientSecret = clientSecret;
     this.redirectUri = redirectUri;
     this.timeoutMs = timeoutMs;
   }
@@ -71,7 +79,10 @@ class OAuthClient {
   }
 
   async _tokenRequest(params, label) {
-    const body = new URLSearchParams(params).toString();
+    const requestParams = this.clientSecret
+      ? { ...params, client_secret: this.clientSecret }
+      : params;
+    const body = new URLSearchParams(requestParams).toString();
 
     let response;
 

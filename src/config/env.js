@@ -47,6 +47,7 @@ const env = {
   apiBaseUrl: process.env.API_BASE_URL || `${baseUrl}/web/index.php/api/v2`,
 
   oauthClientId: required('OHRM_OAUTH_CLIENT_ID'),
+  oauthClientSecret: process.env.OHRM_OAUTH_CLIENT_SECRET || undefined,
 
   oauthAuthUrl: process.env.OHRM_OAUTH_AUTH_URL || `${baseUrl}/web/index.php/oauth2/authorize`,
 

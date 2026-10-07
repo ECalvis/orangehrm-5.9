@@ -25,6 +25,7 @@ async function main(roleName) {
     authorizationUrl: env.oauthAuthUrl,
     tokenUrl: env.oauthTokenUrl,
     clientId: env.oauthClientId,
+    clientSecret: env.oauthClientSecret,
     redirectUri: env.oauthRedirectUri,
   });
 
