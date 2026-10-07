@@ -91,6 +91,13 @@ async function expectRoute(page, baseUrl, route) {
   await expect(page).toHaveURL(`${baseUrl}${route}`);
 }
 
+async function selectRadio(page, name) {
+  const radio = page.getByRole('radio', { name });
+
+  await page.getByText(name, { exact: true }).click();
+  await expect(radio).toBeChecked();
+}
+
 async function selectDropdown(page, label, option) {
   const field = page.locator('.oxd-input-group', { hasText: label });
 
@@ -149,14 +156,14 @@ async function registerOAuthClient(page, baseUrl, { name, redirectUri, envPrefix
 async function install(page, baseUrl) {
   await waitForInstaller(page, baseUrl);
 
-  await page.getByRole('radio', { name: 'Fresh Installation' }).check();
+  await selectRadio(page, 'Fresh Installation');
   await page.getByRole('button', { name: 'Next' }).click();
   await expectRoute(page, baseUrl, '/installer/index.php/installer/licence-acceptance');
   await page.getByText('I accept the terms in the').click();
   await page.getByRole('button', { name: 'Next' }).click();
 
   await expectRoute(page, baseUrl, '/installer/index.php/installer/database-config');
-  await page.getByRole('radio', { name: 'Existing Empty Database' }).check();
+  await selectRadio(page, 'Existing Empty Database');
   await page.getByLabel('Database Host Name').fill('mariadb');
   await page.getByLabel('Database Host Port').fill('3306');
   await page.getByLabel('Database Name').fill(requiredEnv('OHRM_DB_NAME'));
