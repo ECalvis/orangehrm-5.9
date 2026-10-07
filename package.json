@@ -22,7 +22,15 @@
     "token:admin": "node scripts/obtain-token.js admin",
     "token:ess": "node scripts/obtain-token.js ess",
     "api:smoke": "node scripts/api-smoke.js",
-    "db:smoke": "node scripts/db-smoke.js"
+    "db:smoke": "node scripts/db-smoke.js",
+    "env:up": "docker compose up -d",
+    "env:down": "docker compose down",
+    "env:reset": "docker compose down -v --rmi local",
+    "env:rebuild": "docker compose build --no-cache",
+    "env:logs": "docker logs --tail 10 -f orangehrm_5.9_app",
+    "env:error": "docker exec -it orangehrm_5.9_app sh -c 'tail -n 10 -f /var/www/html/src/log/orangehrm.log'",
+    "openapi:build": "docker exec orangehrm_5.9_app sh -c \"mkdir -p /var/www/html/swagger && /var/www/html/src/vendor/bin/openapi /var/www/html/src/plugins -o /var/www/html/swagger/orangehrm-v2.json && chown -R www-data:www-data /var/www/html/swagger\"",
+    "openapi:copy": "docker cp orangehrm_5.9_app:/var/www/html/swagger/orangehrm-v2.json ./swagger/orangehrm-v2.json"
   },
   "dependencies": {
     "axios": "^1.20.0",

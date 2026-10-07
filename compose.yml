@@ -1,5 +1,6 @@
 services:
   orangehrm:
+    image: orangehrm:5.9
     build:
       context: .
       dockerfile: Dockerfile
@@ -18,19 +19,24 @@ services:
     networks:
       - orangehrm
     container_name: orangehrm_5.9_app
+    command: >
+      sh -c '
+        tail -n 0 -F /var/www/html/src/log/orangehrm.log &
+        exec apache2-foreground
+      '
 
   mariadb:
     image: mariadb:11.4@sha256:1292844148b311e4ed4300022a996d39083f415a963e970cf47cad1b3b18e3a6
     restart: unless-stopped
     ports:
-      - '${MARIADB_HOST_PORT}:3306'
+      - '${OHRM_DB_PORT}:3306'
     volumes:
       - mariadb_data:/var/lib/mysql
     environment:
-      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
-      MARIADB_DATABASE: ${MARIADB_DATABASE}
-      MARIADB_USER: ${MARIADB_USER}
-      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${OHRM_DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${OHRM_DB_NAME}
+      MARIADB_USER: ${OHRM_DB_USER}
+      MARIADB_PASSWORD: ${OHRM_DB_PASSWORD}
       TZ: Asia/Manila
     healthcheck:
       test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
