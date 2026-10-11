@@ -110,9 +110,10 @@ async function expectRoute(page, baseUrl, route) {
 }
 
 async function selectRadio(page, name) {
-  const radio = page.getByRole('radio', { name });
+  const radio = page.getByRole('radio', {name, exact: true});
 
-  await page.getByText(name, { exact: true }).click();
+  await expect(radio).toHaveCount(1);
+  await radio.check();
   await expect(radio).toBeChecked();
 }
 
