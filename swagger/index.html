@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+  <head>
+    <title>OrangeHRM API</title>
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.11.10/swagger-ui.css" />
+    <script src="https://unpkg.com/swagger-ui-dist@5.11.10/swagger-ui-bundle.js"></script>
+  </head>
+  <body>
+    <div id="swagger-ui"></div>
+
+    <script>
+      window.onload = () => {
+        SwaggerUIBundle({
+          url: '/swagger/orangehrm-v2.json',
+          dom_id: '#swagger-ui',
+          oauth2RedirectUrl: window.location.origin + '/swagger/oauth2-redirect.html',
+          deepLinking: true,
+          presets: [SwaggerUIBundle.presets.apis],
+          layout: 'BaseLayout',
+        });
+      };
+    </script>
+  </body>
+</html>

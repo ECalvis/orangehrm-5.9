@@ -1,0 +1,3726 @@
+======================================================================
+ ORANGEHRM OPENAPI ANALYSIS
+======================================================================
+
+======================================================================
+ BASIC COUNTS
+======================================================================
+
+Paths        : 276
+Operations   : 491
+Schemas      : 171
+
+HTTP METHODS
+GET        239
+POST       80
+PUT        107
+DELETE     65
+
+======================================================================
+ OPERATIONS BY MODULE
+======================================================================
+
+Admin/I18N: 9
+  GET:6 DELETE:1 PUT:2
+Recruitment/Candidate Workflow: 9
+  GET:1 PUT:7 POST:1
+Admin/Workspace Notification: 9
+  GET:3 PUT:2 POST:3 DELETE:1
+Dashboard/Widgets: 8
+  GET:7 PUT:1
+Leave/Entitlements: 7
+  GET:4 PUT:1 POST:1 DELETE:1
+Admin/Pay Grade Currency: 6
+  GET:3 PUT:1 POST:1 DELETE:1
+Admin/Users: 6
+  GET:3 PUT:1 POST:1 DELETE:1
+Admin/Work Shift: 6
+  GET:3 POST:1 DELETE:1 PUT:1
+Leave/Leave Type: 6
+  GET:3 PUT:1 POST:1 DELETE:1
+Performance/Review Configuration: 6
+  GET:3 POST:1 DELETE:1 PUT:1
+Performance/Tracker Configuration: 6
+  GET:3 POST:1 DELETE:1 PUT:1
+PIM/Employee Language: 6
+  GET:3 PUT:1 POST:1 DELETE:1
+PIM/Employee Licenses: 6
+  GET:3 PUT:1 POST:1 DELETE:1
+PIM/Employee Skill: 6
+  GET:3 PUT:1 POST:1 DELETE:1
+PIM/Employee Subordinates: 6
+  GET:2 POST:1 DELETE:1 PUT:2
+Recruitment/Candidates: 6
+  GET:3 POST:1 DELETE:1 PUT:1
+Time/Employee Timesheet: 6
+  GET:3 POST:1 PUT:2
+Admin/Education: 5
+  GET:2 PUT:1 POST:1 DELETE:1
+Admin/Email Subscriber: 5
+  GET:2 POST:1 DELETE:1 PUT:1
+Admin/Employment Status: 5
+  GET:2 PUT:1 POST:1 DELETE:1
+Admin/Job Category: 5
+  GET:2 PUT:1 POST:1 DELETE:1
+Admin/Job Title: 5
+  GET:2 PUT:1 POST:1 DELETE:1
+Admin/Languages: 5
+  GET:2 PUT:1 POST:1 DELETE:1
+Admin/License: 5
+  GET:2 PUT:1 POST:1 DELETE:1
+Admin/Locations: 5
+  GET:2 PUT:1 POST:1 DELETE:1
+Admin/Memberships: 5
+  GET:2 PUT:1 POST:1 DELETE:1
+Admin/Nationality: 5
+  GET:2 PUT:1 POST:1 DELETE:1
+Admin/Pay Grade: 5
+  GET:2 POST:1 DELETE:1 PUT:1
+Admin/Skills: 5
+  GET:2 PUT:1 POST:1 DELETE:1
+Admin/Subunits: 5
+  GET:2 PUT:1 DELETE:1 POST:1
+Buzz/Comments: 5
+  GET:2 PUT:1 DELETE:1 POST:1
+Claim/Attachments: 5
+  GET:2 POST:1 DELETE:1 PUT:1
+Claim/Events: 5
+  GET:2 POST:1 DELETE:1 PUT:1
+Claim/Expenses: 5
+  GET:2 POST:1 DELETE:1 PUT:1
+Claim/Expense Types: 5
+  GET:2 POST:1 DELETE:1 PUT:1
+OAuth/OAuth Clients: 5
+  GET:2 POST:1 DELETE:1 PUT:1
+Leave/Holiday: 5
+  GET:2 PUT:1 POST:1 DELETE:1
+OpenIDConnect/openid-providers: 5
+  GET:2 POST:1 DELETE:1 PUT:1
+Performance/KPI Configuration: 5
+  GET:2 PUT:1 POST:1 DELETE:1
+Performance/Tracker Logs: 5
+  GET:2 POST:1 DELETE:1 PUT:1
+PIM/Custom Field: 5
+  GET:2 PUT:1 POST:1 DELETE:1
+PIM/Employee Emergency Contact: 5
+  GET:2 POST:1 DELETE:1 PUT:1
+PIM/Employee: 5
+  GET:3 POST:1 DELETE:1
+PIM/Employee Attachment: 5
+  GET:2 PUT:1 POST:1 DELETE:1
+PIM/Employee Dependent: 5
+  GET:2 PUT:1 POST:1 DELETE:1
+PIM/Employee Education: 5
+  GET:2 PUT:1 POST:1 DELETE:1
+PIM/Employee Immigration: 5
+  GET:2 POST:1 DELETE:1 PUT:1
+PIM/Employee Membership: 5
+  GET:2 PUT:1 POST:1 DELETE:1
+PIM/Employee Salary: 5
+  GET:2 PUT:1 POST:1 DELETE:1
+PIM/Employee Work Experience: 5
+  GET:2 PUT:1 POST:1 DELETE:1
+PIM/Reporting Method Configuration: 5
+  GET:2 PUT:1 POST:1 DELETE:1
+PIM/Termination Reason Configuration: 5
+  GET:2 POST:1 DELETE:1 PUT:1
+Recruitment/Interview Attachments: 5
+  GET:2 POST:1 DELETE:1 PUT:1
+Recruitment/Vacancy: 5
+  GET:2 PUT:1 POST:1 DELETE:1
+Time/Customers: 5
+  GET:2 POST:1 DELETE:1 PUT:1
+Time/Project: 5
+  GET:2 POST:1 DELETE:1 PUT:1
+Time/Project Activity: 5
+  GET:2 POST:1 DELETE:1 PUT:1
+Attendance/Overlap: 4
+  GET:4
+Attendance/Employee Attendance: 4
+  GET:1 POST:1 PUT:1 DELETE:1
+Buzz/Shares: 4
+  GET:1 POST:1 PUT:1 DELETE:1
+Claim/Requests: 4
+  PUT:1 POST:1 GET:2
+Admin/Theme: 4
+  POST:1 GET:1 PUT:1 DELETE:1
+Leave/Employee Leave Request: 4
+  GET:2 PUT:1 POST:1
+Leave/My Leave Request: 4
+  GET:2 PUT:1 POST:1
+PIM/Employee Supervisor: 4
+  GET:2 POST:1 DELETE:1
+PIM/Employee Termination: 4
+  GET:1 PUT:1 POST:1 DELETE:1
+PIM/Defined Report: 4
+  GET:1 POST:1 DELETE:1 PUT:1
+Recruitment/Vacancy Attachments: 4
+  POST:1 DELETE:1 GET:1 PUT:1
+Time/Validation: 4
+  GET:4
+Attendance/Attendance Record: 3
+  GET:2 PUT:1
+Buzz/Comment Likes: 3
+  GET:1 POST:1 DELETE:1
+Buzz/Share Likes: 3
+  GET:1 POST:1 DELETE:1
+Buzz/Post: 3
+  POST:1 GET:1 PUT:1
+Claim/My Requests: 3
+  GET:2 POST:1
+Admin/LDAP Configuration: 3
+  GET:1 PUT:1 POST:1
+Leave/Leave Period: 3
+  GET:2 PUT:1
+Performance/Trackers: 3
+  GET:3
+Performance/Reviews: 3
+  GET:3
+Performance/Review Evaluation: 3
+  GET:2 PUT:1
+Recruitment/Candidate Attachments: 3
+  POST:1 GET:1 PUT:1
+Recruitment/Candidate History: 3
+  GET:2 PUT:1
+Admin/Email Configuration: 2
+  GET:1 PUT:1
+Admin/Email Subscription: 2
+  GET:1 PUT:1
+Admin/Localization: 2
+  GET:1 PUT:1
+Admin/Modules: 2
+  GET:1 PUT:1
+Admin/Organization: 2
+  GET:1 PUT:1
+Attendance/Configuration: 2
+  GET:1 PUT:1
+Directory/Employees: 2
+  GET:2
+Admin/LDAP User Sync: 2
+  GET:1 POST:1
+Leave/Leave Balance: 2
+  GET:2
+Leave/Leaves: 2
+  GET:1 PUT:1
+Leave/Leave Comment: 2
+  GET:1 POST:1
+Leave/Leave Report: 2
+  GET:2
+Leave/Leave Request Comment: 2
+  GET:1 POST:1
+Leave/Work Week: 2
+  GET:1 PUT:1
+Maintenance/Purge Candidate: 2
+  DELETE:1 GET:1
+Performance/Review Evaluation by Employee: 2
+  GET:1 PUT:1
+Performance/Review Evaluation by Supervisor: 2
+  GET:1 PUT:1
+PIM/Employee US Tax Exemption: 2
+  GET:1 PUT:1
+PIM/Employee Contact Details: 2
+  GET:1 PUT:1
+PIM/Employee Custom Field: 2
+  GET:1 PUT:1
+PIM/Employee Job Details: 2
+  GET:1 PUT:1
+PIM/Employee Personal Details: 2
+  GET:1 PUT:1
+PIM/Employee Picture: 2
+  GET:1 PUT:1
+PIM/Employment Contract: 2
+  GET:1 PUT:1
+PIM/Optional Field: 2
+  GET:1 PUT:1
+PIM/Employee Email Validation: 2
+  GET:2
+Recruitment/Candidate Interview: 2
+  GET:1 PUT:1
+Time/Copy Project Activity: 2
+  GET:1 POST:1
+Time/My Timesheet: 2
+  GET:1 PUT:1
+Time/Timesheet Period: 2
+  GET:1 PUT:1
+Time/Timesheet Report: 2
+  GET:2
+Time/Timesheet Comment: 2
+  PUT:1 GET:1
+Admin/I18N Language Import: 1
+  POST:1
+Admin/Job Specification: 1
+  GET:1
+Attendance/Current Date Time: 1
+  GET:1
+Attendance/Employee Attendance Summary: 1
+  GET:1
+Attendance/Timezones: 1
+  GET:1
+Authentication/Password Strength: 1
+  POST:1
+Buzz/Feed: 1
+  GET:1
+Buzz/Validation: 1
+  GET:1
+Buzz/Employee Anniversary: 1
+  GET:1
+Core/About Organization: 1
+  GET:1
+Core/Unique Validation: 1
+  GET:1
+Leave/Employee Bulk Leave: 1
+  PUT:1
+Leave/Employee Bulk Leave Request: 1
+  PUT:1
+Leave/Employee Leave: 1
+  GET:1
+Leave/Overlap Leave: 1
+  GET:1
+Leave/Validation: 1
+  GET:1
+Maintenance/Purge Employee: 1
+  DELETE:1
+Mobile/Menu Items: 1
+  GET:1
+PIM/Employee Report To: 1
+  GET:1
+PIM/Employee CSV Import: 1
+  POST:1
+PIM/Employee Count: 1
+  GET:1
+PIM/Employee Work Shift: 1
+  GET:1
+PIM/Update Password: 1
+  PUT:1
+Recruitment/Employee List: 1
+  GET:1
+Recruitment/Hiring Managers: 1
+  GET:1
+Time/Default Timesheet: 1
+  GET:1
+Time/Project Admins: 1
+  GET:1
+Time/Timesheet Action Log: 1
+  GET:1
+Time/Timesheet Time Format: 1
+  GET:1
+
+======================================================================
+ CRUD-LIKE RESOURCES
+======================================================================
+
+admin/educations                                             GET, PUT, POST, DELETE
+admin/email-configuration                                    GET, PUT
+admin/email-subscriptions                                    GET, PUT
+admin/email-subscriptions/subscribers                        GET, POST, DELETE, PUT
+admin/employment-statuses                                    GET, PUT, POST, DELETE
+admin/i18n/groups                                            GET
+admin/i18n/languages                                         GET, DELETE, PUT
+admin/i18n/languages/import                                  POST
+admin/i18n/languages/translations                            GET
+admin/i18n/languages/translations/bulk                       PUT
+admin/i18n/languages/translations/errors                     GET
+admin/i18n/translation/validate                              GET
+admin/job-categories                                         GET, PUT, POST, DELETE
+admin/job-titles                                             GET, PUT, POST, DELETE
+admin/job-titles/specification                               GET
+admin/languages                                              GET, PUT, POST, DELETE
+admin/ldap-config                                            GET, PUT
+admin/ldap-test-connection                                   POST
+admin/ldap/user-sync                                         GET, POST
+admin/licenses                                               GET, PUT, POST, DELETE
+admin/localization                                           GET
+admin/localization}                                          PUT
+admin/locations                                              GET, PUT, POST, DELETE
+admin/memberships                                            GET, PUT, POST, DELETE
+admin/modules                                                GET, PUT
+admin/nationalities                                          GET, PUT, POST, DELETE
+admin/oauth-client                                           GET, PUT
+admin/oauth-clients                                          GET, POST, DELETE
+admin/organization                                           GET, PUT
+admin/pay-grades                                             GET, POST, DELETE, PUT
+admin/pay-grades/currencies                                  GET, PUT, POST, DELETE
+admin/pay-grades/currencies/allowed                          GET
+admin/skills                                                 GET, PUT, POST, DELETE
+admin/subunits                                               GET, PUT, DELETE, POST
+admin/theme                                                  GET, PUT, DELETE
+admin/theme/preview                                          POST
+admin/users                                                  GET, PUT, POST, DELETE
+admin/validation/user-name                                   GET
+admin/work-shifts                                            GET, POST, DELETE, PUT
+admin/work-shifts/employees                                  GET
+admin/workspace-notification/config                          GET, PUT
+admin/workspace-notification/registrations                   GET, POST, DELETE, PUT
+admin/workspace-notification/registrations/test              POST
+attendance/configs                                           GET, PUT
+attendance/current-datetime                                  GET
+attendance/employees/records                                 GET, POST, PUT, DELETE
+attendance/employees/summary                                 GET
+attendance/punch-in/overlaps                                 GET
+attendance/punch-out/overlaps                                GET
+attendance/records                                           GET, PUT
+attendance/records/latest                                    GET
+attendance/records/punch-in-overlaps                         GET
+attendance/records/punch-out-overlaps                        GET
+attendance/timezones                                         GET
+auth/openid-providers                                        GET, POST, DELETE, PUT
+auth/validation/password                                     POST
+buzz/anniversaries                                           GET
+buzz/comments/likes                                          GET, POST, DELETE
+buzz/feed                                                    GET
+buzz/posts                                                   POST, GET, PUT
+buzz/posts/shares                                            GET
+buzz/shares                                                  POST, PUT, DELETE
+buzz/shares/comments                                         GET, PUT, DELETE, POST
+buzz/shares/likes                                            GET, POST, DELETE
+buzz/validation/links                                        GET
+claim/employees/requests                                     POST, GET
+claim/events                                                 GET, POST, DELETE, PUT
+claim/expenses/types                                         GET, POST, DELETE, PUT
+claim/requests                                               GET, POST
+claim/requests/action                                        PUT
+claim/requests/attachments                                   GET, POST, DELETE, PUT
+claim/requests/expenses                                      GET, POST, DELETE, PUT
+core/about                                                   GET
+core/validation/unique                                       GET
+dashboard/config/employee-on-leave-today                     GET, PUT
+dashboard/employees/action-summary                           GET
+dashboard/employees/leaves                                   GET
+dashboard/employees/locations                                GET
+dashboard/employees/subunit                                  GET
+dashboard/employees/time-at-work                             GET
+dashboard/shortcuts                                          GET
+directory/employees                                          GET
+leave/employees/leave-balances                               GET
+leave/employees/leave-entitlements                           GET
+leave/employees/leave-requests                               GET, PUT, POST
+leave/employees/leave-requests/bulk                          PUT
+leave/employees/leaves                                       GET
+leave/holidays                                               GET, PUT, POST, DELETE
+leave/leave-balance/leave-type                               GET
+leave/leave-entitlements                                     GET, PUT, POST, DELETE
+leave/leave-entitlements/validation/entitlements             GET
+leave/leave-period                                           GET, PUT
+leave/leave-periods                                          GET
+leave/leave-requests                                         GET, PUT, POST
+leave/leave-requests/leave-comments                          GET, POST
+leave/leave-requests/leaves                                  GET
+leave/leave-types                                            GET, PUT, POST, DELETE
+leave/leave-types/eligible                                   GET
+leave/leaves                                                 PUT
+leave/leaves/bulk                                            PUT
+leave/leaves/leave-comments                                  GET, POST
+leave/overlap-leaves                                         GET
+leave/reports                                                GET
+leave/reports/data                                           GET
+leave/workweek                                               GET, PUT
+maintenance/candidates                                       GET
+maintenance/candidates/purge                                 DELETE
+maintenance/purge                                            DELETE
+mobile/menus                                                 GET
+performance/config/trackers                                  GET, POST, DELETE, PUT
+performance/employees/reviews                                GET
+performance/employees/trackers                               GET
+performance/kpis                                             GET, PUT, POST, DELETE
+performance/manage/reviews                                   GET, POST, DELETE, PUT
+performance/reviews                                          GET
+performance/reviews/actions/allowed                          GET
+performance/reviews/evaluation/employee                      GET, PUT
+performance/reviews/evaluation/final                         GET, PUT
+performance/reviews/evaluation/supervisor                    GET, PUT
+performance/reviews/kpis                                     GET
+performance/supervisors                                      GET
+performance/trackers}                                        GET
+performance/trackers/logs                                    GET, POST, DELETE, PUT
+performance/trackers/reviewers                               GET
+pim/csv-import                                               POST
+pim/custom-fields                                            GET, PUT, POST, DELETE
+pim/employee/contact-details                                 GET, PUT
+pim/employees                                                GET, POST, DELETE
+pim/employees/contact-details/validation/other-emails        GET
+pim/employees/contact-details/validation/work-emails         GET
+pim/employees/count                                          GET
+pim/employees/custom-fields                                  GET, PUT
+pim/employees/dependents                                     GET, PUT, POST, DELETE
+pim/employees/educations                                     GET, PUT, POST, DELETE
+pim/employees/emergency-contacts                             GET, POST, DELETE, PUT
+pim/employees/employment-contract                            GET, PUT
+pim/employees/immigrations                                   GET, POST, DELETE, PUT
+pim/employees/job-details                                    GET, PUT
+pim/employees/languages                                      GET, POST, DELETE
+pim/employees/languages/allowed                              GET
+pim/employees/languages/fluencies                            GET, PUT
+pim/employees/licenses                                       GET, PUT, POST, DELETE
+pim/employees/licenses/allowed                               GET
+pim/employees/memberships                                    GET, PUT, POST, DELETE
+pim/employees/personal-details                               GET, PUT
+pim/employees/picture                                        GET, PUT
+pim/employees/report-to/allowed                              GET
+pim/employees/salary-components                              GET, PUT, POST, DELETE
+pim/employees/screen/attachments                             GET, PUT, POST, DELETE
+pim/employees/skills                                         GET, PUT, POST, DELETE
+pim/employees/skills/allowed                                 GET
+pim/employees/subordinates                                   GET, POST, DELETE, PUT
+pim/employees/supervisors                                    GET, PUT, POST, DELETE
+pim/employees/tax-exemption                                  GET, PUT
+pim/employees/terminations                                   GET, PUT, POST, DELETE
+pim/employees/work-experiences                               GET, PUT, POST, DELETE
+pim/employees/work-shift                                     GET
+pim/myself                                                   GET
+pim/optional-field                                           GET, PUT
+pim/reporting-methods                                        GET, PUT, POST, DELETE
+pim/reports/defined                                          GET, POST, DELETE, PUT
+pim/termination-reasons                                      GET, POST, DELETE, PUT
+pim/update-password                                          PUT
+recruitment/candidate/attachment                             GET, PUT
+recruitment/candidate/attachments                            POST
+recruitment/candidate/interview                              PUT
+recruitment/candidates                                       GET, POST, DELETE, PUT
+recruitment/candidates/actions/allowed                       GET
+recruitment/candidates/hire                                  PUT
+recruitment/candidates/history                               GET, PUT
+recruitment/candidates/interview                             GET
+recruitment/candidates/interviews/fail                       PUT
+recruitment/candidates/interviews/pass                       PUT
+recruitment/candidates/job/decline                           PUT
+recruitment/candidates/job/offer                             PUT
+recruitment/candidates/reject                                PUT
+recruitment/candidates/shedule-interview                     POST
+recruitment/candidates/shortlist                             PUT
+recruitment/candidates/status                                GET
+recruitment/hiring-managers                                  GET
+recruitment/interviews/attachments                           GET, POST, DELETE, PUT
+recruitment/interviwers                                      GET
+recruitment/vacancies                                        GET, PUT, POST, DELETE
+recruitment/vacancies/attachments                            GET, PUT
+recruitment/vacancy/attachments                              POST, DELETE
+time/config/time-format                                      GET
+time/customers                                               GET, POST, DELETE, PUT
+time/employees/timesheets                                    GET, POST, PUT
+time/employees/timesheets/entries                            GET, PUT
+time/employees/timesheets/list                               GET
+time/project-admins                                          GET
+time/project/activities                                      GET, POST, DELETE, PUT
+time/projects                                                GET, POST, DELETE, PUT
+time/projects/activities/copy                                GET, POST
+time/reports                                                 GET
+time/reports/data                                            GET
+time/time-sheet-period                                       GET, PUT
+time/timesheets/action-logs                                  GET
+time/timesheets/default                                      GET
+time/timesheets/entries                                      GET, PUT
+time/timesheets/entries/comment                              PUT, GET
+time/validation/activity-name                                GET
+time/validation/customer-name                                GET
+time/validation/project-activity                             GET
+time/validation/project-name                                 GET
+
+======================================================================
+ REQUEST BODY USAGE
+======================================================================
+
+application/json: 189
+  - PUT /api/v2/admin/educations/{id}
+  - POST /api/v2/admin/educations
+  - PUT /api/v2/admin/email-configuration
+  - POST /api/v2/admin/email-subscriptions/{emailSubscriptionId}/subscribers
+  - PUT /api/v2/admin/email-subscriptions/{emailSubscriptionId}/subscribers/{id}
+  - PUT /api/v2/admin/email-subscriptions/{id}
+  - PUT /api/v2/admin/employment-statuses/{id}
+  - POST /api/v2/admin/employment-statuses
+  - PUT /api/v2/admin/i18n/languages/{id}
+  - PUT /api/v2/admin/i18n/languages/{languageId}/translations/bulk
+  - POST /api/v2/admin/i18n/languages/{languageId}/import
+  - PUT /api/v2/admin/job-categories/{id}
+  - POST /api/v2/admin/job-categories
+  - PUT /api/v2/admin/job-titles/{id}
+  - POST /api/v2/admin/job-titles
+  - PUT /api/v2/admin/languages/{id}
+  - POST /api/v2/admin/languages
+  - PUT /api/v2/admin/licenses/{id}
+  - POST /api/v2/admin/licenses
+  - PUT /api/v2/admin/localization}
+  - PUT /api/v2/admin/locations/{id}
+  - POST /api/v2/admin/locations
+  - PUT /api/v2/admin/memberships/{id}
+  - POST /api/v2/admin/memberships
+  - PUT /api/v2/admin/modules
+  - PUT /api/v2/admin/nationalities/{id}
+  - POST /api/v2/admin/nationalities
+  - PUT /api/v2/admin/organization
+  - POST /api/v2/admin/pay-grades
+  - PUT /api/v2/admin/pay-grades/{id}
+  - PUT /api/v2/admin/pay-grades/{payGradeId}/currencies/{id}
+  - POST /api/v2/admin/pay-grades/{payGradeId}/currencies
+  - PUT /api/v2/admin/skills/{id}
+  - POST /api/v2/admin/skills
+  - PUT /api/v2/admin/subunits/{id}
+  - POST /api/v2/admin/subunits
+  - PUT /api/v2/admin/users/{id}
+  - POST /api/v2/admin/users
+  - POST /api/v2/admin/work-shifts
+  - PUT /api/v2/admin/work-shifts/{id}
+  - PUT /api/v2/attendance/configs
+  - PUT /api/v2/attendance/records/{id}
+  - POST /api/v2/attendance/employees/{empNumber}/records
+  - PUT /api/v2/attendance/employees/{empNumber}/records
+  - POST /api/v2/auth/validation/password
+  - PUT /api/v2/buzz/shares/{shareId}/comments/{commentId}
+  - POST /api/v2/buzz/shares/{shareId}/comments
+  - POST /api/v2/buzz/posts
+  - PUT /api/v2/buzz/posts/{id}
+  - POST /api/v2/buzz/shares
+  - PUT /api/v2/buzz/shares/{id}
+  - POST /api/v2/claim/requests/{requestId}/attachments
+  - DELETE /api/v2/claim/requests/{requestId}/attachments
+  - PUT /api/v2/claim/requests/{requestId}/attachments/{id}
+  - POST /api/v2/claim/events
+  - PUT /api/v2/claim/events/{id}
+  - POST /api/v2/claim/requests/{requestId}/expenses
+  - PUT /api/v2/claim/requests/{requestId}/expenses/{id}
+  - POST /api/v2/claim/expenses/types
+  - PUT /api/v2/claim/expenses/types/{id}
+  - PUT /api/v2/claim/requests/{requestId}/action
+  - POST /api/v2/claim/employees/{empNumber}/requests
+  - POST /api/v2/claim/requests
+  - POST /api/v2/admin/oauth-clients
+  - PUT /api/v2/admin/oauth-client/{id}
+  - POST /api/v2/admin/theme/preview
+  - PUT /api/v2/admin/theme
+  - PUT /api/v2/dashboard/config/employee-on-leave-today
+  - PUT /api/v2/admin/ldap-config
+  - POST /api/v2/admin/ldap-test-connection
+  - PUT /api/v2/leave/leaves/bulk
+  - PUT /api/v2/leave/employees/leave-requests/bulk
+  - PUT /api/v2/leave/employees/leave-requests/{leaveRequestId}
+  - POST /api/v2/leave/employees/leave-requests
+  - PUT /api/v2/leave/holidays/{id}
+  - POST /api/v2/leave/holidays
+  - PUT /api/v2/leave/leaves/{leaveId}
+  - POST /api/v2/leave/leaves/{leaveId}/leave-comments
+  - PUT /api/v2/leave/leave-entitlements/{id}
+  - POST /api/v2/leave/leave-entitlements
+  - PUT /api/v2/leave/leave-period
+  - POST /api/v2/leave/leave-requests/{leaveRequestId}/leave-comments
+  - PUT /api/v2/leave/leave-types/{id}
+  - POST /api/v2/leave/leave-types
+  - PUT /api/v2/leave/leave-requests/{leaveRequestId}
+  - POST /api/v2/leave/leave-requests
+  - PUT /api/v2/leave/workweek
+  - DELETE /api/v2/maintenance/candidates/purge
+  - DELETE /api/v2/maintenance/purge
+  - POST /api/v2/auth/openid-providers
+  - PUT /api/v2/auth/openid-providers/{id}
+  - PUT /api/v2/performance/reviews/{reviewId}/evaluation/employee
+  - PUT /api/v2/performance/kpis/{id}
+  - POST /api/v2/performance/kpis
+  - POST /api/v2/performance/manage/reviews
+  - PUT /api/v2/performance/manage/reviews/{id}
+  - PUT /api/v2/performance/reviews/{reviewId}/evaluation/final
+  - POST /api/v2/performance/config/trackers
+  - PUT /api/v2/performance/config/trackers/{id}
+  - POST /api/v2/performance/trackers/{trackerId}/logs
+  - PUT /api/v2/performance/trackers/{trackerId}/logs/{id}
+  - PUT /api/v2/performance/reviews/{reviewId}/evaluation/supervisor
+  - PUT /api/v2/pim/custom-fields/{id}
+  - POST /api/v2/pim/custom-fields
+  - POST /api/v2/pim/employees/{empNumber}/emergency-contacts
+  - PUT /api/v2/pim/employees/{empNumber}/emergency-contacts/{id}
+  - PUT /api/v2/pim/employees/{empNumber}/tax-exemption
+  - POST /api/v2/pim/employees
+  - PUT /api/v2/pim/employees/{empNumber}/screen/{screen}/attachments/{id}
+  - POST /api/v2/pim/employees/{empNumber}/screen/{screen}/attachments
+  - POST /api/v2/pim/csv-import
+  - PUT /api/v2/pim/employee/{empNumber}/contact-details
+  - PUT /api/v2/pim/employees/{empNumber}/custom-fields
+  - PUT /api/v2/pim/employees/{empNumber}/dependents/{id}
+  - POST /api/v2/pim/employees/{empNumber}/dependents
+  - PUT /api/v2/pim/employees/{empNumber}/educations/{id}
+  - POST /api/v2/pim/employees/{empNumber}/educations
+  - POST /api/v2/pim/employees/{empNumber}/immigrations
+  - PUT /api/v2/pim/employees/{empNumber}/immigrations/{id}
+  - PUT /api/v2/pim/employees/{empNumber}/job-details
+  - PUT /api/v2/pim/employees/{empNumber}/languages/{languageId}/fluencies/{fluencyId}
+  - POST /api/v2/pim/employees/{empNumber}/languages
+  - DELETE /api/v2/pim/employees/{empNumber}/languages
+  - PUT /api/v2/pim/employees/{empNumber}/licenses/{id}
+  - POST /api/v2/pim/employees/{empNumber}/licenses
+  - PUT /api/v2/pim/employees/{empNumber}/memberships/{id}
+  - POST /api/v2/pim/employees/{empNumber}/memberships
+  - PUT /api/v2/pim/employees/{empNumber}/personal-details
+  - PUT /api/v2/pim/employees/{empNumber}/picture
+  - PUT /api/v2/pim/employees/{empNumber}/salary-components/{id}
+  - POST /api/v2/pim/employees/{empNumber}/salary-components
+  - PUT /api/v2/pim/employees/{empNumber}/skills/{id}
+  - POST /api/v2/pim/employees/{empNumber}/skills
+  - POST /api/v2/pim/employees/{empNumber}/subordinates
+  - PUT /api/v2/pim/employees/{empNumber}/subordinates/{id}
+  - PUT /api/v2/pim/employees/{empNumber}/supervisors/{id}
+  - POST /api/v2/pim/employees/{empNumber}/supervisors
+  - PUT /api/v2/pim/employees/{empNumber}/terminations/{id}
+  - POST /api/v2/pim/employees/{empNumber}/terminations
+  - PUT /api/v2/pim/employees/{empNumber}/work-experiences/{id}
+  - POST /api/v2/pim/employees/{empNumber}/work-experiences
+  - PUT /api/v2/pim/employees/{empNumber}/employment-contract
+  - PUT /api/v2/pim/optional-field
+  - POST /api/v2/pim/reports/defined
+  - PUT /api/v2/pim/reports/defined/{id}
+  - PUT /api/v2/pim/reporting-methods/{id}
+  - POST /api/v2/pim/reporting-methods
+  - POST /api/v2/pim/termination-reasons
+  - PUT /api/v2/pim/termination-reasons/{id}
+  - PUT /api/v2/pim/update-password
+  - POST /api/v2/recruitment/candidates
+  - PUT /api/v2/recruitment/candidates/{id}
+  - POST /api/v2/recruitment/candidate/attachments
+  - PUT /api/v2/recruitment/candidate/{candidateId}/attachment
+  - PUT /api/v2/recruitment/candidates/{candidateId}/hire
+  - PUT /api/v2/recruitment/candidates/{candidateId}/history/{historyId}
+  - POST /api/v2/recruitment/candidates/{candidateId}/shedule-interview
+  - PUT /api/v2/recruitment/candidate/{candidateId}/interview/{interviewId}
+  - PUT /api/v2/recruitment/candidates/{candidateId}/job/offer
+  - PUT /api/v2/recruitment/candidates/{candidateId}/interviews/{interviewId}/fail
+  - PUT /api/v2/recruitment/candidates/{candidateId}/interviews/{interviewId}/pass
+  - PUT /api/v2/recruitment/candidates/{candidateId}/job/decline
+  - PUT /api/v2/recruitment/candidates/{candidateId}/reject
+  - PUT /api/v2/recruitment/candidates/{candidateId}/shortlist
+  - POST /api/v2/recruitment/interviews/{interviewId}/attachments
+  - PUT /api/v2/recruitment/interviews/{interviewId}/attachments/{attachmentId}
+  - PUT /api/v2/recruitment/vacancies/{id}
+  - POST /api/v2/recruitment/vacancies
+  - POST /api/v2/recruitment/vacancy/attachments
+  - PUT /api/v2/recruitment/vacancies/{vacancyId}/attachments/{attachmentId}
+  - POST /api/v2/time/projects/{toProjectId}/activities/copy/{fromProjectId}
+  - POST /api/v2/time/customers
+  - PUT /api/v2/time/customers/{id}
+  - POST /api/v2/time/employees/{empNumber}/timesheets
+  - PUT /api/v2/time/employees/{empNumber}/timesheets/{id}
+  - PUT /api/v2/time/employees/timesheets/{timesheetId}/entries
+  - PUT /api/v2/time/timesheets/{timesheetId}/entries
+  - POST /api/v2/time/projects
+  - PUT /api/v2/time/projects/{id}
+  - POST /api/v2/time/project/{projectId}/activities
+  - PUT /api/v2/time/project/{projectId}/activities/{id}
+  - PUT /api/v2/time/time-sheet-period
+  - PUT /api/v2/time/timesheets/{timesheetId}/entries/comment
+  - PUT /api/v2/admin/workspace-notification/config
+  - POST /api/v2/admin/workspace-notification/registrations
+  - DELETE /api/v2/admin/workspace-notification/registrations
+  - PUT /api/v2/admin/workspace-notification/registrations/{id}
+  - POST /api/v2/admin/workspace-notification/registrations/test
+  - POST /api/v2/admin/workspace-notification/registrations/{id}/test
+
+======================================================================
+ FILE / UPLOAD CANDIDATES
+======================================================================
+
+GET     /api/v2/admin/i18n/languages/{languageId}/translations/errors | List I18N Import Errors
+POST    /api/v2/admin/i18n/languages/{languageId}/import | Import I18N language
+GET     /api/v2/claim/requests/{requestId}/attachments | List Attachements on a Claim
+POST    /api/v2/claim/requests/{requestId}/attachments | Add Attachments to a Claim
+DELETE  /api/v2/claim/requests/{requestId}/attachments | Remove Attachments from a Claim
+GET     /api/v2/claim/requests/{requestId}/attachments/{id} | View an Attachment on a Claim
+PUT     /api/v2/claim/requests/{requestId}/attachments/{id} | Update an Attachment on a Claim
+GET     /api/v2/pim/employees/{empNumber}/screen/{screen}/attachments/{id} | Get an Employee's Attachment on a Screen
+PUT     /api/v2/pim/employees/{empNumber}/screen/{screen}/attachments/{id} | Update an Employee's Attachment on a Screen
+GET     /api/v2/pim/employees/{empNumber}/screen/{screen}/attachments | List an Employee's Attachments on a Screen
+POST    /api/v2/pim/employees/{empNumber}/screen/{screen}/attachments | Add an Attachment to an Employee on a Screen
+DELETE  /api/v2/pim/employees/{empNumber}/screen/{screen}/attachments | Delete an Employee's Attachments on a Screen
+POST    /api/v2/pim/csv-import | Import Employee Records
+GET     /api/v2/pim/employees/{empNumber}/picture | Get an Employee's Picture
+PUT     /api/v2/pim/employees/{empNumber}/picture | Update an Employee's Picture
+POST    /api/v2/recruitment/candidate/attachments | Add an Attachment to a Candidate
+GET     /api/v2/recruitment/candidate/{candidateId}/attachment | Get a Candidate's Attachment
+PUT     /api/v2/recruitment/candidate/{candidateId}/attachment | Update a Candidate's Attachment
+GET     /api/v2/recruitment/interviews/{interviewId}/attachments | List All Interview Attachments
+POST    /api/v2/recruitment/interviews/{interviewId}/attachments | Add an Attachment to an Interview
+DELETE  /api/v2/recruitment/interviews/{interviewId}/attachments | Delete Interview Attachments
+GET     /api/v2/recruitment/interviews/{interviewId}/attachments/{attachmentId} | Get an Interview Attachment
+PUT     /api/v2/recruitment/interviews/{interviewId}/attachments/{attachmentId} | Update an Interview Attachment
+POST    /api/v2/recruitment/vacancy/attachments | Add an Attachment to a Vacancy
+DELETE  /api/v2/recruitment/vacancy/attachments | Delete Vacancy Attachments
+GET     /api/v2/recruitment/vacancies/{vacancyId}/attachments | Get a Vacancy Attachment
+PUT     /api/v2/recruitment/vacancies/{vacancyId}/attachments/{attachmentId} | Update a Vacancy Attachment
+
+======================================================================
+ BULK / BATCH CANDIDATES
+======================================================================
+
+PUT     /api/v2/admin/i18n/languages/{languageId}/translations/bulk | Bulk Update I18N Translations
+PUT     /api/v2/leave/leaves/bulk | Bulk Approve/Cancel/Reject Leaves
+PUT     /api/v2/leave/employees/leave-requests/bulk | Bulk Approve/Cancel/Reject Leave Requests
+
+======================================================================
+ ACTION / WORKFLOW CANDIDATES
+======================================================================
+
+POST    /api/v2/admin/i18n/languages/{languageId}/import | Import I18N language
+PUT     /api/v2/claim/requests/{requestId}/action | Perform an Action on a Claim Request
+DELETE  /api/v2/maintenance/candidates/purge | Purge Candidate
+DELETE  /api/v2/maintenance/purge | Purge Employee
+PUT     /api/v2/recruitment/candidates/{candidateId}/hire | Hire Candidate
+PUT     /api/v2/recruitment/candidates/{candidateId}/job/offer | Offer Job to Candidate
+PUT     /api/v2/recruitment/candidates/{candidateId}/interviews/{interviewId}/fail | Mark Candidate Interview as Failed
+PUT     /api/v2/recruitment/candidates/{candidateId}/interviews/{interviewId}/pass | Mark Candidate Interview as Passed
+PUT     /api/v2/recruitment/candidates/{candidateId}/job/decline | Decline Job Offer for Candidate
+PUT     /api/v2/recruitment/candidates/{candidateId}/reject | Reject Candidate
+PUT     /api/v2/recruitment/candidates/{candidateId}/shortlist | Shortlist Candidate
+GET     /api/v2/time/projects/{toProjectId}/activities/copy/{fromProjectId} | List Copyable Activities Between Two Projects
+POST    /api/v2/time/projects/{toProjectId}/activities/copy/{fromProjectId} | Copy Activities From One Project
+POST    /api/v2/admin/workspace-notification/registrations/test | Send a test Slack notification using a provided webhook URL
+POST    /api/v2/admin/workspace-notification/registrations/{id}/test | Send a test Slack notification using a saved registration's stored webhook
+
+======================================================================
+ PAGINATION / FILTERING CANDIDATES
+======================================================================
+
+GET     /api/v2/admin/educations
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/admin/email-subscriptions/{emailSubscriptionId}/subscribers
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/admin/email-subscriptions
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/admin/employment-statuses
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/admin/i18n/groups
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/admin/i18n/languages/{languageId}/translations/errors
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/admin/i18n/languages
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/admin/i18n/languages/{languageId}/translations
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/admin/job-categories
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/admin/job-titles
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/admin/languages
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/admin/licenses
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/admin/locations
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/admin/memberships
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/admin/nationalities
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/admin/pay-grades
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/admin/pay-grades/{payGradeId}/currencies/allowed
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/admin/pay-grades/{payGradeId}/currencies
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/admin/skills
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/admin/users
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/admin/work-shifts
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/admin/work-shifts/employees
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/attendance/records/punch-in-overlaps
+  - punchInTimezoneOffset [query]
+  - punchOutTimezoneOffset [query]
+GET     /api/v2/attendance/records/punch-out-overlaps
+  - punchInTimezoneOffset [query]
+  - punchOutTimezoneOffset [query]
+GET     /api/v2/attendance/punch-in/overlaps
+  - timezoneOffset [query]
+GET     /api/v2/attendance/punch-out/overlaps
+  - timezoneOffset [query]
+GET     /api/v2/attendance/employees/{empNumber}/records
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/attendance/employees/summary
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/buzz/shares/{shareId}/comments
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/buzz/feed
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/buzz/comments/{commentId}/likes
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/buzz/shares/{shareId}/likes
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/buzz/posts/{id}/shares
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/buzz/anniversaries
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/claim/requests/{requestId}/attachments
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/claim/events
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/claim/requests/{requestId}/expenses
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/claim/expenses/types
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/claim/employees/requests
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/claim/requests
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/admin/oauth-clients
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/dashboard/employees/leaves
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/dashboard/employees/time-at-work
+  - timezoneOffset [query]
+GET     /api/v2/leave/employees/leaves
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/leave/employees/leave-balances
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/leave/employees/leave-entitlements
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/leave/employees/leave-requests
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/leave/holidays
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/leave/leave-requests/{leaveRequestId}/leaves
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/leave/leaves/{leaveId}/leave-comments
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/leave/leave-entitlements
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/leave/overlap-leaves
+  - endDuration[type] [query]
+  - endDuration[fromTime] [query]
+  - endDuration[toTime] [query]
+GET     /api/v2/leave/reports/data
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/leave/leave-requests/{leaveRequestId}/leave-comments
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/leave/leave-types
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/leave/leave-requests
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/maintenance/candidates
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/auth/openid-providers
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/performance/reviews/{reviewId}/evaluation/employee
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/performance/employees/trackers
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/performance/kpis
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/performance/reviews
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/performance/trackers}
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/performance/manage/reviews
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/performance/config/trackers
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/performance/trackers/{trackerId}/logs
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/performance/trackers/reviewers
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/performance/supervisors
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/performance/reviews/{reviewId}/kpis
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/performance/employees/reviews
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/performance/reviews/{reviewId}/evaluation/supervisor
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/pim/custom-fields
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/pim/employees/{empNumber}/emergency-contacts
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/pim/employees
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/pim/employees/{empNumber}/languages/allowed
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/pim/employees/{empNumber}/licenses/allowed
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/pim/employees/{empNumber}/report-to/allowed
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/pim/employees/{empNumber}/skills/allowed
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/pim/employees/{empNumber}/screen/{screen}/attachments
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/pim/employees/{empNumber}/dependents
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/pim/employees/{empNumber}/educations
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/pim/employees/{empNumber}/immigrations
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/pim/employees/{empNumber}/languages
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/pim/employees/{empNumber}/licenses
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/pim/employees/{empNumber}/memberships
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/pim/employees/{empNumber}/salary-components
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/pim/employees/{empNumber}/skills
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/pim/employees/{empNumber}/subordinates
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/pim/employees/{empNumber}/supervisors
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/pim/employees/{empNumber}/work-experiences
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/pim/reports/defined
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/pim/reporting-methods
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/pim/termination-reasons
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/recruitment/candidates
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/recruitment/candidates/{candidateId}/history
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/recruitment/interviwers
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/recruitment/hiring-managers
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/recruitment/interviews/{interviewId}/attachments
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/recruitment/vacancies
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/time/projects/{toProjectId}/activities/copy/{fromProjectId}
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/time/customers
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/time/employees/{empNumber}/timesheets
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/time/employees/timesheets/list
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/time/projects
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/time/project/{projectId}/activities
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/time/project-admins
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/time/reports/data
+  - limit [query]
+GET     /api/v2/time/timesheets/{timesheetId}/action-logs
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+GET     /api/v2/admin/workspace-notification/registrations
+  - sortField [query]
+  - sortOrder [query] (#/components/parameters/sortOrder)
+  - limit [query] (#/components/parameters/limit)
+  - offset [query] (#/components/parameters/offset)
+
+======================================================================
+ ENUMS
+======================================================================
+
+GET /api/v2/admin/educations parameter:sortField
+  - e.name
+GET /api/v2/admin/educations parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/admin/email-subscriptions/{emailSubscriptionId}/subscribers parameter:sortField
+  - emailSubscriber.name
+GET /api/v2/admin/email-subscriptions/{emailSubscriptionId}/subscribers parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/admin/email-subscriptions parameter:sortField
+  - emailSubscription.name
+GET /api/v2/admin/email-subscriptions parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/admin/employment-statuses parameter:sortField
+  - es.name
+GET /api/v2/admin/employment-statuses parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/admin/i18n/groups parameter:sortField
+  - g.name
+GET /api/v2/admin/i18n/groups parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/admin/i18n/languages/{languageId}/translations/errors parameter:sortField
+  - importError.langString
+GET /api/v2/admin/i18n/languages/{languageId}/translations/errors parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/admin/i18n/languages parameter:sortField
+  - l.name
+GET /api/v2/admin/i18n/languages parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/admin/i18n/languages/{languageId}/translations parameter:sortField
+  - langString.value
+GET /api/v2/admin/i18n/languages/{languageId}/translations parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/admin/i18n/translation/{langStringId}/validate response:200 [application/json].data.code
+  - placeholder_mismatch
+  - select_placeholder_mismatch
+  - plural_placeholder_mismatch
+  - unnecessary_placeholder
+  - invalid_syntax
+GET /api/v2/admin/job-categories parameter:sortField
+  - jc.name
+GET /api/v2/admin/job-categories parameter:sortOrder
+  - ASC
+  - DESC
+PUT /api/v2/admin/job-titles/{id} requestBody [application/json].currentJobSpecification
+  - keepCurrent
+  - deleteCurrent
+  - replaceCurrent
+GET /api/v2/admin/job-titles parameter:sortField
+  - jt.jobTitleName
+  - jt.jobDescription
+GET /api/v2/admin/job-titles parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/admin/languages parameter:sortField
+  - l.name
+GET /api/v2/admin/languages parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/admin/licenses parameter:sortField
+  - l.name
+GET /api/v2/admin/licenses parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/admin/locations parameter:sortField
+  - location.name
+  - location.city
+  - location.phone
+  - country.countryCode
+  - country.countryName
+  - noOfEmployees
+GET /api/v2/admin/locations parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/admin/memberships parameter:sortField
+  - m.name
+GET /api/v2/admin/memberships parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/admin/nationalities parameter:sortField
+  - n.name
+GET /api/v2/admin/nationalities parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/admin/pay-grades parameter:sortField
+  - pg.name
+GET /api/v2/admin/pay-grades parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/admin/pay-grades/{payGradeId}/currencies/allowed parameter:sortField
+  - ct.name
+GET /api/v2/admin/pay-grades/{payGradeId}/currencies/allowed parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/admin/pay-grades/{payGradeId}/currencies parameter:sortField
+  - ct.name
+GET /api/v2/admin/pay-grades/{payGradeId}/currencies parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/admin/skills parameter:sortField
+  - s.name
+  - s.description
+GET /api/v2/admin/skills parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/admin/users parameter:sortField
+  - u.userName
+  - u.status
+  - r.name
+  - e.firstName
+  - e.lastName
+  - r.displayName
+GET /api/v2/admin/users parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/admin/work-shifts parameter:sortField
+  - workShift.name
+GET /api/v2/admin/work-shifts parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/admin/work-shifts/employees parameter:sortField
+  - employee.lastName
+  - employee.firstName
+  - employee.middleName
+  - employee.empNumber
+  - employee.employeeId
+  - jobTitle.jobTitleName
+  - empStatus.name
+  - subunit.name
+  - supervisor.firstName
+GET /api/v2/admin/work-shifts/employees parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/attendance/employees/{empNumber}/records parameter:sortField
+  - attendanceRecord.punchInUserTime
+GET /api/v2/attendance/employees/{empNumber}/records parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/attendance/employees/summary parameter:sortField
+  - employee.lastName
+GET /api/v2/attendance/employees/summary parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/buzz/shares/{shareId}/comments/{commentId} parameter:model
+  - default
+  - detailed
+PUT /api/v2/buzz/shares/{shareId}/comments/{commentId} parameter:model
+  - default
+  - detailed
+GET /api/v2/buzz/shares/{shareId}/comments parameter:model
+  - default
+  - detailed
+GET /api/v2/buzz/shares/{shareId}/comments parameter:sortField
+  - comment.createdAtUtc
+GET /api/v2/buzz/shares/{shareId}/comments parameter:sortOrder
+  - ASC
+  - DESC
+POST /api/v2/buzz/shares/{shareId}/comments parameter:model
+  - default
+  - detailed
+GET /api/v2/buzz/feed parameter:sortField
+  - share.createdAtUtc
+  - share.numOfLikes
+  - share.numOfComments
+GET /api/v2/buzz/feed parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/buzz/comments/{commentId}/likes parameter:sortField
+  - commentLike.id
+  - commentLike.likedAtUtc
+GET /api/v2/buzz/comments/{commentId}/likes parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/buzz/shares/{shareId}/likes parameter:sortField
+  - shareLike.id
+  - shareLike.likedAtUtc
+GET /api/v2/buzz/shares/{shareId}/likes parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/buzz/posts/{id} parameter:model
+  - default
+  - detailed
+PUT /api/v2/buzz/posts/{id} parameter:model
+  - default
+  - detailed
+GET /api/v2/buzz/posts/{id}/shares parameter:sortField
+GET /api/v2/buzz/posts/{id}/shares parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/buzz/anniversaries parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/claim/requests/{requestId}/attachments parameter:sortField
+GET /api/v2/claim/requests/{requestId}/attachments parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/claim/events parameter:sortField
+  - claimEvent.name
+  - claimEvent.status
+GET /api/v2/claim/events parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/claim/requests/{requestId}/expenses parameter:sortField
+GET /api/v2/claim/requests/{requestId}/expenses parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/claim/expenses/types parameter:sortField
+  - expenseType.name
+  - expenseType.status
+GET /api/v2/claim/expenses/types parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/claim/employees/requests parameter:sortField
+  - claimRequest.referenceId
+  - claimRequest.status
+  - claimEvent.name
+  - claimRequest.submittedDate
+  - employee.firstName
+GET /api/v2/claim/employees/requests parameter:status
+  - INITIATED
+  - SUBMITTED
+  - APPROVED
+  - REJECTED
+  - CANCELLED
+  - PAID
+GET /api/v2/claim/employees/requests parameter:includeEmployees
+  - onlyCurrent
+  - onlyPast
+  - currentAndPast
+GET /api/v2/claim/employees/requests parameter:model
+  - default
+  - summary
+GET /api/v2/claim/employees/requests parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/claim/requests parameter:sortField
+  - claimRequest.referenceId
+  - claimRequest.status
+  - claimEvent.name
+  - claimRequest.submittedDate
+GET /api/v2/claim/requests parameter:status
+  - INITIATED
+  - SUBMITTED
+  - APPROVED
+  - REJECTED
+  - CANCELLED
+  - PAID
+GET /api/v2/claim/requests parameter:model
+  - default
+  - summary
+GET /api/v2/claim/requests parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/admin/oauth-clients parameter:sortField
+  - oauthClient.id
+GET /api/v2/admin/oauth-clients parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/core/validation/unique parameter:entityName
+  - EmailSubscriber
+  - EmploymentStatus
+  - JobCategory
+  - JobTitle
+  - Location
+  - Nationality
+  - PayGrade
+  - Education
+  - Language
+  - License
+  - Membership
+  - Skill
+  - WorkShift
+  - ExpenseType
+  - ClaimEvent
+  - LeaveType
+  - Employee
+  - User
+  - TerminationReason
+  - Vacancy
+GET /api/v2/core/validation/unique parameter:attributeName
+  - email
+  - jobTitleName
+  - name
+  - userName
+GET /api/v2/core/validation/unique parameter:matchByField
+  - emailNotification
+  - deleted
+PUT /api/v2/admin/theme requestBody [application/json].currentClientLogo
+  - keepCurrent
+  - deleteCurrent
+  - replaceCurrent
+PUT /api/v2/admin/theme requestBody [application/json].currentClientBanner
+  - keepCurrent
+  - deleteCurrent
+  - replaceCurrent
+PUT /api/v2/admin/theme requestBody [application/json].currentLoginBanner
+  - keepCurrent
+  - deleteCurrent
+  - replaceCurrent
+GET /api/v2/directory/employees/{empNumber} parameter:model
+  - default
+  - detailed
+GET /api/v2/directory/employees parameter:model
+  - default
+  - detailed
+GET /api/v2/dashboard/employees/leaves parameter:sortField
+  - leaveList.date
+  - employee.firstName
+GET /api/v2/dashboard/employees/leaves parameter:sortOrder
+  - ASC
+  - DESC
+PUT /api/v2/admin/ldap-config requestBody [application/json].encryption
+  - none
+  - tls
+  - ssl
+PUT /api/v2/admin/ldap-config requestBody [application/json].ldapImplementation
+  - OpenLDAP
+  - ActiveDirectory
+PUT /api/v2/admin/ldap-config requestBody [application/json].userLookupSettings[].searchScope
+  - one
+  - sub
+PUT /api/v2/admin/ldap-config requestBody [application/json].userLookupSettings[].employeeSelectorMapping[].field
+  - ["employeeId","workEmail","drivingLicenseNo","otherId","otherEmail","ssnNumber","sinNumber"]
+POST /api/v2/admin/ldap-test-connection requestBody [application/json].encryption
+  - none
+  - tls
+  - ssl
+POST /api/v2/admin/ldap-test-connection requestBody [application/json].ldapImplementation
+  - OpenLDAP
+  - ActiveDirectory
+POST /api/v2/admin/ldap-test-connection requestBody [application/json].userLookupSettings[].searchScope
+  - one
+  - sub
+GET /api/v2/leave/employees/leaves parameter:includeEmployees
+  - onlyCurrent
+  - onlyPast
+  - currentAndPast
+GET /api/v2/leave/employees/leaves parameter:statuses
+  - -1
+  - 0
+  - 1
+  - 2
+  - 3
+GET /api/v2/leave/employees/leaves parameter:sortField
+  - leave.date
+GET /api/v2/leave/employees/leaves parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/leave/employees/leave-balances parameter:sortField
+  - leaveType.name
+GET /api/v2/leave/employees/leave-balances parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/leave/employees/leave-entitlements parameter:sortField
+  - employee.lastName
+  - employee.firstName
+  - employee.middleName
+  - employee.empNumber
+  - employee.employeeId
+  - jobTitle.jobTitleName
+  - empStatus.name
+  - subunit.name
+  - supervisor.firstName
+GET /api/v2/leave/employees/leave-entitlements parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/leave/employees/leave-requests/{leaveRequestId} parameter:model
+  - default
+  - detailed
+PUT /api/v2/leave/employees/leave-requests/{leaveRequestId} parameter:model
+  - default
+  - detailed
+GET /api/v2/leave/employees/leave-requests parameter:sortField
+  - leave.date
+GET /api/v2/leave/employees/leave-requests parameter:includeEmployees
+  - onlyCurrent
+  - onlyPast
+  - currentAndPast
+GET /api/v2/leave/employees/leave-requests parameter:statuses
+  - -1
+  - 0
+  - 1
+  - 2
+  - 3
+GET /api/v2/leave/employees/leave-requests parameter:sortOrder
+  - ASC
+  - DESC
+POST /api/v2/leave/employees/leave-requests requestBody [application/json].partialOption
+  - none, all, start, end, start_end
+POST /api/v2/leave/employees/leave-requests requestBody [application/json].duration.type
+  - full_day
+  - half_day_morning
+  - half_day_afternoon
+  - specify_time
+POST /api/v2/leave/employees/leave-requests parameter:model
+  - default
+  - detailed
+PUT /api/v2/leave/holidays/{id} requestBody [application/json].length
+  - 0
+  - 4
+GET /api/v2/leave/holidays parameter:sortField
+  - holiday.date
+GET /api/v2/leave/holidays parameter:sortOrder
+  - ASC
+  - DESC
+POST /api/v2/leave/holidays requestBody [application/json].length
+  - 0
+  - 4
+GET /api/v2/leave/leave-requests/{leaveRequestId}/leaves parameter:sortOrder
+  - ASC
+  - DESC
+PUT /api/v2/leave/leaves/{leaveId} requestBody [application/json].action
+  - APPROVE
+  - REJECT
+  - CANCEL
+GET /api/v2/leave/leaves/{leaveId}/leave-comments parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/leave/leave-entitlements/{id} parameter:model
+  - default
+  - summary
+GET /api/v2/leave/leave-entitlements parameter:sortField
+  - entitlement.fromDate
+  - leaveType.name
+GET /api/v2/leave/leave-entitlements parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/leave/leave-entitlements parameter:model
+  - default
+  - summary
+GET /api/v2/leave/overlap-leaves parameter:endDuration[type]
+  - full_day
+  - half_day_morning
+  - half_day_afternoon
+  - specify_time
+GET /api/v2/leave/overlap-leaves parameter:partialOption
+  - none
+  - all
+  - start
+  - end
+  - start_end
+GET /api/v2/leave/reports parameter:name
+  - employee_leave_entitlements_and_usage
+  - my_leave_entitlements_and_usage
+  - leave_type_leave_entitlements_and_usage
+GET /api/v2/leave/reports/data parameter:name
+  - employee_leave_entitlements_and_usage
+  - my_leave_entitlements_and_usage
+  - leave_type_leave_entitlements_and_usage
+GET /api/v2/leave/reports/data parameter:includeEmployees
+  - onlyCurrent
+  - onlyPast
+  - currentAndPast
+GET /api/v2/leave/reports/data parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/leave/leave-requests/{leaveRequestId}/leave-comments parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/leave/leave-types parameter:sortField
+  - leaveType.name
+GET /api/v2/leave/leave-types parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/leave/leave-requests/{leaveRequestId} parameter:model
+  - default
+  - detailed
+PUT /api/v2/leave/leave-requests/{leaveRequestId} requestBody [application/json].action
+  - APPROVE
+  - REJECT
+  - CANCEL
+PUT /api/v2/leave/leave-requests/{leaveRequestId} parameter:model
+  - default
+  - detailed
+GET /api/v2/leave/leave-requests parameter:includeEmployees
+  - onlyCurrent
+  - onlyPast
+  - currentAndPast
+GET /api/v2/leave/leave-requests parameter:statuses
+  - -1
+  - 0
+  - 1
+  - 2
+  - 3
+GET /api/v2/leave/leave-requests parameter:sortField
+  - leave.date
+GET /api/v2/leave/leave-requests parameter:sortOrder
+  - ASC
+  - DESC
+POST /api/v2/leave/leave-requests requestBody [application/json].duration.type
+  - full_day
+  - half_day_afternoon
+  - half_day_morning
+  - specify_time
+POST /api/v2/leave/leave-requests requestBody [application/json].endDuration.type
+  - full_day
+  - half_day_afternoon
+  - half_day_morning
+  - specify_time
+POST /api/v2/leave/leave-requests parameter:model
+  - default
+  - detailed
+GET /api/v2/leave/workweek parameter:model
+  - default
+  - indexed
+PUT /api/v2/leave/workweek parameter:model
+  - default
+  - indexed
+GET /api/v2/maintenance/candidates parameter:sortField
+  - vacancy.name
+  - candidate.lastName
+  - hiringManager.lastName
+  - candidate.dateOfApplication
+  - candidateVacancy.status
+GET /api/v2/maintenance/candidates parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/auth/openid-providers parameter:sortField
+  - provider.name
+  - provider.status
+GET /api/v2/auth/openid-providers parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/performance/reviews/{reviewId}/evaluation/employee parameter:sortField
+GET /api/v2/performance/reviews/{reviewId}/evaluation/employee parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/performance/employees/trackers parameter:sortField
+  - tracker.trackerName
+  - employee.lastName
+  - tracker.addedDate
+  - tracker.modifiedDate
+GET /api/v2/performance/employees/trackers parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/performance/kpis parameter:sortField
+  - kpi.title
+  - jobTitle.jobTitleName
+GET /api/v2/performance/kpis parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/performance/reviews parameter:sortField
+  - performanceReview.statusId
+  - performanceReview.reviewPeriodStart
+  - performanceReview.dueDate
+  - reviewer.status
+GET /api/v2/performance/reviews parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/performance/trackers} parameter:sortField
+  - performanceTracker.trackerName
+  - performanceTracker.addedDate
+  - employee.empNumber
+  - employee.lastName
+  - performanceTracker.modifiedDate
+GET /api/v2/performance/trackers} parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/performance/manage/reviews parameter:includeEmployees
+  - onlyCurrent
+  - onlyPast
+  - currentAndPast
+GET /api/v2/performance/manage/reviews parameter:sortField
+  - employee.lastName
+  - performanceReview.reviewPeriodStart
+  - performanceReview.dueDate
+  - performanceReview.statusId
+  - jobTitle.jobTitleName
+  - reviewerEmployee.lastName
+GET /api/v2/performance/manage/reviews parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/performance/config/trackers parameter:sortField
+  - performanceTracker.trackerName
+  - performanceTracker.addedDate
+  - employee.empNumber
+  - employee.lastName
+  - performanceTracker.modifiedDate
+GET /api/v2/performance/config/trackers parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/performance/trackers/{trackerId}/logs parameter:sortField
+  - ptrLog.addedDate
+GET /api/v2/performance/trackers/{trackerId}/logs parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/performance/trackers/reviewers parameter:includeEmployees
+  - onlyCurrent
+  - currentAndPast
+  - onlyPast
+GET /api/v2/performance/trackers/reviewers parameter:sortField
+  - employee.lastName
+  - employee.firstName
+  - employee.middleName
+  - employee.empNumber
+  - employee.employeeId
+  - jobTitle.jobTitleName
+  - empStatus.name
+  - subunit.name
+  - supervisor.firstName
+GET /api/v2/performance/trackers/reviewers parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/performance/supervisors parameter:sortField
+  - employee.empNumber
+GET /api/v2/performance/supervisors parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/performance/reviews/{reviewId}/kpis parameter:sortField
+  - kpi.title
+GET /api/v2/performance/reviews/{reviewId}/kpis parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/performance/employees/reviews parameter:includeEmployees
+  - onlyCurrent
+  - onlyPast
+  - currentAndPast
+GET /api/v2/performance/employees/reviews parameter:sortField
+  - employee.lastName
+  - performanceReview.reviewPeriodStart
+  - performanceReview.dueDate
+  - performanceReview.statusId
+GET /api/v2/performance/employees/reviews parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/performance/reviews/{reviewId}/evaluation/supervisor parameter:sortField
+GET /api/v2/performance/reviews/{reviewId}/evaluation/supervisor parameter:sortOrder
+  - ASC
+  - DESC
+PUT /api/v2/pim/custom-fields/{id} requestBody [application/json].fieldType
+  - 0
+  - 1
+PUT /api/v2/pim/custom-fields/{id} requestBody [application/json].screen
+  - personal
+  - contact
+  - emergency
+  - dependents
+  - immigration
+  - qualifications
+  - tax
+  - salary
+  - job
+  - report-to
+  - membership
+GET /api/v2/pim/custom-fields parameter:sortField
+  - cf.name
+  - cf.screen
+  - cf.type
+GET /api/v2/pim/custom-fields parameter:sortOrder
+  - ASC
+  - DESC
+POST /api/v2/pim/custom-fields requestBody [application/json].fieldType
+  - 0
+  - 1
+POST /api/v2/pim/custom-fields requestBody [application/json].screen
+  - personal
+  - contact
+  - emergency
+  - dependents
+  - immigration
+  - qualifications
+  - tax
+  - salary
+  - job
+  - report-to
+  - membership
+GET /api/v2/pim/employees/{empNumber}/emergency-contacts parameter:sortField
+  - eec.name
+GET /api/v2/pim/employees/{empNumber}/emergency-contacts parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/pim/employees/{empNumber} parameter:model
+  - default
+  - detailed
+GET /api/v2/pim/employees parameter:includeEmployees
+  - onlyCurrent
+  - currentAndPast
+  - onlyPast
+GET /api/v2/pim/employees parameter:model
+  - default
+  - detailed
+GET /api/v2/pim/employees parameter:sortField
+  - employee.lastName
+  - employee.firstName
+  - employee.middleName
+  - employee.empNumber
+  - employee.employeeId
+  - jobTitle.jobTitleName
+  - empStatus.name
+  - subunit.name
+  - supervisor.firstName
+GET /api/v2/pim/employees parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/pim/employees/{empNumber}/languages/allowed parameter:sortField
+  - l.name
+GET /api/v2/pim/employees/{empNumber}/languages/allowed parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/pim/employees/{empNumber}/licenses/allowed parameter:sortField
+  - l.name
+GET /api/v2/pim/employees/{empNumber}/licenses/allowed parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/pim/employees/{empNumber}/report-to/allowed parameter:sortField
+  - employee.lastName
+  - employee.firstName
+  - employee.middleName
+  - employee.empNumber
+  - employee.employeeId
+  - jobTitle.jobTitleName
+  - empStatus.name
+  - subunit.name
+  - supervisor.firstName
+GET /api/v2/pim/employees/{empNumber}/report-to/allowed parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/pim/employees/{empNumber}/skills/allowed parameter:sortField
+  - s.name
+GET /api/v2/pim/employees/{empNumber}/skills/allowed parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/pim/employees/{empNumber}/screen/{screen}/attachments/{id} parameter:screen
+  - personal
+  - contact
+  - emergency
+  - dependents
+  - immigration
+  - qualifications
+  - tax
+  - salary
+  - job
+  - report-to
+  - membership
+PUT /api/v2/pim/employees/{empNumber}/screen/{screen}/attachments/{id} parameter:screen
+  - personal
+  - contact
+  - emergency
+  - dependents
+  - immigration
+  - qualifications
+  - tax
+  - salary
+  - job
+  - report-to
+  - membership
+PUT /api/v2/pim/employees/{empNumber}/screen/{screen}/attachments/{id} response:200 [application/json].meta.screen
+  - personal
+  - contact
+  - emergency
+  - dependents
+  - immigration
+  - qualifications
+  - tax
+  - salary
+  - job
+  - report-to
+  - membership
+GET /api/v2/pim/employees/{empNumber}/screen/{screen}/attachments parameter:screen
+  - personal
+  - contact
+  - emergency
+  - dependents
+  - immigration
+  - qualifications
+  - tax
+  - salary
+  - job
+  - report-to
+  - membership
+GET /api/v2/pim/employees/{empNumber}/screen/{screen}/attachments parameter:sortOrder
+  - ASC
+  - DESC
+POST /api/v2/pim/employees/{empNumber}/screen/{screen}/attachments parameter:screen
+  - personal
+  - contact
+  - emergency
+  - dependents
+  - immigration
+  - qualifications
+  - tax
+  - salary
+  - job
+  - report-to
+  - membership
+POST /api/v2/pim/employees/{empNumber}/screen/{screen}/attachments response:200 [application/json].meta.screen
+  - personal
+  - contact
+  - emergency
+  - dependents
+  - immigration
+  - qualifications
+  - tax
+  - salary
+  - job
+  - report-to
+  - membership
+DELETE /api/v2/pim/employees/{empNumber}/screen/{screen}/attachments parameter:screen
+  - personal
+  - contact
+  - emergency
+  - dependents
+  - immigration
+  - qualifications
+  - tax
+  - salary
+  - job
+  - report-to
+  - membership
+GET /api/v2/pim/employees/count parameter:includeEmployees
+  - onlyCurrent
+  - currentAndPast
+  - onlyPast
+GET /api/v2/pim/employees/{empNumber}/custom-fields parameter:screen
+  - personal
+  - contact
+  - emergency
+  - dependents
+  - immigration
+  - qualifications
+  - tax
+  - salary
+  - job
+  - report-to
+  - membership
+PUT /api/v2/pim/employees/{empNumber}/dependents/{id} requestBody [application/json].relationshipType
+  - child
+  - other
+GET /api/v2/pim/employees/{empNumber}/dependents parameter:sortField
+  - d.name
+  - d.relationshipType
+GET /api/v2/pim/employees/{empNumber}/dependents parameter:sortOrder
+  - ASC
+  - DESC
+POST /api/v2/pim/employees/{empNumber}/dependents requestBody [application/json].relationshipType
+  - child
+  - other
+GET /api/v2/pim/employees/{empNumber}/educations parameter:sortField
+  - e.name
+GET /api/v2/pim/employees/{empNumber}/educations parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/pim/employees/{empNumber}/immigrations parameter:sortField
+  - eir.number
+GET /api/v2/pim/employees/{empNumber}/immigrations parameter:sortOrder
+  - ASC
+  - DESC
+PUT /api/v2/pim/employees/{empNumber}/languages/{languageId}/fluencies/{fluencyId} requestBody [application/json].fluencyId
+  - Writing
+  - Speaking
+  - Reading
+PUT /api/v2/pim/employees/{empNumber}/languages/{languageId}/fluencies/{fluencyId} requestBody [application/json].competencyId
+  - Poor
+  - Basic
+  - Good
+  - Mother Tongue
+GET /api/v2/pim/employees/{empNumber}/languages parameter:sortField
+  - l.name
+GET /api/v2/pim/employees/{empNumber}/languages parameter:sortOrder
+  - ASC
+  - DESC
+POST /api/v2/pim/employees/{empNumber}/languages requestBody [application/json].fluencyId
+  - Writing
+  - Speaking
+  - Reading
+POST /api/v2/pim/employees/{empNumber}/languages requestBody [application/json].competencyId
+  - Poor
+  - Basic
+  - Good
+  - Mother Tongue
+GET /api/v2/pim/employees/{empNumber}/licenses parameter:sortField
+  - el.licenseIssuedDate
+GET /api/v2/pim/employees/{empNumber}/licenses parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/pim/employees/{empNumber}/memberships parameter:sortField
+  - m.name
+GET /api/v2/pim/employees/{empNumber}/memberships parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/pim/employees/{empNumber}/salary-components parameter:sortField
+  - es.salaryName
+GET /api/v2/pim/employees/{empNumber}/salary-components parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/pim/employees/{empNumber}/skills parameter:sortField
+  - s.name
+GET /api/v2/pim/employees/{empNumber}/skills parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/pim/employees/{empNumber}/subordinates parameter:sortField
+  - subordinate.lastName
+GET /api/v2/pim/employees/{empNumber}/subordinates parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/pim/employees/{empNumber}/supervisors parameter:sortField
+  - supervisor.lastName
+GET /api/v2/pim/employees/{empNumber}/supervisors parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/pim/employees/{empNumber}/work-experiences parameter:sortField
+  - we.jobTitle
+  - we.employer
+GET /api/v2/pim/employees/{empNumber}/work-experiences parameter:sortOrder
+  - ASC
+  - DESC
+PUT /api/v2/pim/employees/{empNumber}/employment-contract requestBody [application/json].currentContractAttachment
+  - replaceCurrent
+  - keepCurrent
+  - deleteCurrent
+GET /api/v2/pim/myself parameter:model
+  - default
+  - detailed
+  - summary
+GET /api/v2/pim/reports/defined parameter:sortField
+  - report.name
+GET /api/v2/pim/reports/defined parameter:sortOrder
+  - ASC
+  - DESC
+POST /api/v2/pim/reports/defined requestBody [application/json].include
+  - onlyPast
+  - currentAndPast
+  - onlyCurrent
+PUT /api/v2/pim/reports/defined/{id} requestBody [application/json].include
+  - onlyPast
+  - currentAndPast
+  - onlyCurrent
+GET /api/v2/pim/reporting-methods parameter:sortField
+  - rm.name
+GET /api/v2/pim/reporting-methods parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/pim/termination-reasons parameter:sortField
+  - tr.name
+GET /api/v2/pim/termination-reasons parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/recruitment/candidates parameter:sortField
+  - vacancy.name
+  - candidate.lastName
+  - hiringManager.lastName
+  - candidate.dateOfApplication
+  - candidateVacancy.status
+GET /api/v2/recruitment/candidates parameter:status
+  - APPLICATION INITIATED
+  - SHORTLISTED
+  - REJECTED
+  - INTERVIEW SCHEDULED
+  - INTERVIEW PASSED
+  - INTERVIEW FAILED
+  - JOB OFFERED
+  - OFFER DECLINED
+  - HIRED
+GET /api/v2/recruitment/candidates parameter:model
+  - default
+  - list
+  - detailed
+GET /api/v2/recruitment/candidates parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/recruitment/candidates/{candidateId}/history parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/recruitment/interviwers parameter:sortField
+  - employee.lastName
+  - employee.firstName
+  - employee.middleName
+  - employee.empNumber
+  - employee.employeeId
+  - jobTitle.jobTitleName
+  - empStatus.name
+  - subunit.name
+  - supervisor.firstName
+GET /api/v2/recruitment/interviwers parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/recruitment/hiring-managers parameter:sortField
+  - employee.lastName
+  - employee.firstName
+  - employee.middleName
+  - employee.empNumber
+  - employee.employeeId
+  - jobTitle.jobTitleName
+  - empStatus.name
+  - subunit.name
+  - supervisor.firstName
+GET /api/v2/recruitment/hiring-managers parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/recruitment/interviews/{interviewId}/attachments parameter:sortField
+  - attachment.id
+  - attachment.interviewId
+GET /api/v2/recruitment/interviews/{interviewId}/attachments parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/recruitment/vacancies parameter:sortField
+  - vacancy.name
+  - vacancy.status
+  - jobTitle.jobTitleName
+  - hiringManager.lastName
+GET /api/v2/recruitment/vacancies parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/time/projects/{toProjectId}/activities/copy/{fromProjectId} parameter:sortField
+  - projectActivity.name
+GET /api/v2/time/projects/{toProjectId}/activities/copy/{fromProjectId} parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/time/customers parameter:sortField
+  - customer.name
+GET /api/v2/time/customers parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/time/employees/{empNumber}/timesheets parameter:sortOrder
+  - ASC
+  - DESC
+PUT /api/v2/time/employees/{empNumber}/timesheets/{id} requestBody [application/json].action
+  - VIEW
+  - SUBMIT
+  - APPROVE
+  - REJECT
+  - RESET
+  - MODIFY
+  - CREATE
+GET /api/v2/time/employees/timesheets/list parameter:sortField
+  - timesheet.startDate
+GET /api/v2/time/employees/timesheets/list parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/time/projects parameter:model
+  - default
+  - detailed
+GET /api/v2/time/projects parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/time/projects/{id} parameter:model
+  - default
+  - detailed
+GET /api/v2/time/project/{projectId}/activities parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/time/project-admins parameter:includeEmployees
+  - onlyCurrent
+  - currentAndPast
+  - onlyPast
+GET /api/v2/time/project-admins parameter:sortField
+  - employee.lastName
+  - employee.firstName
+  - employee.middleName
+  - employee.empNumber
+  - employee.employeeId
+  - jobTitle.jobTitleName
+  - empStatus.name
+  - subunit.name
+  - supervisor.firstName
+GET /api/v2/time/project-admins parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/time/timesheets/{timesheetId}/action-logs parameter:sortField
+  - timesheetActionLog.date
+GET /api/v2/time/timesheets/{timesheetId}/action-logs parameter:sortOrder
+  - ASC
+  - DESC
+GET /api/v2/admin/workspace-notification/registrations parameter:sortField
+  - r.id
+  - r.channelLabel
+  - r.dailySendTime
+GET /api/v2/admin/workspace-notification/registrations parameter:sortOrder
+  - ASC
+  - DESC
+POST /api/v2/admin/workspace-notification/registrations requestBody [application/json].eventType
+  - BIRTHDAY
+  - LEAVE_TODAY
+POST /api/v2/admin/workspace-notification/registrations requestBody [application/json].provider
+  - slack
+  - google_chat
+PUT /api/v2/admin/workspace-notification/registrations/{id} requestBody [application/json].eventType
+  - BIRTHDAY
+  - LEAVE_TODAY
+PUT /api/v2/admin/workspace-notification/registrations/{id} requestBody [application/json].provider
+  - slack
+  - google_chat
+POST /api/v2/admin/workspace-notification/registrations/test requestBody [application/json].eventType
+  - BIRTHDAY
+  - LEAVE_TODAY
+POST /api/v2/admin/workspace-notification/registrations/test requestBody [application/json].provider
+  - slack
+  - google_chat
+POST /api/v2/admin/workspace-notification/registrations/{id}/test requestBody [application/json].eventType
+  - BIRTHDAY
+  - LEAVE_TODAY
+#/components/schemas/Claim-EmployeeClaimRequestModel.status
+  - INITIATED
+  - SUBMITTED
+  - APPROVED
+  - REJECTED
+  - CANCELLED
+  - PAID
+#/components/schemas/Claim-MyClaimRequestModel.status
+  - INITIATED
+  - SUBMITTED
+  - APPROVED
+  - REJECTED
+  - CANCELLED
+  - PAID
+#/components/schemas/Leave-HolidayModel.length
+  - 0
+  - 4
+#/components/schemas/Leave-HolidayModel.lengthName
+  - Full Day
+  - Half Day
+#/components/schemas/Maintenance-PurgeCandidateListModel.status.label
+  - application initiated
+  - shortlisted
+  - rejected
+  - interview scheduled
+  - interview passed
+  - interview failed
+  - job offered
+  - offer declined
+  - hired
+#/components/schemas/Slack-ConfigModel.eventTypes[]
+  - BIRTHDAY
+  - LEAVE_TODAY
+
+======================================================================
+ SCHEMA REFERENCES
+======================================================================
+
+#/components/requestBodies/DeleteRequestBody
+  used 54 time(s)
+  - DELETE /api/v2/admin/educations requestBody
+  - DELETE /api/v2/admin/email-subscriptions/{emailSubscriptionId}/subscribers requestBody
+  - DELETE /api/v2/admin/employment-statuses requestBody
+  - DELETE /api/v2/admin/i18n/languages requestBody
+  - DELETE /api/v2/admin/job-categories requestBody
+  - DELETE /api/v2/admin/job-titles requestBody
+  - DELETE /api/v2/admin/languages requestBody
+  - DELETE /api/v2/admin/licenses requestBody
+  - DELETE /api/v2/admin/locations requestBody
+  - DELETE /api/v2/admin/memberships requestBody
+  - DELETE /api/v2/admin/nationalities requestBody
+  - DELETE /api/v2/admin/pay-grades requestBody
+  - DELETE /api/v2/admin/pay-grades/{payGradeId}/currencies requestBody
+  - DELETE /api/v2/admin/skills requestBody
+  - DELETE /api/v2/admin/users requestBody
+  - DELETE /api/v2/admin/work-shifts requestBody
+  - DELETE /api/v2/attendance/employees/{empNumber}/records requestBody
+  - DELETE /api/v2/claim/events requestBody
+  - DELETE /api/v2/claim/requests/{requestId}/expenses requestBody
+  - DELETE /api/v2/claim/expenses/types requestBody
+  - DELETE /api/v2/admin/oauth-clients requestBody
+  - DELETE /api/v2/leave/holidays requestBody
+  - DELETE /api/v2/leave/leave-entitlements requestBody
+  - DELETE /api/v2/leave/leave-types requestBody
+  - DELETE /api/v2/auth/openid-providers requestBody
+  - DELETE /api/v2/performance/kpis requestBody
+  - DELETE /api/v2/performance/manage/reviews requestBody
+  - DELETE /api/v2/performance/config/trackers requestBody
+  - DELETE /api/v2/performance/trackers/{trackerId}/logs requestBody
+  - DELETE /api/v2/pim/custom-fields requestBody
+  - DELETE /api/v2/pim/employees/{empNumber}/emergency-contacts requestBody
+  - DELETE /api/v2/pim/employees requestBody
+  - DELETE /api/v2/pim/employees/{empNumber}/screen/{screen}/attachments requestBody
+  - DELETE /api/v2/pim/employees/{empNumber}/dependents requestBody
+  - DELETE /api/v2/pim/employees/{empNumber}/educations requestBody
+  - DELETE /api/v2/pim/employees/{empNumber}/immigrations requestBody
+  - DELETE /api/v2/pim/employees/{empNumber}/licenses requestBody
+  - DELETE /api/v2/pim/employees/{empNumber}/memberships requestBody
+  - DELETE /api/v2/pim/employees/{empNumber}/salary-components requestBody
+  - DELETE /api/v2/pim/employees/{empNumber}/skills requestBody
+  - DELETE /api/v2/pim/employees/{empNumber}/subordinates requestBody
+  - DELETE /api/v2/pim/employees/{empNumber}/supervisors requestBody
+  - DELETE /api/v2/pim/employees/{empNumber}/terminations requestBody
+  - DELETE /api/v2/pim/employees/{empNumber}/work-experiences requestBody
+  - DELETE /api/v2/pim/reports/defined requestBody
+  - DELETE /api/v2/pim/reporting-methods requestBody
+  - DELETE /api/v2/pim/termination-reasons requestBody
+  - DELETE /api/v2/recruitment/candidates requestBody
+  - DELETE /api/v2/recruitment/interviews/{interviewId}/attachments requestBody
+  - DELETE /api/v2/recruitment/vacancies requestBody
+  - DELETE /api/v2/recruitment/vacancy/attachments requestBody
+  - DELETE /api/v2/time/customers requestBody
+  - DELETE /api/v2/time/projects requestBody
+  - DELETE /api/v2/time/project/{projectId}/activities requestBody
+
+#/components/schemas/Base64Attachment
+  used 21 time(s)
+  - POST /api/v2/admin/i18n/languages/{languageId}/import requestBody [application/json].attachment
+  - POST /api/v2/claim/requests/{requestId}/attachments requestBody [application/json].attachment
+  - PUT /api/v2/claim/requests/{requestId}/attachments/{id} requestBody [application/json].attachment
+  - PUT /api/v2/admin/theme requestBody [application/json].clientLogo
+  - PUT /api/v2/admin/theme requestBody [application/json].clientBanner
+  - PUT /api/v2/admin/theme requestBody [application/json].loginBanner
+  - POST /api/v2/pim/employees requestBody [application/json].empPicture
+  - PUT /api/v2/pim/employees/{empNumber}/screen/{screen}/attachments/{id} requestBody [application/json].attachment
+  - POST /api/v2/pim/employees/{empNumber}/screen/{screen}/attachments requestBody [application/json].attachment
+  - POST /api/v2/pim/csv-import requestBody [application/json].attachment
+  - PUT /api/v2/pim/employees/{empNumber}/picture requestBody [application/json].empPicture
+  - PUT /api/v2/pim/employees/{empNumber}/employment-contract requestBody [application/json].contractAttachment
+  - POST /api/v2/recruitment/candidate/attachments requestBody [application/json].attachment
+  - PUT /api/v2/recruitment/candidate/{candidateId}/attachment requestBody [application/json].attachment
+  - POST /api/v2/recruitment/interviews/{interviewId}/attachments requestBody [application/json].attachment
+  - PUT /api/v2/recruitment/interviews/{interviewId}/attachments/{attachmentId} requestBody [application/json].attachment
+  - POST /api/v2/recruitment/vacancy/attachments requestBody [application/json].attachment
+  - PUT /api/v2/recruitment/vacancies/{vacancyId}/attachments/{attachmentId} requestBody [application/json].attachment
+  - #/components/schemas/Buzz-Post-Photo.photos[]
+  - #/components/schemas/Buzz-Post-Photo-Edit.photos[]
+  - #/components/schemas/Base64AttachmentOrNull.oneOf[1]
+
+#/components/schemas/Pim-EmployeeModel
+  used 11 time(s)
+  - GET /api/v2/admin/work-shifts/employees response:200 [application/json].data[]
+  - GET /api/v2/leave/leave-balance/leave-type/{leaveTypeId} response:200 [application/json].meta.employee
+  - GET /api/v2/performance/trackers/reviewers response:200 [application/json].data[]
+  - GET /api/v2/pim/employees/{empNumber} response:200 [application/json].data.oneOf[1]
+  - GET /api/v2/pim/employees response:200 [application/json].data[].oneOf[1]
+  - POST /api/v2/pim/employees response:200 [application/json].data
+  - GET /api/v2/pim/myself response:200 [application/json].data.oneOf[1]
+  - GET /api/v2/recruitment/interviwers response:200 [application/json].data
+  - GET /api/v2/recruitment/hiring-managers response:200 [application/json].data
+  - GET /api/v2/time/project-admins response:200 [application/json].data
+  - #/components/schemas/Admin-WorkShiftDetailedModel.employees[]
+
+#/components/schemas/Leave-LeaveRequestDetailedModel
+  used 8 time(s)
+  - GET /api/v2/leave/employees/leave-requests/{leaveRequestId} response:200 [application/json].data.oneOf[2]
+  - PUT /api/v2/leave/employees/leave-requests/{leaveRequestId} response:200 [application/json].data.oneOf[2]
+  - GET /api/v2/leave/employees/leave-requests response:200 [application/json].data
+  - POST /api/v2/leave/employees/leave-requests response:200 [application/json].data.oneOf[2]
+  - GET /api/v2/leave/leave-requests/{leaveRequestId} response:200 [application/json].data.oneOf[1]
+  - PUT /api/v2/leave/leave-requests/{leaveRequestId} response:200 [application/json].data.oneOf[1]
+  - GET /api/v2/leave/leave-requests response:200 [application/json].data
+  - POST /api/v2/leave/leave-requests response:200 [application/json].data.oneOf[1]
+
+#/components/schemas/Leave-LeaveRequestModel
+  used 7 time(s)
+  - PUT /api/v2/leave/employees/leave-requests/bulk response:200 [application/json].data
+  - GET /api/v2/leave/employees/leave-requests/{leaveRequestId} response:200 [application/json].data.oneOf[1]
+  - PUT /api/v2/leave/employees/leave-requests/{leaveRequestId} response:200 [application/json].data.oneOf[1]
+  - POST /api/v2/leave/employees/leave-requests response:200 [application/json].data.oneOf[1]
+  - GET /api/v2/leave/leave-requests/{leaveRequestId} response:200 [application/json].data.oneOf[2]
+  - PUT /api/v2/leave/leave-requests/{leaveRequestId} response:200 [application/json].data.oneOf[2]
+  - POST /api/v2/leave/leave-requests response:200 [application/json].data.oneOf[2]
+
+#/components/schemas/Recruitment-CandidateHistoryDefaultModel
+  used 7 time(s)
+  - PUT /api/v2/recruitment/candidates/{candidateId}/hire response:200 [application/json].data
+  - PUT /api/v2/recruitment/candidates/{candidateId}/job/offer response:200 [application/json].data
+  - PUT /api/v2/recruitment/candidates/{candidateId}/interviews/{interviewId}/fail response:200 [application/json].data
+  - PUT /api/v2/recruitment/candidates/{candidateId}/interviews/{interviewId}/pass response:200 [application/json].data
+  - PUT /api/v2/recruitment/candidates/{candidateId}/job/decline response:200 [application/json].data
+  - PUT /api/v2/recruitment/candidates/{candidateId}/reject response:200 [application/json].data
+  - PUT /api/v2/recruitment/candidates/{candidateId}/shortlist response:200 [application/json].data
+
+#/components/schemas/Admin-SkillModel
+  used 6 time(s)
+  - GET /api/v2/admin/educations response:200 [application/json].data[]
+  - POST /api/v2/admin/educations response:200 [application/json].data
+  - GET /api/v2/admin/skills/{id} response:200 [application/json].data
+  - PUT /api/v2/admin/skills/{id} response:200 [application/json].data
+  - GET /api/v2/admin/skills response:200 [application/json].data[]
+  - POST /api/v2/admin/skills response:200 [application/json].data
+
+#/components/schemas/Admin-LanguageModel
+  used 6 time(s)
+  - PUT /api/v2/admin/email-configuration response:200 [application/json].data
+  - PUT /api/v2/admin/i18n/languages/{languageId}/translations/bulk response:200 [application/json].data
+  - GET /api/v2/admin/languages/{id} response:200 [application/json].data
+  - PUT /api/v2/admin/languages/{id} response:200 [application/json].data
+  - GET /api/v2/admin/languages response:200 [application/json].data[]
+  - POST /api/v2/admin/languages response:200 [application/json].data
+
+#/components/schemas/Leave-LeaveTypeModel
+  used 6 time(s)
+  - GET /api/v2/leave/leave-types/eligible response:200 [application/json].data
+  - GET /api/v2/leave/leave-balance/leave-type/{leaveTypeId} response:200 [application/json].meta.leaveType
+  - GET /api/v2/leave/leave-types/{id} response:200 [application/json].data
+  - PUT /api/v2/leave/leave-types/{id} response:200 [application/json].data
+  - GET /api/v2/leave/leave-types response:200 [application/json].data
+  - POST /api/v2/leave/leave-types response:200 [application/json].data
+
+#/components/schemas/Pim-CustomFieldModel
+  used 6 time(s)
+  - GET /api/v2/pim/custom-fields/{id} response:200 [application/json].data
+  - PUT /api/v2/pim/custom-fields/{id} response:200 [application/json].data
+  - GET /api/v2/pim/custom-fields response:200 [application/json].data[]
+  - POST /api/v2/pim/custom-fields response:200 [application/json].data
+  - GET /api/v2/pim/employees/{empNumber}/custom-fields response:200 [application/json].meta.fields[]
+  - PUT /api/v2/pim/employees/{empNumber}/custom-fields response:200 [application/json].meta.fields[]
+
+#/components/schemas/Pim-EmployeeDependentModel
+  used 6 time(s)
+  - GET /api/v2/pim/employees/{empNumber}/dependents/{id} response:200 [application/json].data
+  - PUT /api/v2/pim/employees/{empNumber}/dependents/{id} response:200 [application/json].data
+  - GET /api/v2/pim/employees/{empNumber}/dependents response:200 [application/json].data
+  - POST /api/v2/pim/employees/{empNumber}/dependents response:200 [application/json].data
+  - GET /api/v2/pim/employees/{empNumber}/memberships response:200 [application/json].data
+  - PUT /api/v2/pim/employees/{empNumber}/personal-details response:200 [application/json].data
+
+#/components/schemas/Admin-LicenseModel
+  used 5 time(s)
+  - GET /api/v2/admin/licenses/{id} response:200 [application/json].data
+  - PUT /api/v2/admin/licenses/{id} response:200 [application/json].data
+  - GET /api/v2/admin/licenses response:200 [application/json].data[]
+  - POST /api/v2/admin/licenses response:200 [application/json].data
+  - GET /api/v2/pim/employees/{empNumber}/licenses/allowed response:200 [application/json].data[]
+
+#/components/schemas/Admin-MembershipModel
+  used 5 time(s)
+  - PUT /api/v2/admin/localization} response:200 [application/json].data
+  - GET /api/v2/admin/memberships/{id} response:200 [application/json].data
+  - PUT /api/v2/admin/memberships/{id} response:200 [application/json].data
+  - GET /api/v2/admin/memberships response:200 [application/json].data[]
+  - POST /api/v2/admin/memberships response:200 [application/json].data
+
+#/components/schemas/Admin-SubunitModel
+  used 5 time(s)
+  - GET /api/v2/admin/subunits/{id} response:200 [application/json].data
+  - PUT /api/v2/admin/subunits/{id} response:200 [application/json].data
+  - DELETE /api/v2/admin/subunits/{id} response:200 [application/json].data
+  - GET /api/v2/admin/subunits response:200 [application/json].data[].oneOf[1]
+  - POST /api/v2/admin/subunits response:200 [application/json].data
+
+#/components/schemas/Admin-UserModel
+  used 5 time(s)
+  - GET /api/v2/admin/users/{id} response:200 [application/json].data
+  - PUT /api/v2/admin/users/{id} response:200 [application/json].data
+  - GET /api/v2/admin/users response:200 [application/json].data[]
+  - POST /api/v2/admin/users response:200 [application/json].data
+  - PUT /api/v2/pim/update-password response:200 [application/json].data
+
+#/components/schemas/Buzz-FeedPostModel
+  used 5 time(s)
+  - GET /api/v2/buzz/feed response:200 [application/json].data[]
+  - POST /api/v2/buzz/posts response:200 [application/json].data[].oneOf[2]
+  - GET /api/v2/buzz/posts/{id} response:200 [application/json].data.oneOf[2]
+  - PUT /api/v2/buzz/posts/{id} response:200 [application/json].data.oneOf[2]
+  - PUT /api/v2/buzz/shares/{id} response:200 [application/json].data.oneOf[2]
+
+#/components/schemas/Claim-RequestModel
+  used 5 time(s)
+  - PUT /api/v2/claim/requests/{requestId}/action response:200 [application/json].data
+  - POST /api/v2/claim/employees/{empNumber}/requests response:200 [application/json].data
+  - GET /api/v2/claim/employees/{empNumber}/requests/{id} response:200 [application/json].data
+  - POST /api/v2/claim/requests response:200 [application/json].data
+  - GET /api/v2/claim/requests/{id} response:200 [application/json].data
+
+#/components/schemas/Leave-LeavePeriodModel
+  used 5 time(s)
+  - GET /api/v2/leave/leave-period response:200 [application/json].meta.currentLeavePeriod
+  - PUT /api/v2/leave/leave-period response:200 [application/json].meta.currentLeavePeriod
+  - GET /api/v2/leave/leave-periods response:200 [application/json].data
+  - GET /api/v2/leave/leave-periods response:200 [application/json].meta.currentLeavePeriod
+  - #/components/schemas/Leave-LeaveRequestDetailedModel.leaveBalances[].period
+
+#/components/schemas/Performance-ReviewerRatingModel
+  used 5 time(s)
+  - GET /api/v2/performance/reviews/{reviewId}/evaluation/employee response:200 [application/json].data[]
+  - PUT /api/v2/performance/reviews/{reviewId}/evaluation/employee response:200 [application/json].data
+  - PUT /api/v2/performance/reviews/{reviewId}/evaluation/final response:200 [application/json].data
+  - GET /api/v2/performance/reviews/{reviewId}/evaluation/supervisor response:200 [application/json].data[]
+  - PUT /api/v2/performance/reviews/{reviewId}/evaluation/supervisor response:200 [application/json].data
+
+#/components/schemas/Performance-KpiSummaryModel
+  used 5 time(s)
+  - GET /api/v2/performance/reviews/{reviewId}/evaluation/employee response:200 [application/json].meta.kpis[]
+  - GET /api/v2/performance/reviews/{reviewId}/evaluation/employee response:200 [application/json].meta.reviewer
+  - GET /api/v2/performance/reviews/{reviewId}/kpis response:200 [application/json].data[]
+  - GET /api/v2/performance/reviews/{reviewId}/evaluation/supervisor response:200 [application/json].meta.kpis[]
+  - GET /api/v2/performance/reviews/{reviewId}/evaluation/supervisor response:200 [application/json].meta.reviewer
+
+#/components/schemas/Performance-PerformanceReviewModel
+  used 5 time(s)
+  - GET /api/v2/performance/manage/reviews response:200 [application/json].data[]
+  - POST /api/v2/performance/manage/reviews response:200 [application/json].data
+  - GET /api/v2/performance/manage/reviews/{id} response:200 [application/json].data
+  - PUT /api/v2/performance/manage/reviews/{id} response:200 [application/json].data
+  - GET /api/v2/performance/employees/reviews response:200 [application/json].data[]
+
+#/components/schemas/Pim-ReportingMethodConfigurationModel
+  used 5 time(s)
+  - GET /api/v2/pim/reporting-methods/{id} response:200 [application/json].data
+  - PUT /api/v2/pim/reporting-methods/{id} response:200 [application/json].data
+  - GET /api/v2/pim/reporting-methods response:200 [application/json].data
+  - POST /api/v2/pim/reporting-methods response:200 [application/json].data
+  - PUT /api/v2/pim/termination-reasons/{id} response:200 [application/json].data
+
+#/components/schemas/Admin-EmailSubscriberModel
+  used 4 time(s)
+  - GET /api/v2/admin/email-subscriptions/{emailSubscriptionId}/subscribers response:200 [application/json].data[]
+  - POST /api/v2/admin/email-subscriptions/{emailSubscriptionId}/subscribers response:200 [application/json].data
+  - GET /api/v2/admin/email-subscriptions/{emailSubscriptionId}/subscribers/{id} response:200 [application/json].data
+  - PUT /api/v2/admin/email-subscriptions/{emailSubscriptionId}/subscribers/{id} response:200 [application/json].data
+
+#/components/schemas/Admin-EmploymentStatusModel
+  used 4 time(s)
+  - GET /api/v2/admin/employment-statuses/{id} response:200 [application/json].data
+  - PUT /api/v2/admin/employment-statuses/{id} response:200 [application/json].data
+  - GET /api/v2/admin/employment-statuses response:200 [application/json].data[]
+  - POST /api/v2/admin/employment-statuses response:200 [application/json].data
+
+#/components/schemas/Admin-JobCategoryModel
+  used 4 time(s)
+  - GET /api/v2/admin/job-categories/{id} response:200 [application/json].data
+  - PUT /api/v2/admin/job-categories/{id} response:200 [application/json].data
+  - GET /api/v2/admin/job-categories response:200 [application/json].data[]
+  - POST /api/v2/admin/job-categories response:200 [application/json].data
+
+#/components/schemas/Admin-JobTitleModel
+  used 4 time(s)
+  - GET /api/v2/admin/job-titles/{id} response:200 [application/json].data
+  - PUT /api/v2/admin/job-titles/{id} response:200 [application/json].data
+  - GET /api/v2/admin/job-titles response:200 [application/json].data[]
+  - POST /api/v2/admin/job-titles response:200 [application/json].data
+
+#/components/schemas/Admin-LocationModel
+  used 4 time(s)
+  - GET /api/v2/admin/locations/{id} response:200 [application/json].data
+  - PUT /api/v2/admin/locations/{id} response:200 [application/json].data
+  - GET /api/v2/admin/locations response:200 [application/json].data[]
+  - POST /api/v2/admin/locations response:200 [application/json].data
+
+#/components/schemas/Admin-NationalityModel
+  used 4 time(s)
+  - GET /api/v2/admin/nationalities/{id} response:200 [application/json].data
+  - PUT /api/v2/admin/nationalities/{id} response:200 [application/json].data
+  - GET /api/v2/admin/nationalities response:200 [application/json].data[]
+  - POST /api/v2/admin/nationalities response:200 [application/json].data
+
+#/components/schemas/Admin-PayGradeModel
+  used 4 time(s)
+  - GET /api/v2/admin/pay-grades response:200 [application/json].data[]
+  - POST /api/v2/admin/pay-grades response:200 [application/json].data
+  - GET /api/v2/admin/pay-grades/{id} response:200 [application/json].data
+  - PUT /api/v2/admin/pay-grades/{id} response:200 [application/json].data
+
+#/components/schemas/Admin-PayGradeCurrencyModel
+  used 4 time(s)
+  - GET /api/v2/admin/pay-grades/{payGradeId}/currencies/{id} response:200 [application/json].data
+  - PUT /api/v2/admin/pay-grades/{payGradeId}/currencies/{id} response:200 [application/json].data
+  - GET /api/v2/admin/pay-grades/{payGradeId}/currencies response:200 [application/json].data[]
+  - POST /api/v2/admin/pay-grades/{payGradeId}/currencies response:200 [application/json].data
+
+#/components/schemas/Buzz-BuzzCommentModel
+  used 4 time(s)
+  - GET /api/v2/buzz/shares/{shareId}/comments/{commentId} response:200 [application/json].data.oneOf[1]
+  - PUT /api/v2/buzz/shares/{shareId}/comments/{commentId} response:200 [application/json].data.oneOf[1]
+  - GET /api/v2/buzz/shares/{shareId}/comments response:200 [application/json].data[].oneOf[1]
+  - POST /api/v2/buzz/shares/{shareId}/comments response:200 [application/json].data.oneOf[1]
+
+#/components/schemas/Buzz-BuzzDetailedCommentModel
+  used 4 time(s)
+  - GET /api/v2/buzz/shares/{shareId}/comments/{commentId} response:200 [application/json].data.oneOf[2]
+  - PUT /api/v2/buzz/shares/{shareId}/comments/{commentId} response:200 [application/json].data.oneOf[2]
+  - GET /api/v2/buzz/shares/{shareId}/comments response:200 [application/json].data[].oneOf[2]
+  - POST /api/v2/buzz/shares/{shareId}/comments response:200 [application/json].data.oneOf[2]
+
+#/components/schemas/Claim-AttachmentModel
+  used 4 time(s)
+  - GET /api/v2/claim/requests/{requestId}/attachments response:200 [application/json].data[]
+  - POST /api/v2/claim/requests/{requestId}/attachments response:200 [application/json].data
+  - GET /api/v2/claim/requests/{requestId}/attachments/{id} response:200 [application/json].data
+  - PUT /api/v2/claim/requests/{requestId}/attachments/{id} response:200 [application/json].data
+
+#/components/schemas/Claim-ClaimEventModel
+  used 4 time(s)
+  - GET /api/v2/claim/events response:200 [application/json].data[]
+  - POST /api/v2/claim/events response:200 [application/json].data
+  - GET /api/v2/claim/events/{id} response:200 [application/json].data
+  - PUT /api/v2/claim/events/{id} response:200 [application/json].data
+
+#/components/schemas/Claim-ExpenseModel
+  used 4 time(s)
+  - GET /api/v2/claim/requests/{requestId}/expenses response:200 [application/json].data[]
+  - POST /api/v2/claim/requests/{requestId}/expenses response:200 [application/json].data
+  - GET /api/v2/claim/requests/{requestId}/expenses/{id} response:200 [application/json].data
+  - PUT /api/v2/claim/requests/{requestId}/expenses/{id} response:200 [application/json].data
+
+#/components/schemas/Claim-ExpenseTypeModel
+  used 4 time(s)
+  - GET /api/v2/claim/expenses/types response:200 [application/json].data[]
+  - POST /api/v2/claim/expenses/types response:200 [application/json].data
+  - GET /api/v2/claim/expenses/types/{id} response:200 [application/json].data
+  - PUT /api/v2/claim/expenses/types/{id} response:200 [application/json].data
+
+#/components/schemas/OAuth-OAuthClientModel
+  used 4 time(s)
+  - GET /api/v2/admin/oauth-clients response:200 [application/json].data[]
+  - POST /api/v2/admin/oauth-clients response:200 [application/json].data
+  - GET /api/v2/admin/oauth-client/{id} response:200 [application/json].data
+  - PUT /api/v2/admin/oauth-client/{id} response:200 [application/json].data
+
+#/components/schemas/Leave-HolidayModel
+  used 4 time(s)
+  - GET /api/v2/leave/holidays/{id} response:200 [application/json].data
+  - PUT /api/v2/leave/holidays/{id} response:200 [application/json].data
+  - GET /api/v2/leave/holidays response:200 [application/json].data
+  - POST /api/v2/leave/holidays response:200 [application/json].data
+
+#/components/schemas/Leave-LeaveEntitlementModel
+  used 4 time(s)
+  - GET /api/v2/leave/leave-entitlements/{id} response:200 [application/json].data.oneOf[1]
+  - PUT /api/v2/leave/leave-entitlements/{id} response:200 [application/json].data
+  - GET /api/v2/leave/leave-entitlements response:200 [application/json].data[].oneOf[1]
+  - POST /api/v2/leave/leave-entitlements response:200 [application/json].data
+
+#/components/schemas/OpenIdConnect-ProviderModel
+  used 4 time(s)
+  - GET /api/v2/auth/openid-providers response:200 [application/json].data[]
+  - POST /api/v2/auth/openid-providers response:200 [application/json].data
+  - GET /api/v2/auth/openid-providers/{id} response:200 [application/json].data
+  - PUT /api/v2/auth/openid-providers/{id} response:200 [application/json].data
+
+#/components/schemas/Performance-KpiModel
+  used 4 time(s)
+  - GET /api/v2/performance/kpis/{id} response:200 [application/json].data
+  - PUT /api/v2/performance/kpis/{id} response:200 [application/json].data
+  - GET /api/v2/performance/kpis response:200 [application/json].data[]
+  - POST /api/v2/performance/kpis response:200 [application/json].data
+
+#/components/schemas/Performance-PerformanceTrackerLogModel
+  used 4 time(s)
+  - GET /api/v2/performance/trackers/{trackerId}/logs response:200 [application/json].data[]
+  - POST /api/v2/performance/trackers/{trackerId}/logs response:200 [application/json].data
+  - GET /api/v2/performance/trackers/{trackerId}/logs/{id} response:200 [application/json].data
+  - PUT /api/v2/performance/trackers/{trackerId}/logs/{id} response:200 [application/json].data
+
+#/components/schemas/Pim-EmpEmergencyContactModel
+  used 4 time(s)
+  - GET /api/v2/pim/employees/{empNumber}/emergency-contacts response:200 [application/json].data[]
+  - POST /api/v2/pim/employees/{empNumber}/emergency-contacts response:200 [application/json].data
+  - GET /api/v2/pim/employees/{empNumber}/emergency-contacts/{id} response:200 [application/json].data
+  - PUT /api/v2/pim/employees/{empNumber}/emergency-contacts/{id} response:200 [application/json].data
+
+#/components/schemas/Pim-EmployeeAttachmentModel
+  used 4 time(s)
+  - GET /api/v2/pim/employees/{empNumber}/screen/{screen}/attachments/{id} response:200 [application/json].data
+  - PUT /api/v2/pim/employees/{empNumber}/screen/{screen}/attachments/{id} response:200 [application/json].data
+  - GET /api/v2/pim/employees/{empNumber}/screen/{screen}/attachments response:200 [application/json].data[]
+  - POST /api/v2/pim/employees/{empNumber}/screen/{screen}/attachments response:200 [application/json].data
+
+#/components/schemas/Pim-EmployeeEducationModel
+  used 4 time(s)
+  - GET /api/v2/pim/employees/{empNumber}/educations/{id} response:200 [application/json].data
+  - PUT /api/v2/pim/employees/{empNumber}/educations/{id} response:200 [application/json].data
+  - GET /api/v2/pim/employees/{empNumber}/educations response:200 [application/json].data
+  - POST /api/v2/pim/employees/{empNumber}/educations response:200 [application/json].data
+
+#/components/schemas/Pim-EmployeeImmigrationModel
+  used 4 time(s)
+  - GET /api/v2/pim/employees/{empNumber}/immigrations response:200 [application/json].data
+  - POST /api/v2/pim/employees/{empNumber}/immigrations response:200 [application/json].data
+  - GET /api/v2/pim/employees/{empNumber}/immigrations/{id} response:200 [application/json].data
+  - PUT /api/v2/pim/employees/{empNumber}/immigrations/{id} response:200 [application/json].data
+
+#/components/schemas/Pim-EmployeeLanguageModel
+  used 4 time(s)
+  - GET /api/v2/pim/employees/{empNumber}/languages/{languageId}/fluencies/{fluencyId} response:200 [application/json].data
+  - PUT /api/v2/pim/employees/{empNumber}/languages/{languageId}/fluencies/{fluencyId} response:200 [application/json].data
+  - GET /api/v2/pim/employees/{empNumber}/languages response:200 [application/json].data[]
+  - POST /api/v2/pim/employees/{empNumber}/languages response:200 [application/json].data
+
+#/components/schemas/Pim-EmployeeLicenseModel
+  used 4 time(s)
+  - GET /api/v2/pim/employees/{empNumber}/licenses/{id} response:200 [application/json].data
+  - PUT /api/v2/pim/employees/{empNumber}/licenses/{id} response:200 [application/json].data
+  - GET /api/v2/pim/employees/{empNumber}/licenses response:200 [application/json].data[]
+  - POST /api/v2/pim/employees/{empNumber}/licenses response:200 [application/json].data
+
+#/components/schemas/Pim-EmployeeSalaryModel
+  used 4 time(s)
+  - GET /api/v2/pim/employees/{empNumber}/salary-components/{id} response:200 [application/json].data
+  - PUT /api/v2/pim/employees/{empNumber}/salary-components/{id} response:200 [application/json].data
+  - GET /api/v2/pim/employees/{empNumber}/salary-components response:200 [application/json].data
+  - POST /api/v2/pim/employees/{empNumber}/salary-components response:200 [application/json].data
+
+#/components/schemas/Pim-EmployeeSkillModel
+  used 4 time(s)
+  - GET /api/v2/pim/employees/{empNumber}/skills/{id} response:200 [application/json].data
+  - PUT /api/v2/pim/employees/{empNumber}/skills/{id} response:200 [application/json].data
+  - GET /api/v2/pim/employees/{empNumber}/skills response:200 [application/json].data[]
+  - POST /api/v2/pim/employees/{empNumber}/skills response:200 [application/json].data
+
+#/components/schemas/Pim-EmployeeSubordinateModel
+  used 4 time(s)
+  - GET /api/v2/pim/employees/{empNumber}/subordinates response:200 [application/json].data
+  - POST /api/v2/pim/employees/{empNumber}/subordinates response:200 [application/json].data
+  - GET /api/v2/pim/employees/{empNumber}/subordinates/{id} response:200 [application/json].data
+  - PUT /api/v2/pim/employees/{empNumber}/subordinates/{id} response:200 [application/json].data
+
+#/components/schemas/Pim-EmployeeSupervisorModel
+  used 4 time(s)
+  - GET /api/v2/pim/employees/{empNumber}/supervisors/{id} response:200 [application/json].data
+  - PUT /api/v2/pim/employees/{empNumber}/supervisors/{id} response:200 [application/json].data
+  - GET /api/v2/pim/employees/{empNumber}/supervisors response:200 [application/json].data
+  - POST /api/v2/pim/employees/{empNumber}/supervisors response:200 [application/json].data
+
+#/components/schemas/Pim-EmployeeWorkExperienceModel
+  used 4 time(s)
+  - GET /api/v2/pim/employees/{empNumber}/work-experiences/{id} response:200 [application/json].data
+  - PUT /api/v2/pim/employees/{empNumber}/work-experiences/{id} response:200 [application/json].data
+  - GET /api/v2/pim/employees/{empNumber}/work-experiences response:200 [application/json].data
+  - POST /api/v2/pim/employees/{empNumber}/work-experiences response:200 [application/json].data
+
+#/components/schemas/Recruitment-InterviewAttachmentModel
+  used 4 time(s)
+  - GET /api/v2/recruitment/interviews/{interviewId}/attachments response:200 [application/json].data
+  - POST /api/v2/recruitment/interviews/{interviewId}/attachments response:200 [application/json].data
+  - GET /api/v2/recruitment/interviews/{interviewId}/attachments/{attachmentId} response:200 [application/json].data
+  - PUT /api/v2/recruitment/interviews/{interviewId}/attachments/{attachmentId} response:200 [application/json].data
+
+#/components/schemas/Recruitment-VacancyDetailedModel
+  used 4 time(s)
+  - GET /api/v2/recruitment/vacancies/{id} response:200 [application/json].data
+  - PUT /api/v2/recruitment/vacancies/{id} response:200 [application/json].data
+  - GET /api/v2/recruitment/vacancies response:200 [application/json].data[].oneOf[3]
+  - POST /api/v2/recruitment/vacancies response:200 [application/json].data
+
+#/components/schemas/Time-CustomerModel
+  used 4 time(s)
+  - GET /api/v2/time/customers response:200 [application/json].data
+  - POST /api/v2/time/customers response:200 [application/json].data
+  - GET /api/v2/time/customers/{id} response:200 [application/json].data
+  - PUT /api/v2/time/customers/{id} response:200 [application/json].data
+
+#/components/schemas/Time-TimesheetModel
+  used 4 time(s)
+  - GET /api/v2/time/employees/{empNumber}/timesheets response:200 [application/json].data[]
+  - POST /api/v2/time/employees/{empNumber}/timesheets response:200 [application/json].data
+  - PUT /api/v2/time/employees/{empNumber}/timesheets/{id} response:200 [application/json].data
+  - POST /api/v2/time/projects response:200 [application/json].data
+
+#/components/schemas/Time-DetailedTimesheetModel
+  used 4 time(s)
+  - GET /api/v2/time/employees/timesheets/{timesheetId}/entries response:200 [application/json].data
+  - PUT /api/v2/time/employees/timesheets/{timesheetId}/entries response:200 [application/json].data
+  - GET /api/v2/time/timesheets/{timesheetId}/entries response:200 [application/json].data
+  - PUT /api/v2/time/timesheets/{timesheetId}/entries response:200 [application/json].data
+
+#/components/schemas/Time-ProjectActivityModel
+  used 4 time(s)
+  - GET /api/v2/time/project/{projectId}/activities response:200 [application/json].data
+  - POST /api/v2/time/project/{projectId}/activities response:200 [application/json].data
+  - GET /api/v2/time/project/{projectId}/activities/{id} response:200 [application/json].data
+  - PUT /api/v2/time/project/{projectId}/activities/{id} response:200 [application/json].data
+
+#/components/schemas/Slack-RegistrationModel
+  used 4 time(s)
+  - GET /api/v2/admin/workspace-notification/registrations response:200 [application/json].data[]
+  - POST /api/v2/admin/workspace-notification/registrations response:200 [application/json].data
+  - GET /api/v2/admin/workspace-notification/registrations/{id} response:200 [application/json].data
+  - PUT /api/v2/admin/workspace-notification/registrations/{id} response:200 [application/json].data
+
+#/components/schemas/Admin-I18NLanguageModel
+  used 3 time(s)
+  - GET /api/v2/admin/i18n/languages response:200 [application/json].data[]
+  - GET /api/v2/admin/i18n/languages/{id} response:200 [application/json].data
+  - PUT /api/v2/admin/i18n/languages/{id} response:200 [application/json].data
+
+#/components/schemas/Admin-WorkShiftDetailedModel
+  used 3 time(s)
+  - POST /api/v2/admin/work-shifts response:200 [application/json].data
+  - GET /api/v2/admin/work-shifts/{id} response:200 [application/json].data
+  - PUT /api/v2/admin/work-shifts/{id} response:200 [application/json].data
+
+#/components/schemas/Attendance-AttendanceRecordModel
+  used 3 time(s)
+  - PUT /api/v2/attendance/records/{id} response:200 [application/json].data
+  - POST /api/v2/attendance/employees/{empNumber}/records response:200 [application/json].data
+  - PUT /api/v2/attendance/employees/{empNumber}/records response:200 [application/json].data
+
+#/components/schemas/Buzz-PostModel
+  used 3 time(s)
+  - POST /api/v2/buzz/posts response:200 [application/json].data[].oneOf[1]
+  - GET /api/v2/buzz/posts/{id} response:200 [application/json].data.oneOf[1]
+  - PUT /api/v2/buzz/posts/{id} response:200 [application/json].data.oneOf[1]
+
+#/components/schemas/Buzz-ShareModel
+  used 3 time(s)
+  - GET /api/v2/buzz/posts/{id}/shares response:200 [application/json].data[]
+  - POST /api/v2/buzz/shares response:200 [application/json].data
+  - PUT /api/v2/buzz/shares/{id} response:200 [application/json].data.oneOf[1]
+
+#/components/schemas/Leave-LeaveModel
+  used 3 time(s)
+  - PUT /api/v2/leave/leaves/bulk response:200 [application/json].data
+  - PUT /api/v2/leave/leaves/{leaveId} response:200 [application/json].data
+  - #/components/schemas/Leave-OverlapLeaveModel.allOf[1]
+
+#/components/schemas/Performance-PerformanceTrackerModel
+  used 3 time(s)
+  - GET /api/v2/performance/employees/trackers/{id} response:200 [application/json].data
+  - GET /api/v2/performance/trackers} response:200 [application/json].data[]
+  - GET /api/v2/performance/config/trackers response:200 [application/json].data[]
+
+#/components/schemas/Performance-DetailedPerformanceTrackerModel
+  used 3 time(s)
+  - POST /api/v2/performance/config/trackers response:200 [application/json].data
+  - GET /api/v2/performance/config/trackers/{id} response:200 [application/json].data
+  - PUT /api/v2/performance/config/trackers/{id} response:200 [application/json].data
+
+#/components/schemas/Pim-EmployeeDetailedModel
+  used 3 time(s)
+  - GET /api/v2/pim/employees/{empNumber} response:200 [application/json].data.oneOf[2]
+  - GET /api/v2/pim/employees response:200 [application/json].data[].oneOf[2]
+  - GET /api/v2/pim/myself response:200 [application/json].data.oneOf[3]
+
+#/components/schemas/Pim-EmployeeMembershipModel
+  used 3 time(s)
+  - GET /api/v2/pim/employees/{empNumber}/memberships/{id} response:200 [application/json].data
+  - PUT /api/v2/pim/employees/{empNumber}/memberships/{id} response:200 [application/json].data
+  - POST /api/v2/pim/employees/{empNumber}/memberships response:200 [application/json].data
+
+#/components/schemas/Pim-EmployeeTerminationModel
+  used 3 time(s)
+  - GET /api/v2/pim/employees/{empNumber}/terminations/{id} response:200 [application/json].data
+  - PUT /api/v2/pim/employees/{empNumber}/terminations/{id} response:200 [application/json].data
+  - POST /api/v2/pim/employees/{empNumber}/terminations response:200 [application/json].data
+
+#/components/schemas/Pim-PimDefinedReportModel
+  used 3 time(s)
+  - GET /api/v2/pim/reports/defined response:200 [application/json].data
+  - POST /api/v2/pim/reports/defined response:200 [application/json].data
+  - PUT /api/v2/pim/reports/defined/{id} response:200 [application/json].data
+
+#/components/schemas/Pim-TerminationReasonConfigurationModel
+  used 3 time(s)
+  - GET /api/v2/pim/termination-reasons response:200 [application/json].data
+  - POST /api/v2/pim/termination-reasons response:200 [application/json].data
+  - GET /api/v2/pim/termination-reasons/{id} response:200 [application/json].data
+
+#/components/schemas/Recruitment-CandidateModel
+  used 3 time(s)
+  - GET /api/v2/recruitment/candidates response:200 [application/json].data[].oneOf[1]
+  - POST /api/v2/recruitment/candidates response:200 [application/json].data
+  - PUT /api/v2/recruitment/candidates/{id} response:200 [application/json].data
+
+#/components/schemas/Recruitment-CandidateAttachmentModel
+  used 3 time(s)
+  - POST /api/v2/recruitment/candidate/attachments response:200 [application/json].data
+  - GET /api/v2/recruitment/candidate/{candidateId}/attachment response:200 [application/json].data
+  - PUT /api/v2/recruitment/candidate/{candidateId}/attachment response:200 [application/json].data
+
+#/components/schemas/Recruitment-CandidateInterviewModel
+  used 3 time(s)
+  - POST /api/v2/recruitment/candidates/{candidateId}/shedule-interview response:200 [application/json].data
+  - GET /api/v2/recruitment/candidates/{candidateId}/interview/{interviewId} response:200 [application/json].data
+  - PUT /api/v2/recruitment/candidate/{candidateId}/interview/{interviewId} response:200 [application/json].data
+
+#/components/schemas/Recruitment-VacancyAttachmentModel
+  used 3 time(s)
+  - POST /api/v2/recruitment/vacancy/attachments response:200 [application/json].data
+  - GET /api/v2/recruitment/vacancies/{vacancyId}/attachments response:200 [application/json].data
+  - PUT /api/v2/recruitment/vacancies/{vacancyId}/attachments/{attachmentId} response:200 [application/json].data
+
+#/components/schemas/Time-ProjectDetailedModel
+  used 3 time(s)
+  - GET /api/v2/time/projects response:200 [application/json].data.oneOf[2]
+  - GET /api/v2/time/projects/{id} response:200 [application/json].data.oneOf[2]
+  - PUT /api/v2/time/projects/{id} response:200 [application/json].data
+
+#/components/schemas/Admin-EducationModel
+  used 2 time(s)
+  - GET /api/v2/admin/educations/{id} response:200 [application/json].data
+  - PUT /api/v2/admin/educations/{id} response:200 [application/json].data
+
+#/components/schemas/Admin-EmailSubscriptionModel
+  used 2 time(s)
+  - GET /api/v2/admin/email-subscriptions response:200 [application/json].data[]
+  - PUT /api/v2/admin/email-subscriptions/{id} response:200 [application/json].data
+
+#/components/schemas/Base64AttachmentOrNull
+  used 2 time(s)
+  - PUT /api/v2/admin/job-titles/{id} requestBody [application/json].specification
+  - POST /api/v2/admin/job-titles requestBody [application/json].specification
+
+#/components/schemas/Admin-OrganizationModel
+  used 2 time(s)
+  - GET /api/v2/admin/organization response:200 [application/json].data
+  - PUT /api/v2/admin/organization response:200 [application/json].data
+
+#/components/schemas/Attendance-AttendanceConfigurationModel
+  used 2 time(s)
+  - GET /api/v2/attendance/configs response:200 [application/json].data
+  - PUT /api/v2/attendance/configs response:200 [application/json].data
+
+#/components/schemas/Buzz-BuzzLikeOnCommentModel
+  used 2 time(s)
+  - GET /api/v2/buzz/comments/{commentId}/likes response:200 [application/json].data[]
+  - POST /api/v2/buzz/comments/{commentId}/likes response:200 [application/json].data
+
+#/components/schemas/Buzz-BuzzLikeOnShareModel
+  used 2 time(s)
+  - GET /api/v2/buzz/shares/{shareId}/likes response:200 [application/json].data[]
+  - POST /api/v2/buzz/shares/{shareId}/likes response:200 [application/json].data
+
+#/components/schemas/Claim-ClaimRequestSummaryModel
+  used 2 time(s)
+  - GET /api/v2/claim/employees/requests response:200 [application/json].data[].oneOf[2]
+  - GET /api/v2/claim/requests response:200 [application/json].data[].oneOf[2]
+
+#/components/schemas/CorporateBranding-ThemeModel
+  used 2 time(s)
+  - GET /api/v2/admin/theme response:200 [application/json].data
+  - PUT /api/v2/admin/theme response:200 [application/json].data
+
+#/components/schemas/CorporateDirectory-EmployeeDirectoryModel
+  used 2 time(s)
+  - GET /api/v2/directory/employees/{empNumber} response:200 [application/json].data[].oneOf[1]
+  - GET /api/v2/directory/employees response:200 [application/json].data[].oneOf[1]
+
+#/components/schemas/CorporateDirectory-EmployeeDirectoryDetailedModel
+  used 2 time(s)
+  - GET /api/v2/directory/employees/{empNumber} response:200 [application/json].data[].oneOf[2]
+  - GET /api/v2/directory/employees response:200 [application/json].data[].oneOf[2]
+
+#/components/schemas/LDAP-LDAPConfigModel
+  used 2 time(s)
+  - GET /api/v2/admin/ldap-config response:200 [application/json].data
+  - PUT /api/v2/admin/ldap-config response:200 [application/json].data
+
+#/components/schemas/LDAP-LDAPSyncStatusModel
+  used 2 time(s)
+  - GET /api/v2/admin/ldap/user-sync response:200 [application/json].data
+  - POST /api/v2/admin/ldap/user-sync response:200 [application/json].data
+
+#/components/schemas/Leave-LeaveCommentModel
+  used 2 time(s)
+  - GET /api/v2/leave/leaves/{leaveId}/leave-comments response:200 [application/json].data
+  - POST /api/v2/leave/leaves/{leaveId}/leave-comments response:200 [application/json].data
+
+#/components/schemas/Leave-LeaveEntitlementSummaryModel
+  used 2 time(s)
+  - GET /api/v2/leave/leave-entitlements/{id} response:200 [application/json].data.oneOf[2]
+  - GET /api/v2/leave/leave-entitlements response:200 [application/json].data[].oneOf[2]
+
+#/components/schemas/Leave-LeavePeriodHistoryModel
+  used 2 time(s)
+  - GET /api/v2/leave/leave-period response:200 [application/json].data
+  - PUT /api/v2/leave/leave-period response:200 [application/json].data
+
+#/components/schemas/Leave-LeaveRequestCommentModel
+  used 2 time(s)
+  - GET /api/v2/leave/leave-requests/{leaveRequestId}/leave-comments response:200 [application/json].data
+  - POST /api/v2/leave/leave-requests/{leaveRequestId}/leave-comments response:200 [application/json].data
+
+#/components/schemas/Leave-WorkWeekIndexedModel
+  used 2 time(s)
+  - GET /api/v2/leave/workweek response:200 [application/json].data.oneOf[1]
+  - PUT /api/v2/leave/workweek response:200 [application/json].data.oneOf[1]
+
+#/components/schemas/Leave-WorkWeekModel
+  used 2 time(s)
+  - GET /api/v2/leave/workweek response:200 [application/json].data.oneOf[2]
+  - PUT /api/v2/leave/workweek response:200 [application/json].data.oneOf[2]
+
+#/components/schemas/Core-WorkflowStateModel
+  used 2 time(s)
+  - GET /api/v2/performance/reviews/{reviewId}/evaluation/employee response:200 [application/json].meta.allowedActions[]
+  - GET /api/v2/performance/reviews/{reviewId}/evaluation/supervisor response:200 [application/json].meta.allowedActions[]
+
+#/components/schemas/Pim-EmpUsTaxExemptionModel
+  used 2 time(s)
+  - GET /api/v2/pim/employees/{empNumber}/tax-exemption response:200 [application/json].data
+  - PUT /api/v2/pim/employees/{empNumber}/tax-exemption response:200 [application/json].data
+
+#/components/schemas/Pim-EmployeeContactDetailsModel
+  used 2 time(s)
+  - GET /api/v2/pim/employee/{empNumber}/contact-details response:200 [application/json].data
+  - PUT /api/v2/pim/employee/{empNumber}/contact-details response:200 [application/json].data
+
+#/components/schemas/Pim-EmployeeJobDetailModel
+  used 2 time(s)
+  - GET /api/v2/pim/employees/{empNumber}/job-details response:200 [application/json].data
+  - PUT /api/v2/pim/employees/{empNumber}/job-details response:200 [application/json].data
+
+#/components/schemas/Pim-EmployeePictureModel
+  used 2 time(s)
+  - GET /api/v2/pim/employees/{empNumber}/picture response:200 [application/json].data
+  - PUT /api/v2/pim/employees/{empNumber}/picture response:200 [application/json].data
+
+#/components/schemas/Pim-EmploymentContractModel
+  used 2 time(s)
+  - GET /api/v2/pim/employees/{empNumber}/employment-contract response:200 [application/json].data
+  - PUT /api/v2/pim/employees/{empNumber}/employment-contract response:200 [application/json].data
+
+#/components/schemas/Recruitment-CandidateHistoryDetailedModel
+  used 2 time(s)
+  - GET /api/v2/recruitment/candidates/{candidateId}/history/{historyId} response:200 [application/json].data
+  - PUT /api/v2/recruitment/candidates/{candidateId}/history/{historyId} response:200 [application/json].data
+
+#/components/schemas/Time-ProjectModel
+  used 2 time(s)
+  - GET /api/v2/time/projects response:200 [application/json].data.oneOf[1]
+  - GET /api/v2/time/projects/{id} response:200 [application/json].data.oneOf[1]
+
+#/components/schemas/Time-TimeConfigPeriodModel
+  used 2 time(s)
+  - GET /api/v2/time/time-sheet-period response:200 [application/json].data
+  - PUT /api/v2/time/time-sheet-period response:200 [application/json].data
+
+#/components/schemas/Time-TimesheetItemModel
+  used 2 time(s)
+  - PUT /api/v2/time/timesheets/{timesheetId}/entries/comment response:200 [application/json].data
+  - GET /api/v2/time/timesheets/{timesheetId}/entries/{id}/comment response:200 [application/json].data
+
+#/components/schemas/Slack-ConfigModel
+  used 2 time(s)
+  - GET /api/v2/admin/workspace-notification/config response:200 [application/json].data
+  - PUT /api/v2/admin/workspace-notification/config response:200 [application/json].data
+
+#/components/schemas/Admin-EmailConfigurationModel
+  used 1 time(s)
+  - GET /api/v2/admin/email-configuration response:200 [application/json].data
+
+#/components/schemas/Admin-I18NGroupModel
+  used 1 time(s)
+  - GET /api/v2/admin/i18n/groups response:200 [application/json].data[]
+
+#/components/schemas/Admin-I18NImportErrorModel
+  used 1 time(s)
+  - GET /api/v2/admin/i18n/languages/{languageId}/translations/errors response:200 [application/json].data[]
+
+#/components/schemas/Admin-JobSpecificationModel
+  used 1 time(s)
+  - GET /api/v2/admin/job-titles/{id}/specification response:200 [application/json].data
+
+#/components/schemas/Admin-CurrencyTypeModel
+  used 1 time(s)
+  - GET /api/v2/admin/pay-grades/{payGradeId}/currencies/allowed response:200 [application/json].data[]
+
+#/components/schemas/Admin-SubunitTreeModel
+  used 1 time(s)
+  - GET /api/v2/admin/subunits response:200 [application/json].data[].oneOf[2]
+
+#/components/schemas/Admin-WorkShiftModel
+  used 1 time(s)
+  - GET /api/v2/admin/work-shifts response:200 [application/json].data[]
+
+#/components/schemas/Attendance-DetailedAttendanceRecordModel
+  used 1 time(s)
+  - GET /api/v2/attendance/records/{id} response:200 [application/json].data
+
+#/components/schemas/Attendance-DateTimeModel
+  used 1 time(s)
+  - GET /api/v2/attendance/current-datetime response:200 [application/json].data
+
+#/components/schemas/Attendance-AttendanceRecordListModel
+  used 1 time(s)
+  - GET /api/v2/attendance/employees/{empNumber}/records response:200 [application/json].data[]
+
+#/components/schemas/Attendance-EmployeeAttendanceSummeryListModel
+  used 1 time(s)
+  - GET /api/v2/attendance/employees/summary response:200 [application/json].data[]
+
+#/components/schemas/Attendance-EmployeeLatestAttendanceRecordModel
+  used 1 time(s)
+  - GET /api/v2/attendance/records/latest response:200 [application/json].data
+
+#/components/schemas/Buzz-Post-Text
+  used 1 time(s)
+  - POST /api/v2/buzz/posts requestBody [application/json].oneOf[1]
+
+#/components/schemas/Buzz-Post-Photo
+  used 1 time(s)
+  - POST /api/v2/buzz/posts requestBody [application/json].oneOf[2]
+
+#/components/schemas/Buzz-Post-Video
+  used 1 time(s)
+  - POST /api/v2/buzz/posts requestBody [application/json].oneOf[3]
+
+#/components/schemas/Buzz-Post-Text-Edit
+  used 1 time(s)
+  - PUT /api/v2/buzz/posts/{id} requestBody [application/json].oneOf[1]
+
+#/components/schemas/Buzz-Post-Photo-Edit
+  used 1 time(s)
+  - PUT /api/v2/buzz/posts/{id} requestBody [application/json].oneOf[2]
+
+#/components/schemas/Buzz-Post-Video-Edit
+  used 1 time(s)
+  - PUT /api/v2/buzz/posts/{id} requestBody [application/json].oneOf[3]
+
+#/components/schemas/Buzz-EmployeeAnniversaryModel
+  used 1 time(s)
+  - GET /api/v2/buzz/anniversaries response:200 [application/json].data[]
+
+#/components/schemas/Claim-EmployeeClaimRequestModel
+  used 1 time(s)
+  - GET /api/v2/claim/employees/requests response:200 [application/json].data[].oneOf[1]
+
+#/components/schemas/Claim-MyClaimRequestModel
+  used 1 time(s)
+  - GET /api/v2/claim/requests response:200 [application/json].data[].oneOf[1]
+
+#/components/schemas/Core-AboutOrganizationModel
+  used 1 time(s)
+  - GET /api/v2/core/about response:200 [application/json].data
+
+#/components/schemas/Dashboard-LocationModel
+  used 1 time(s)
+  - GET /api/v2/dashboard/employees/locations response:200 [application/json].data[]
+
+#/components/schemas/Dashboard-SubunitModel
+  used 1 time(s)
+  - GET /api/v2/dashboard/employees/subunit response:200 [application/json].data[]
+
+#/components/schemas/Dashboard-EmployeeOnLeaveListModel
+  used 1 time(s)
+  - GET /api/v2/dashboard/employees/leaves response:200 [application/json].data[]
+
+#/components/schemas/Leave-EmployeeLeaveModel
+  used 1 time(s)
+  - GET /api/v2/leave/employees/leaves response:200 [application/json].data[]
+
+#/components/schemas/Leave-EmployeeLeaveBalanceModel
+  used 1 time(s)
+  - GET /api/v2/leave/employees/leave-balances response:200 [application/json].data[]
+
+#/components/schemas/Leave-EmployeeLeaveEntitlementModel
+  used 1 time(s)
+  - GET /api/v2/leave/employees/{empNumber}/leave-entitlements response:200 [application/json].data
+
+#/components/schemas/Leave-BulkLeaveEntitlementMatchingEmployeeModel
+  used 1 time(s)
+  - GET /api/v2/leave/employees/leave-entitlements response:200 [application/json].data
+
+#/components/schemas/Leave-LeaveDetailedModel
+  used 1 time(s)
+  - GET /api/v2/leave/leave-requests/{leaveRequestId}/leaves response:200 [application/json].data
+
+#/components/schemas/Leave-OverlapLeaveModel
+  used 1 time(s)
+  - GET /api/v2/leave/overlap-leaves response:200 [application/json].data
+
+#/components/schemas/Maintenance-PurgeCandidateModel
+  used 1 time(s)
+  - DELETE /api/v2/maintenance/candidates/purge response:200 [application/json].data
+
+#/components/schemas/Maintenance-PurgeCandidateListModel
+  used 1 time(s)
+  - GET /api/v2/maintenance/candidates response:200 [application/json].data
+
+#/components/schemas/Maintenance-PurgeEmployeeModel
+  used 1 time(s)
+  - DELETE /api/v2/maintenance/purge response:200 [application/json].data
+
+#/components/schemas/Performance-EmployeeTrackerModel
+  used 1 time(s)
+  - GET /api/v2/performance/employees/trackers response:200 [application/json].data[]
+
+#/components/schemas/Performance-DetailedPerformanceReviewModel
+  used 1 time(s)
+  - GET /api/v2/performance/reviews response:200 [application/json].data[]
+
+#/components/schemas/Performance-CompletedPerformanceReviewModel
+  used 1 time(s)
+  - GET /api/v2/performance/reviews/{reviewId}/evaluation/final response:200 [application/json].data
+
+#/components/schemas/Performance-SupervisorModel
+  used 1 time(s)
+  - GET /api/v2/performance/supervisors response:200 [application/json].data[]
+
+#/components/schemas/Pim-EmployeeAllowedLanguageModel
+  used 1 time(s)
+  - GET /api/v2/pim/employees/{empNumber}/languages/allowed response:200 [application/json].data[]
+
+#/components/schemas/Pim-EmployeeAllowedReportToEmployeeModel
+  used 1 time(s)
+  - GET /api/v2/pim/employees/{empNumber}/report-to/allowed response:200 [application/json].data[]
+
+#/components/schemas/Pim-EmployeeAllowedSkillModel
+  used 1 time(s)
+  - GET /api/v2/pim/employees/{empNumber}/skills/allowed response:200 [application/json].data[]
+
+#/components/schemas/Pim-EmployeePersonalDetailModel
+  used 1 time(s)
+  - GET /api/v2/pim/employees/{empNumber}/personal-details response:200 [application/json].data
+
+#/components/schemas/Pim-EmployeeWorkShiftModel
+  used 1 time(s)
+  - GET /api/v2/pim/employees/{empNumber}/work-shift response:200 [application/json].data
+
+#/components/schemas/Pim-MyInfoDetailedModel
+  used 1 time(s)
+  - GET /api/v2/pim/myself response:200 [application/json].data.oneOf[2]
+
+#/components/schemas/Recruitment-CandidateListModel
+  used 1 time(s)
+  - GET /api/v2/recruitment/candidates response:200 [application/json].data[].oneOf[2]
+
+#/components/schemas/Recruitment-CandidateDetailedModel
+  used 1 time(s)
+  - GET /api/v2/recruitment/candidates response:200 [application/json].data[].oneOf[3]
+
+#/components/schemas/Recruitment-VacancyModel
+  used 1 time(s)
+  - GET /api/v2/recruitment/vacancies response:200 [application/json].data[].oneOf[1]
+
+#/components/schemas/Recruitment-VacancySummaryModel
+  used 1 time(s)
+  - GET /api/v2/recruitment/vacancies response:200 [application/json].data[].oneOf[2]
+
+#/components/schemas/Time-CopyActivityModel
+  used 1 time(s)
+  - GET /api/v2/time/projects/{toProjectId}/activities/copy/{fromProjectId} response:200 [application/json].data
+
+#/components/schemas/Time-DefaultTimesheetModel
+  used 1 time(s)
+  - GET /api/v2/time/timesheets/default response:200 [application/json].data
+
+#/components/schemas/Time-EmployeeTimesheetModel
+  used 1 time(s)
+  - GET /api/v2/time/employees/timesheets/list response:200 [application/json].data
+
+#/components/schemas/Time-TimesheetActionLogModel
+  used 1 time(s)
+  - GET /api/v2/time/timesheets/{timesheetId}/action-logs response:200 [application/json].data
+
+#/components/schemas/Time-TimeFormatModel
+  used 1 time(s)
+  - GET /api/v2/time/config/time-format response:200 [application/json].data
+
+#/components/schemas/Buzz-FeedPostModel-Text
+  used 1 time(s)
+  - #/components/schemas/Buzz-FeedPostModel.oneOf[1]
+
+#/components/schemas/Buzz-FeedPostModel-Photo
+  used 1 time(s)
+  - #/components/schemas/Buzz-FeedPostModel.oneOf[2]
+
+#/components/schemas/Buzz-FeedPostModel-Video
+  used 1 time(s)
+  - #/components/schemas/Buzz-FeedPostModel.oneOf[3]
+
+#/components/schemas/Buzz-FeedPostModel-Share
+  used 1 time(s)
+  - #/components/schemas/Buzz-FeedPostModel.oneOf[4]
+
+#/components/schemas/Null
+  used 1 time(s)
+  - #/components/schemas/Base64AttachmentOrNull.oneOf[2]
+
+#/components/schemas/Leave-LeaveBalanceModel
+  used 1 time(s)
+  - #/components/schemas/Leave-LeaveRequestDetailedModel.leaveBalances[].balance
+
+#/components/schemas/Performance-PerformanceTrackReviewerModel
+  used 1 time(s)
+  - #/components/schemas/Performance-DetailedPerformanceTrackerModel.reviewers[]
+
+
+======================================================================
+ UNUSED SCHEMAS
+======================================================================
+
+Performance-ReviewerModel
+Performance-SupervisorReviewerModel
+Recruitment-CandidateHistoryListModel
+Time-TotalDurationModel
+
+======================================================================
+ RESPONSE SCHEMA MISMATCHES
+======================================================================
+
+1. GET /api/v2/admin/educations
+   operationId : list-all-education-records
+   expected    : Admin-EducationModel
+   actual      : Admin-SkillModel
+
+2. POST /api/v2/admin/educations
+   operationId : create-an-education-record
+   expected    : Admin-EducationModel
+   actual      : Admin-SkillModel
+
+3. PUT /api/v2/admin/email-configuration
+   operationId : update-email-configuration
+   expected    : Admin-EmailConfigurationModel
+   actual      : Admin-LanguageModel
+
+4. PUT /api/v2/admin/localization}
+   operationId : update-localization-settings
+   expected    : Admin-LocalizationModel
+   actual      : Admin-MembershipModel
+
+5. GET /api/v2/pim/employees/{empNumber}/memberships
+   operationId : list-an-employees-memberships
+   expected    : Pim-EmployeeMembershipModel
+   actual      : Pim-EmployeeDependentModel
+
+6. PUT /api/v2/pim/employees/{empNumber}/personal-details
+   operationId : update-an-employees-personal-details
+   expected    : Pim-EmployeePersonalDetailModel
+   actual      : Pim-EmployeeDependentModel
+
+7. PUT /api/v2/pim/termination-reasons/{id}
+   operationId : update-a-termination-reason
+   expected    : Pim-TerminationReasonConfigurationModel
+   actual      : Pim-ReportingMethodConfigurationModel
+
+8. POST /api/v2/time/projects
+   operationId : create-a-project
+   expected    : Time-ProjectDetailedModel
+   actual      : Time-TimesheetModel
+
+
+======================================================================
+ REQUEST / RESPONSE PROPERTY TYPE INCONSISTENCIES
+======================================================================
+
+1. PUT /api/v2/admin/i18n/languages/{languageId}/translations/bulk
+   operationId : bulk-update-i18n-translations
+   property    : data
+   request     : array
+   response    : #/components/schemas/Admin-LanguageModel
+
+
+======================================================================
+ SPELLING / TYPE TYPOS
+======================================================================
+
+1. DELETE /api/v2/buzz/comments/{commentId}/likes response:400.error.messsage
+   found      : property name "messsage"
+   suggestion : message
+
+2. DELETE /api/v2/pim/employees response:400.error.messsage
+   found      : property name "messsage"
+   suggestion : message
+
+3. POST /api/v2/pim/employees/{empNumber}/languages response:400.error.messsage
+   found      : property name "messsage"
+   suggestion : message
+
+4. PUT /api/v2/recruitment/vacancies/{id} requestBody.isPublished
+   found      : type: "boleean"
+   suggestion : boolean
+
+5. #/components/schemas/Recruitment-CandidateDetailedModel.status[].lable
+   found      : property name "lable"
+   suggestion : label
+
+
+======================================================================
+ SUSPICIOUS DATE FIELDS TYPED AS NUMBERS
+======================================================================
+
+1. #/components/schemas/Leave-LeaveBalanceModel.asAtDate
+   field : asAtDate
+   type  : number (expected a date/string)
+
+2. #/components/schemas/Leave-LeaveBalanceModel.endDate
+   field : endDate
+   type  : number (expected a date/string)
+
+3. #/components/schemas/Leave-LeaveEntitlementModel.fromDate
+   field : fromDate
+   type  : number (expected a date/string)
+
+4. #/components/schemas/Leave-LeaveEntitlementModel.toDate
+   field : toDate
+   type  : number (expected a date/string)
+
+5. #/components/schemas/Leave-LeaveEntitlementModel.creditedDate
+   field : creditedDate
+   type  : number (expected a date/string)
+
+6. #/components/schemas/Leave-LeavePeriodHistoryModel.createdAt
+   field : createdAt
+   type  : number (expected a date/string)
+
+7. #/components/schemas/Leave-LeavePeriodModel.startDate
+   field : startDate
+   type  : number (expected a date/string)
+
+8. #/components/schemas/Leave-LeavePeriodModel.endDate
+   field : endDate
+   type  : number (expected a date/string)
+
+9. #/components/schemas/Leave-LeaveRequestDetailedModel.dates.fromDate
+   field : fromDate
+   type  : number (expected a date/string)
+
+10. #/components/schemas/Leave-LeaveRequestDetailedModel.dates.toDate
+   field : toDate
+   type  : number (expected a date/string)
+
+11. #/components/schemas/Leave-LeaveRequestModel.dateApplied
+   field : dateApplied
+   type  : number (expected a date/string)
+
+12. #/components/schemas/Performance-CompletedPerformanceReviewModel.dueDate
+   field : dueDate
+   type  : number (expected a date/string)
+
+13. #/components/schemas/Performance-CompletedPerformanceReviewModel.completedDate
+   field : completedDate
+   type  : number (expected a date/string)
+
+14. #/components/schemas/Performance-DetailedPerformanceReviewModel.dueDate
+   field : dueDate
+   type  : number (expected a date/string)
+
+15. #/components/schemas/Performance-DetailedPerformanceTrackerModel.addedDate
+   field : addedDate
+   type  : number (expected a date/string)
+
+16. #/components/schemas/Performance-DetailedPerformanceTrackerModel.modifiedDate
+   field : modifiedDate
+   type  : number (expected a date/string)
+
+17. #/components/schemas/Performance-EmployeeTrackerModel.addedDate
+   field : addedDate
+   type  : number (expected a date/string)
+
+18. #/components/schemas/Performance-EmployeeTrackerModel.modifiedDate
+   field : modifiedDate
+   type  : number (expected a date/string)
+
+19. #/components/schemas/Performance-PerformanceReviewModel.dueDate
+   field : dueDate
+   type  : number (expected a date/string)
+
+20. #/components/schemas/Performance-PerformanceTrackerLogModel.addedDate
+   field : addedDate
+   type  : number (expected a date/string)
+
+21. #/components/schemas/Performance-PerformanceTrackerLogModel.modifiedDate
+   field : modifiedDate
+   type  : number (expected a date/string)
+
+22. #/components/schemas/Performance-PerformanceTrackerModel.addedDate
+   field : addedDate
+   type  : number (expected a date/string)
+
+23. #/components/schemas/Performance-PerformanceTrackerModel.modifiedDate
+   field : modifiedDate
+   type  : number (expected a date/string)
+
+
+======================================================================
+ SUSPICIOUS CODE FIELDS TYPED AS INTEGERS
+======================================================================
+
+1. #/components/schemas/Admin-CurrencyTypeModel.code
+   field : code
+   type  : integer (expected a string code)
+
+
+======================================================================
+ ANOMALIES / THINGS TO REVIEW
+======================================================================
+
+1. Malformed path parameter braces
+   Method : PUT
+   Path   : /api/v2/admin/localization}
+
+2. Malformed path parameter braces
+   Method : GET
+   Path   : /api/v2/performance/trackers}
+
+3. Possible spelling issue: "shedule"
+   Method : POST
+   Path   : /api/v2/recruitment/candidates/{candidateId}/shedule-interview
+   Summary: Schedule Interview for a Candidate
+
+
+======================================================================
+ REVIEW ITEMS (not errors)
+======================================================================
+
+1. Write operation without requestBody
+   Method : POST
+   Path   : /api/v2/buzz/comments/{commentId}/likes
+   Summary: Like a Comment
+
+2. Write operation without requestBody
+   Method : POST
+   Path   : /api/v2/buzz/shares/{shareId}/likes
+   Summary: Like a Share/Post
+
+3. Write operation without requestBody
+   Method : POST
+   Path   : /api/v2/admin/ldap/user-sync
+   Summary: Sync LDAP User
+
+
+======================================================================
+ SECURITY
+======================================================================
+
+{
+  "OAuth2": {
+    "type": "oauth2",
+    "flows": {
+      "authorizationCode": {
+        "authorizationUrl": "http://localhost:8080/web/index.php/oauth2/authorize",
+        "tokenUrl": "http://localhost:8080/web/index.php/oauth2/token",
+        "scopes": {}
+      }
+    }
+  }
+}
+
+Global security:
+[
+  {
+    "OAuth2": []
+  }
+]
+
+======================================================================
+ SERVERS
+======================================================================
+
+1. {orangehrm-url}
+
+======================================================================
+ END OF ANALYSIS
+======================================================================
