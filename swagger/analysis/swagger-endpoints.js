@@ -2,7 +2,7 @@
 const fs = require('fs');
 
 const INPUT = './swagger/orangehrm-v2.json';
-const OUTPUT = './swagger-endpoints.txt';
+const OUTPUT = './swagger/analysis/swagger-endpoints.txt';
 
 const j = JSON.parse(fs.readFileSync(INPUT, 'utf8'));
 

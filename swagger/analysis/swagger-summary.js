@@ -3,7 +3,7 @@
 const fs = require('fs');
 
 const SPEC_PATH = './swagger/orangehrm-v2.json';
-const OUTPUT_PATH = './swagger-summary.txt';
+const OUTPUT_PATH = './swagger/analysis/swagger-summary.txt';
 
 const j = require(SPEC_PATH);
 

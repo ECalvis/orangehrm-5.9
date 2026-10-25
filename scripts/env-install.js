@@ -110,10 +110,11 @@ async function expectRoute(page, baseUrl, route) {
 }
 
 async function selectRadio(page, name) {
-  const radio = page.getByRole('radio', {name, exact: true});
+  const radio = page.getByRole('radio', { name, exact: true });
+  const wrapper = page.locator('.oxd-radio-wrapper').filter({ has: radio });
 
   await expect(radio).toHaveCount(1);
-  await radio.check();
+  await wrapper.getByText(name, { exact: true }).click();
   await expect(radio).toBeChecked();
 }
 
@@ -440,7 +441,7 @@ async function main() {
   const authRedirectUrl = requiredEnv('OHRM_AUTH_REDIRECT_URL').replace(/\/+$/, '');
   process.env.OHRM_AUTH_REDIRECT_URL = authRedirectUrl;
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: false });
 
   try {
     const page = await browser.newPage();

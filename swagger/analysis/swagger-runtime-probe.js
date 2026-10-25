@@ -34,7 +34,7 @@ function flag(name) {
 const HELP = flag('--help');
 if (HELP) {
   console.log(`
-usage: node swagger-runtime-probe.js [options]
+usage: node swagger/analysis/swagger-runtime-probe.js [options]
 
 Required for execution:
   --execute                 actually send requests (otherwise dry run)
@@ -57,9 +57,9 @@ Behavior:
   --max <n>                 cap number of probes (default 0 = unlimited)
 
 Output:
-  --out-txt <file>          default ./swagger-runtime-findings.txt
-  --out-csv <file>          default ./swagger-runtime-findings.csv
-  --snapshot <file>         default ./swagger-runtime.snapshot.json
+  --out-txt <file>          default ./swagger/analysis/swagger-runtime-findings.txt
+  --out-csv <file>          default ./swagger/analysis/swagger-runtime-findings.csv
+  --snapshot <file>         default ./swagger/analysis/swagger-runtime.snapshot.json
   --baseline <file>         diff against a prior snapshot
   --merge <file>            merge with another findings CSV (for a combined view)
 
@@ -83,9 +83,9 @@ const TIMEOUT = Number(arg('--timeout', 10000));
 const CONCURRENCY = Math.max(1, Number(arg('--concurrency', 1)));
 const MAX_PROBES = Number(arg('--max', 0));
 
-const OUT_TXT = String(arg('--out-txt', './swagger-runtime-findings.txt'));
-const OUT_CSV = String(arg('--out-csv', './swagger-runtime-findings.csv'));
-const SNAPSHOT = String(arg('--snapshot', './swagger-runtime.snapshot.json'));
+const OUT_TXT = String(arg('--out-txt', './swagger/analysis/swagger-runtime-findings.txt'));
+const OUT_CSV = String(arg('--out-csv', './swagger/analysis/swagger-runtime-findings.csv'));
+const SNAPSHOT = String(arg('--snapshot', './swagger/analysis/swagger-runtime.snapshot.json'));
 const BASELINE = arg('--baseline', null);
 const MERGE = arg('--merge', null);
 
@@ -552,7 +552,7 @@ async function run() {
 
   // observed log (not findings — evidence)
   fs.writeFileSync(
-    './swagger-runtime-observed.json',
+    './swagger/analysis/swagger-runtime-observed.json',
     JSON.stringify(
       { generatedAt: new Date().toISOString(), base: BASE, observed: observedLog },
       null,
@@ -602,7 +602,7 @@ async function run() {
   console.log('Artifacts:');
   console.log(`  ${OUT_TXT}`);
   console.log(`  ${OUT_CSV}`);
-  console.log(`  ./swagger-runtime-observed.json`);
+  console.log(`  ./swagger/analysis/swagger-runtime-observed.json`);
   console.log(`  ${SNAPSHOT}`);
   console.log(`Total runtime findings: ${findings.length}`);
   console.log('By severity  :', snapshot.bySeverity);

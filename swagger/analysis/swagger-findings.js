@@ -3,9 +3,9 @@ const fs = require('fs');
 const path = require('path');
 
 const INPUT = './swagger/orangehrm-v2.json';
-const OUT_TXT = './swagger-findings.txt';
-const OUT_CSV = './swagger-findings.csv';
-const SNAPSHOT = './swagger-findings.snapshot.json';
+const OUT_TXT = './swagger/analysis/swagger-findings.txt';
+const OUT_CSV = './swagger/analysis/swagger-findings.csv';
+const SNAPSHOT = './swagger/analysis/swagger-findings.snapshot.json';
 
 // ---- CLI -------------------------------------------------------------------
 const args = process.argv.slice(2);
@@ -13,7 +13,7 @@ let baselineFile = null;
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--baseline' && args[i + 1]) baselineFile = args[++i];
   if (args[i] === '--help') {
-    console.log('usage: node swagger-findings.js [--baseline <snapshot.json>]');
+    console.log('usage: node swagger/analysis/swagger-findings.js [--baseline <snapshot.json>]');
     process.exit(0);
   }
 }

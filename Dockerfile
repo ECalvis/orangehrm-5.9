@@ -1,4 +1,4 @@
-FROM php:8.3-apache-bookworm@sha256:06df07e2e1d72581dde4fd97bc98d2d0b78686fc13d6a041c520da9a6ce73055
+FROM php:8.3.36-apache-bookworm
 
 ENV OHRM_VERSION=5.9
 ENV OHRM_SHA256=F6E640F8B59E8D09F15EDCD24AC3D42BB52DCC4839A7D83F964DD798BC793F79
@@ -16,13 +16,13 @@ RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
 
 RUN printf '%s\n' \
     'Types: deb' \
-    'URIs: http://snapshot.debian.org/archive/debian/20260918T000000Z' \
+    'URIs: https://snapshot.debian.org/archive/debian/20260918T000000Z' \
     'Suites: bookworm' \
     'Components: main' \
     'Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg' \
     '' \
     'Types: deb' \
-    'URIs: http://snapshot.debian.org/archive/debian-security/20260918T000000Z' \
+    'URIs: https://snapshot.debian.org/archive/debian-security/20260918T000000Z' \
     'Suites: bookworm-security' \
     'Components: main' \
     'Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg' \

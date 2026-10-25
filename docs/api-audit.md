@@ -13,9 +13,9 @@ Determine whether the OpenAPI spec that ships with OrangeHRM 5.9 accurately desc
 
 Two independent passes:
 
-1. **Static analysis** of the spec against a curated expectation table and internal-consistency rules (`swagger-analysis.js`, `swagger-findings.js`). Detects response-schema mismatches, suspicious data types, typos, malformed paths, and request/response asymmetries without touching the runtime.
+1. **Static analysis** of the spec against a curated expectation table and internal-consistency rules (`swagger/analysis/swagger-analysis.js`, `swagger/analysis/swagger-findings.js`). Detects response-schema mismatches, suspicious data types, typos, malformed paths, and request/response asymmetries without touching the runtime.
 
-2. **Live runtime probing** (`swagger-runtime-probe.js`) — 234 authenticated GET requests against the running container, comparing observed status codes, response envelopes, error message strings, and content types against what the spec claims. Snapshot-based diffing so future runs can be compared against this baseline.
+2. **Live runtime probing** (`swagger/analysis/swagger-runtime-probe.js`) — 234 authenticated GET requests against the running container, comparing observed status codes, response envelopes, error message strings, and content types against what the spec claims. Snapshot-based diffing so future runs can be compared against this baseline.
 
 Both tools emit findings as flat CSV worklists with stable IDs, grouped by severity and category.
 
@@ -39,19 +39,19 @@ Stack traces are in the audit artifacts.
 
 ## Artifacts
 
-All audit outputs live in the repository root:
+All audit outputs live in the `swagger/analysis/` directory:
 
 | File                                    | Contents                                                    |
 | --------------------------------------- | ----------------------------------------------------------- |
-| `swagger-analysis.txt`                  | Static analysis report (prose)                              |
-| `swagger-findings.csv` / `.txt`         | Static findings worklist                                    |
-| `swagger-findings.snapshot.json`        | Static baseline for diffing                                 |
-| `swagger-runtime-findings.csv` / `.txt` | Runtime findings worklist (213 rows)                        |
-| `swagger-runtime-observed.json`         | Per-request observed status/content-type/top-level-keys log |
-| `swagger-runtime.snapshot.json`         | Runtime baseline for diffing                                |
-| `swagger-summary.txt`                   | High-level spec statistics                                  |
-| `swagger-schemas.txt`                   | Full schema inventory                                       |
-| `swagger-endpoints.txt`                 | Per-operation endpoint inventory                            |
+| `swagger/analysis/swagger-analysis.txt`                  | Static analysis report (prose)                              |
+| `swagger/analysis/swagger-findings.csv` / `swagger/analysis/swagger-findings.txt`         | Static findings worklist                                    |
+| `swagger/analysis/swagger-findings.snapshot.json`        | Static baseline for diffing                                 |
+| `swagger/analysis/swagger-runtime-findings.csv` / `swagger/analysis/swagger-runtime-findings.txt` | Runtime findings worklist (213 rows)                        |
+| `swagger/analysis/swagger-runtime-observed.json`         | Per-request observed status/content-type/top-level-keys log |
+| `swagger/analysis/swagger-runtime.snapshot.json`         | Runtime baseline for diffing                                |
+| `swagger/analysis/swagger-summary.txt`                   | High-level spec statistics                                  |
+| `swagger/analysis/swagger-schemas.txt`                   | Full schema inventory                                       |
+| `swagger/analysis/swagger-endpoints.txt`                 | Per-operation endpoint inventory                            |
 
 Re-run instructions for each tool are in the docstrings at the top of the corresponding `.js` file.
 
