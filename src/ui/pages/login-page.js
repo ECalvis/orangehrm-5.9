@@ -27,6 +27,12 @@ class LoginPage extends BasePage {
     await this.page.getByRole('button', { name: /login/i }).click();
     await this.waitForReady();
   }
+
+  async logout() {
+    await this.page.locator(SELECTORS.userDropdown).click();
+    await this.page.getByRole('menuitem', { name: 'Logout', exact: true }).click();
+    await this.page.locator(SELECTORS.loginUsername).waitFor({ state: 'visible' });
+  }
 }
 
 module.exports = { LoginPage };

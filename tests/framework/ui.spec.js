@@ -94,6 +94,8 @@ function mockPage({ countFor } = {}) {
     page: {
       locator: (selector) => new Locator(selector),
       getByRole: (role, options) => new Locator(`role=${role} ${JSON.stringify(options || {})}`),
+      getByPlaceholder: (text, options) =>
+        new Locator(`placeholder=${text} ${JSON.stringify(options || {})}`),
       async goto(url, options) {
         currentUrl = url;
         calls.push({ method: 'goto', url, options });
@@ -318,22 +320,114 @@ test.describe('UI pages, workflows, and composition', () => {
       'dashboard',
       'employees',
       'addEmployee',
+      'employeePersonalDetails',
+      'attendance',
       'leave',
       'users',
+      'timesheets',
     ]);
     await ui.pages.dashboard.goto();
+  });
+
+  test('opens employee personal details and updates a middle name through the UI', async () => {
+    const { page, calls } = mockPage();
+    const ui = createUi(page, 'http://orangehrm.test');
+
+    await ui.pages.employeePersonalDetails.goto(42);
+    await ui.pages.employeePersonalDetails.updateMiddleName('Updated');
+
+    expect(calls.some((call) => call.method === 'goto' && call.url.endsWith('/42'))).toBe(true);
+    expect(calls.some((call) => call.method === 'fill' && call.value === 'Updated')).toBe(true);
+    expect(
+      calls.some(
+        (call) => call.method === 'fill' && call.selector.includes('placeholder=Middle Name'),
+      ),
+    ).toBe(true);
+    expect(
+      calls.some(
+        (call) =>
+          call.method === 'click' &&
+          call.selector.includes(SELECTORS.formActions) &&
+          call.selector.includes('role=button'),
+      ),
+    ).toBe(true);
+  });
+
+  test('opens an employee timesheet and checks its action history', async () => {
+    const { page, calls } = mockPage();
+    const ui = createUi(page, 'http://orangehrm.test');
+
+    await ui.pages.timesheets.gotoEmployeeTimesheets();
+    await ui.pages.timesheets.viewEmployee('QA Owned Employee');
+    await ui.pages.timesheets.waitForAction('Submitted', 'owned comment');
+
+    expect(
+      calls.some(
+        (call) =>
+          call.method === 'goto' && call.url.endsWith('/web/index.php/time/viewEmployeeTimesheet'),
+      ),
+    ).toBe(true);
+    expect(calls.some((call) => call.method === 'fill' && call.value === 'QA Owned Employee')).toBe(
+      true,
+    );
+    expect(
+      calls.some(
+        (call) =>
+          call.method === 'click' &&
+          call.selector.includes('form >> role=button') &&
+          call.selector.includes('"name":"View"'),
+      ),
+    ).toBe(true);
+    expect(
+      calls.some(
+        (call) => call.method === 'filter' && call.options.hasText === 'owned comment',
+      ),
+    ).toBe(true);
+    expect(
+      calls.some(
+        (call) =>
+          call.method === 'waitFor' &&
+          call.options.state === 'visible' &&
+          call.selector.includes('role=row'),
+      ),
+    ).toBe(true);
   });
 
   test('returns false for rows absent from an empty OXD table', async () => {
     const { page } = mockPage({
       countFor: (selector) => (selector.includes(SELECTORS.cardTableCard) ? 0 : undefined),
     });
+
     const ui = createUi(page, 'http://orangehrm.test');
 
     expect(await ui.pages.employees.rowCount()).toBe(0);
     expect(await ui.pages.employees.hasRow('Missing')).toBe(false);
     expect(await ui.pages.leave.hasRow('Missing')).toBe(false);
     expect(await ui.pages.users.hasRow('Missing')).toBe(false);
+  });
+
+  test('checks employees in the Attendance records list', async () => {
+    const { page, calls } = mockPage();
+    const ui = createUi(page, 'http://orangehrm.test');
+
+    await ui.pages.attendance.goto();
+    expect(await ui.pages.attendance.hasRow('QA Owned Employee')).toBe(true);
+
+    expect(
+      calls.some(
+        (call) =>
+          call.method === 'goto' &&
+          call.url.endsWith('/web/index.php/attendance/viewAttendanceRecord'),
+      ),
+    ).toBe(true);
+    expect(
+      calls.some(
+        (call) =>
+          call.method === 'filter' &&
+          call.selector === SELECTORS.cardTableRow &&
+          call.options.hasText === 'QA Owned Employee',
+      ),
+    ).toBe(true);
   });
 
   test('logs in with explicit credentials and supports named login workflow', async () => {
@@ -345,6 +439,7 @@ test.describe('UI pages, workflows, and composition', () => {
       username: 'workflow-user',
       password: 'workflow-password',
     });
+    await ui.pages.login.logout();
 
     expect(calls.filter((call) => call.method === 'fill').map((call) => call.value)).toEqual([
       'test-user',
@@ -352,6 +447,11 @@ test.describe('UI pages, workflows, and composition', () => {
       'workflow-user',
       'workflow-password',
     ]);
+    expect(
+      calls.some(
+        (call) => call.method === 'click' && call.selector.includes(SELECTORS.userDropdown),
+      ),
+    ).toBe(true);
     await expect(ui.pages.login.loginAs('not-a-configured-role')).rejects.toThrow(TypeError);
   });
 
@@ -363,6 +463,14 @@ test.describe('UI pages, workflows, and composition', () => {
     expect(await ui.pages.employees.rowCount()).toBe(1);
     expect(await ui.pages.employees.hasRow('Ada Lovelace')).toBe(true);
     await ui.pages.employees.searchByName('Ada');
+    expect(
+      calls.some(
+        (call) =>
+          call.method === 'fill' &&
+          call.selector.includes(SELECTORS.autocompleteInput) &&
+          call.value === 'Ada',
+      ),
+    ).toBe(true);
     await ui.pages.employees.addEmployee();
     await ui.pages.employees.deleteEmployeeByName('Ada Lovelace');
     await ui.pages.addEmployee.goto();

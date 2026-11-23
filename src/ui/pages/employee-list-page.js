@@ -3,6 +3,7 @@ const { OxdTable } = require('../components/oxd-table');
 const { OxdDialog } = require('../components/oxd-dialog');
 const { OxdToast } = require('../components/oxd-toast');
 const { OxdForm } = require('../components/oxd-form');
+const { OxdSelect } = require('../components/oxd-select');
 
 class EmployeeListPage extends BasePage {
   constructor(page, baseUrl) {
@@ -11,6 +12,7 @@ class EmployeeListPage extends BasePage {
     this.dialog = new OxdDialog(page);
     this.toast = new OxdToast(page);
     this.form = new OxdForm(page);
+    this.select = new OxdSelect(page);
   }
 
   async goto() {
@@ -24,7 +26,7 @@ class EmployeeListPage extends BasePage {
   }
 
   async searchByName(name) {
-    await this.form.fillByLabel('Employee Name', name);
+    await this.select.autocomplete('Employee Name', name, name);
     await this.page.getByRole('button', { name: 'Search', exact: true }).click();
     await this.table.waitForLoad();
   }

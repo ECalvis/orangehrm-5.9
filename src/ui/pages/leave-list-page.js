@@ -3,6 +3,7 @@ const { OxdTable } = require('../components/oxd-table');
 const { OxdForm } = require('../components/oxd-form');
 const { OxdSelect } = require('../components/oxd-select');
 const { OxdDatePicker } = require('../components/oxd-date-picker');
+const { OxdToast } = require('../components/oxd-toast');
 
 class LeaveListPage extends BasePage {
   constructor(page, baseUrl) {
@@ -11,6 +12,7 @@ class LeaveListPage extends BasePage {
     this.form = new OxdForm(page);
     this.select = new OxdSelect(page);
     this.date = new OxdDatePicker(page);
+    this.toast = new OxdToast(page);
   }
 
   async goto() {
@@ -28,6 +30,8 @@ class LeaveListPage extends BasePage {
       await this.form.fillByLabel('Comments', comment);
     }
     await this.page.getByRole('button', { name: 'Apply', exact: true }).click();
+    await this.form.waitForLoad();
+    await this.toast.waitForSuccess();
   }
 
   async rowCount() {

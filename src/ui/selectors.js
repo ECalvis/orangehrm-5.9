@@ -53,6 +53,7 @@ const SELECTORS = Object.freeze({
   pagination: '.oxd-pagination',
   loginUsername: 'input[name="username"]',
   loginPassword: 'input[name="password"]',
+  userDropdown: '.oxd-userdropdown-tab',
 });
 
 function byLabelText(label) {

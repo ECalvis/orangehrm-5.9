@@ -46,6 +46,10 @@ class AdminUsersPage extends BasePage {
   async hasRow(text) {
     return (await this.table.rowByText(text).count()) > 0;
   }
+
+  async hasAddButton() {
+    return (await this.page.getByRole('button', { name: /Add/i }).count()) > 0;
+  }
 }
 
 module.exports = { AdminUsersPage };
