@@ -230,6 +230,49 @@ test.describe('OAuth client', () => {
 });
 
 test.describe('OAuth callback', () => {
+  test('serializes authorization flows that share a callback port', async () => {
+    let active = 0;
+    let maximumActive = 0;
+    let started = 0;
+    let releaseFirst;
+    let signalFirstStarted;
+    const firstStarted = new Promise((resolve) => {
+      signalFirstStarted = resolve;
+    });
+    const firstAuthorizer = new OAuthAuthorizer({ callbackHost: '127.0.0.1', callbackPort: 9875 });
+    const secondAuthorizer = new OAuthAuthorizer({ callbackHost: 'localhost', callbackPort: 9875 });
+    const runFlow =
+      (waitForRelease = false) =>
+      async () => {
+        started += 1;
+        active += 1;
+        maximumActive = Math.max(maximumActive, active);
+        if (waitForRelease) {
+          signalFirstStarted();
+          await new Promise((resolve) => {
+            releaseFirst = resolve;
+          });
+        }
+        active -= 1;
+        return { code: 'code', state: 'state' };
+      };
+    firstAuthorizer._authorize = runFlow(true);
+    secondAuthorizer._authorize = runFlow();
+
+    const first = firstAuthorizer.authorize({});
+    await firstStarted;
+    const second = secondAuthorizer.authorize({});
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(started).toBe(1);
+
+    releaseFirst();
+    await expect(Promise.all([first, second])).resolves.toEqual([
+      { code: 'code', state: 'state' },
+      { code: 'code', state: 'state' },
+    ]);
+    expect(maximumActive).toBe(1);
+  });
+
   async function withCallbackServer(run) {
     const authorizer = new OAuthAuthorizer({
       callbackHost: '127.0.0.1',

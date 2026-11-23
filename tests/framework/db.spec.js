@@ -82,6 +82,36 @@ test.describe('database client', () => {
     expect(calls.filter((call) => call.method === 'release')).toHaveLength(3);
   });
 
+  test('blocks direct destructive SQL and permits only parameterized conditional deletes', async () => {
+    const { connection, calls } = createConnection();
+    const client = new DbClient(createPool(connection));
+
+    await expect(client.execute('DELETE FROM employee WHERE emp_number = ?', [7])).rejects.toThrow(
+      'Direct destructive SQL is not allowed',
+    );
+    await expect(client.select('DELETE FROM employee')).rejects.toThrow(
+      'Direct destructive SQL is not allowed',
+    );
+    await expect(client.execute('/* cleanup */ DROP TABLE employee')).rejects.toThrow(
+      'Direct destructive SQL is not allowed',
+    );
+    await expect(
+      client.execute('WITH old_rows AS (SELECT emp_number FROM employee) DELETE FROM employee'),
+    ).rejects.toThrow('Direct destructive SQL is not allowed');
+    await expect(client.deleteWhere('employee', {})).rejects.toThrow(
+      'deleteWhere requires at least one condition',
+    );
+    await expect(
+      client.deleteWhere('employee; DROP TABLE users', { emp_number: 7 }),
+    ).rejects.toThrow('simple SQL identifier');
+
+    await client.deleteWhere('employee', { emp_number: 7, terminated_at: null });
+    expect(calls.find((call) => call.sql)?.sql).toBe(
+      'DELETE FROM `employee` WHERE `emp_number` = ? AND `terminated_at` IS NULL',
+    );
+    expect(calls.find((call) => call.sql)?.params).toEqual([7]);
+  });
+
   test('normalizes MySQL failures with query context', async () => {
     const mysqlError = Object.assign(new Error('Duplicate value'), {
       code: 'ER_DUP_ENTRY',

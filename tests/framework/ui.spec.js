@@ -47,7 +47,9 @@ function mockPage({ countFor } = {}) {
     }
 
     getByPlaceholder(text, options) {
-      return new Locator(`${this.selector} >> placeholder=${text} ${JSON.stringify(options || {})}`);
+      return new Locator(
+        `${this.selector} >> placeholder=${text} ${JSON.stringify(options || {})}`,
+      );
     }
 
     getByText(text, options) {
@@ -151,6 +153,34 @@ test.describe('base UI page', () => {
 });
 
 test.describe('OXD form', () => {
+  test('fills and submits a real form using its labeled field and action', async ({ page }) => {
+    await page.setContent(`
+      <form class="oxd-form">
+        <div class="oxd-input-group">
+          <label class="oxd-label">First Name</label>
+          <input class="oxd-input">
+          <span class="oxd-input-field-error-message">Required field</span>
+        </div>
+        <div class="oxd-form-actions">
+          <button type="submit">Save</button>
+        </div>
+      </form>
+      <script>
+        document.querySelector('form').addEventListener('submit', (event) => {
+          event.preventDefault();
+          event.currentTarget.dataset.submitted = 'true';
+        });
+      </script>
+    `);
+    const form = new OxdForm(page);
+
+    await form.fillByLabel('First Name', 'Ada');
+    expect(await form.fieldByLabel('First Name').inputValue()).toBe('Ada');
+    expect(await form.errorFor('First Name')).toBe('Required field');
+    await form.submit();
+    await expect(page.locator('form')).toHaveAttribute('data-submitted', 'true');
+  });
+
   test('finds fields without label-for, fills, reads first error, submits, resets, and waits', async () => {
     const { page, calls } = mockPage();
     const form = new OxdForm(page);

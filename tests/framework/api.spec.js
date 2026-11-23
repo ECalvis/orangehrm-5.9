@@ -74,6 +74,41 @@ test.describe('API envelope boundary', () => {
 });
 
 test.describe('API client and endpoint facade', () => {
+  test('sends encoded query parameters to the configured API origin', async () => {
+    let received;
+    const server = await listen(
+      http.createServer((request, response) => {
+        received = {
+          url: new URL(request.url, 'http://127.0.0.1'),
+          authorization: request.headers.authorization,
+        };
+        response.writeHead(200, { 'Content-Type': 'application/json' });
+        response.end(JSON.stringify({ data: { ok: true }, meta: {}, rels: [] }));
+      }),
+    );
+
+    try {
+      const api = createApi({
+        baseUrl: `http://127.0.0.1:${server.address().port}/web/index.php/api/v2`,
+        tokenManager: {
+          async getAccessToken() {
+            return 'access-token';
+          },
+        },
+      });
+
+      await expect(
+        api._client.get('/query', { params: { search: 'Ada & Grace', page: 2 } }),
+      ).resolves.toEqual({ data: { ok: true }, meta: {}, rels: [] });
+      expect(received.url.pathname).toBe('/web/index.php/api/v2/query');
+      expect(received.url.searchParams.get('search')).toBe('Ada & Grace');
+      expect(received.url.searchParams.get('page')).toBe('2');
+      expect(received.authorization).toBe('Bearer access-token');
+    } finally {
+      await closeServer(server);
+    }
+  });
+
   test('covers every documented 5.9 API operation with supported HTTP methods', () => {
     const api = createApi({
       baseUrl: 'http://localhost/web/index.php/api/v2',
