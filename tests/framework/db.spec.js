@@ -72,44 +72,43 @@ test.describe('database client', () => {
       emp_firstname: 'Ada',
     });
     await expect(client.selectValue('SELECT COUNT(*) AS n')).resolves.toBe(7);
-    await expect(client.execute('UPDATE employee SET name = ?', ['Ada'])).resolves.toEqual({
-      affectedRows: 0,
-      insertId: null,
-      changedRows: 0,
-    });
 
-    expect(pool.acquisitions).toBe(3);
-    expect(calls.filter((call) => call.method === 'release')).toHaveLength(3);
+    expect(pool.acquisitions).toBe(2);
+    expect(calls.filter((call) => call.method === 'release')).toHaveLength(2);
   });
 
-  test('blocks direct destructive SQL and permits only parameterized conditional deletes', async () => {
+  test('blocks writes, locking reads, and conditional deletes', async () => {
     const { connection, calls } = createConnection();
     const client = new DbClient(createPool(connection));
 
-    await expect(client.execute('DELETE FROM employee WHERE emp_number = ?', [7])).rejects.toThrow(
-      'Direct destructive SQL is not allowed',
+    await expect(client.select('UPDATE employee SET name = ?', ['Ada'])).rejects.toThrow(
+      'only non-locking SELECT queries are allowed',
     );
     await expect(client.select('DELETE FROM employee')).rejects.toThrow(
-      'Direct destructive SQL is not allowed',
+      'only non-locking SELECT queries are allowed',
     );
-    await expect(client.execute('/* cleanup */ DROP TABLE employee')).rejects.toThrow(
-      'Direct destructive SQL is not allowed',
-    );
-    await expect(
-      client.execute('WITH old_rows AS (SELECT emp_number FROM employee) DELETE FROM employee'),
-    ).rejects.toThrow('Direct destructive SQL is not allowed');
-    await expect(client.deleteWhere('employee', {})).rejects.toThrow(
-      'deleteWhere requires at least one condition',
+    await expect(client.select('/* cleanup */ DROP TABLE employee')).rejects.toThrow(
+      'only non-locking SELECT queries are allowed',
     );
     await expect(
-      client.deleteWhere('employee; DROP TABLE users', { emp_number: 7 }),
-    ).rejects.toThrow('simple SQL identifier');
-
-    await client.deleteWhere('employee', { emp_number: 7, terminated_at: null });
-    expect(calls.find((call) => call.sql)?.sql).toBe(
-      'DELETE FROM `employee` WHERE `emp_number` = ? AND `terminated_at` IS NULL',
+      client.select('WITH old_rows AS (SELECT emp_number FROM employee) DELETE FROM employee'),
+    ).rejects.toThrow('only non-locking SELECT queries are allowed');
+    await expect(client.select('SELECT * FROM employee FOR UPDATE')).rejects.toThrow(
+      'only non-locking SELECT queries are allowed',
     );
-    expect(calls.find((call) => call.sql)?.params).toEqual([7]);
+    await expect(client.select("SELECT GET_LOCK('qa-lock', 1)")).rejects.toThrow(
+      'only non-locking SELECT queries are allowed',
+    );
+    await expect(
+      client.select('SELECT * INTO OUTFILE "employee.csv" FROM employee'),
+    ).rejects.toThrow('only non-locking SELECT queries are allowed');
+    await expect(client.execute('UPDATE employee SET name = ?', ['Ada'])).rejects.toThrow(
+      'write statements are not supported',
+    );
+    await expect(client.deleteWhere('employee', { emp_number: 7 })).rejects.toThrow(
+      'deleteWhere is not supported',
+    );
+    expect(calls.filter((call) => call.sql)).toHaveLength(0);
   });
 
   test('normalizes MySQL failures with query context', async () => {
@@ -121,15 +120,17 @@ test.describe('database client', () => {
     const { connection, calls } = createConnection({ failures: { execute: mysqlError } });
     const client = new DbClient(createPool(connection));
 
-    await expect(client.execute('INSERT INTO t VALUES (?)', ['value'])).rejects.toMatchObject({
-      name: 'DbError',
-      code: 'DUPLICATE_KEY',
-      sqlState: '23000',
-      sqlMessage: 'Duplicate value',
-      sql: 'INSERT INTO t VALUES (?)',
-      params: ['value'],
-      raw: mysqlError,
-    });
+    await expect(client.select('SELECT * FROM t WHERE value = ?', ['value'])).rejects.toMatchObject(
+      {
+        name: 'DbError',
+        code: 'DUPLICATE_KEY',
+        sqlState: '23000',
+        sqlMessage: 'Duplicate value',
+        sql: 'SELECT * FROM t WHERE value = ?',
+        params: ['value'],
+        raw: mysqlError,
+      },
+    );
     expect(calls.filter((call) => call.method === 'release')).toHaveLength(1);
   });
 
@@ -140,7 +141,7 @@ test.describe('database client', () => {
 
     await expect(
       client.transaction(async (tx) => {
-        await tx.execute('UPDATE t SET value = ?', [1]);
+        await tx.select('SELECT value FROM t WHERE id = ?', [1]);
         return 'committed';
       }),
     ).resolves.toBe('committed');

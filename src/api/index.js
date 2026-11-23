@@ -21,8 +21,8 @@ const { createSystemApi } = require('./endpoints/system');
 const { createTimeApi } = require('./endpoints/time');
 const { createWorkspaceNotificationsApi } = require('./endpoints/workspace-notifications');
 
-function createApi({ baseUrl, tokenManager, logger } = {}) {
-  const client = new ApiClient({ baseUrl, tokenManager, logger });
+function createApi({ baseUrl, tokenManager, logger, timeoutMs } = {}) {
+  const client = new ApiClient({ baseUrl, tokenManager, logger, timeoutMs });
 
   return {
     pim: createPimApi(client),

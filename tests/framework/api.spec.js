@@ -393,6 +393,18 @@ test.describe('API client and endpoint facade', () => {
   test('maps API errors and prevents login redirects from becoming success responses', async () => {
     const server = await listen(
       http.createServer((request, response) => {
+        if (request.url.startsWith('/unauthorized')) {
+          response.writeHead(401, { 'Content-Type': 'application/json' });
+          response.end(JSON.stringify({ error: { status: 401, message: 'Unauthorized' } }));
+          return;
+        }
+
+        if (request.url.startsWith('/forbidden')) {
+          response.writeHead(403, { 'Content-Type': 'application/json' });
+          response.end(JSON.stringify({ error: { status: 403, message: 'Forbidden' } }));
+          return;
+        }
+
         if (request.url.startsWith('/not-found')) {
           response.writeHead(404, { 'Content-Type': 'application/json' });
           response.end(JSON.stringify({ error: { status: '404', message: 'Not found' } }));
@@ -428,6 +440,14 @@ test.describe('API client and endpoint facade', () => {
         },
       });
 
+      await expect(api._client.get('/unauthorized')).rejects.toMatchObject({
+        code: 'UNAUTHORIZED',
+        status: 401,
+      });
+      await expect(api._client.get('/forbidden')).rejects.toMatchObject({
+        code: 'FORBIDDEN',
+        status: 403,
+      });
       await expect(api._client.get('/not-found')).rejects.toMatchObject({
         name: 'ApiError',
         code: 'NOT_FOUND',
@@ -441,6 +461,56 @@ test.describe('API client and endpoint facade', () => {
       await expect(api._client.get('/redirect')).rejects.toMatchObject({
         code: 'UNKNOWN',
         status: 302,
+      });
+    } finally {
+      await closeServer(server);
+    }
+  });
+
+  test('surfaces malformed JSON, request timeouts, and connection resets', async () => {
+    const server = await listen(
+      http.createServer((request, response) => {
+        if (request.url.startsWith('/reset')) {
+          request.socket.destroy();
+          return;
+        }
+        if (request.url.startsWith('/slow')) {
+          setTimeout(() => {
+            if (!response.destroyed) {
+              response.writeHead(200, { 'Content-Type': 'application/json' });
+              response.end(JSON.stringify({ data: { ok: true } }));
+            }
+          }, 200);
+          return;
+        }
+        response.writeHead(200, { 'Content-Type': 'application/json' });
+        response.end('{ malformed');
+      }),
+    );
+
+    try {
+      const api = createApi({
+        baseUrl: `http://127.0.0.1:${server.address().port}`,
+        timeoutMs: 25,
+        tokenManager: {
+          async getAccessToken() {
+            return 'access-token';
+          },
+        },
+      });
+
+      await expect(api._client.get('/malformed')).rejects.toMatchObject({
+        name: 'ApiError',
+        code: 'MALFORMED_JSON',
+        status: 200,
+      });
+      await expect(api._client.get('/slow')).rejects.toMatchObject({
+        name: 'ApiError',
+        code: expect.stringMatching(/ECONNABORTED|ETIMEDOUT/),
+      });
+      await expect(api._client.get('/reset')).rejects.toMatchObject({
+        name: 'ApiError',
+        code: 'ECONNRESET',
       });
     } finally {
       await closeServer(server);

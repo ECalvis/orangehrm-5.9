@@ -36,7 +36,7 @@ function normalizeError(axiosError) {
   return {
     message: error?.message ?? axiosError.message,
     status: error?.status ?? response?.status,
-    code: classify(response?.status),
+    code: response ? classify(response.status) : (axiosError.code ?? 'UNKNOWN'),
     data: error?.data,
   };
 }

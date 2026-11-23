@@ -6,7 +6,7 @@ class EmployeesRepository {
   async findById(empNumber) {
     return this.client.selectOne(
       `SELECT emp_number, employee_id, emp_firstname, emp_lastname,
-              emp_middle_name, purged_at
+              emp_middle_name, termination_id, purged_at
          FROM hs_hr_employee
         WHERE emp_number = ?`,
       [empNumber],
@@ -26,10 +26,6 @@ class EmployeesRepository {
     return this.client.selectValue(
       'SELECT COUNT(*) AS n FROM hs_hr_employee WHERE purged_at IS NULL',
     );
-  }
-
-  async deleteById(empNumber) {
-    return this.client.deleteWhere('hs_hr_employee', { emp_number: empNumber });
   }
 
   async findOrphanedTimesheets(empNumber) {

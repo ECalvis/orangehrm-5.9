@@ -716,10 +716,13 @@ For live, read-only verification of the configured instance, run `npm run test:l
 
 ### 8.4 Cleanup
 
-- **Cascading tables:** deleting the employee via API removes most dependent rows automatically.
-- **Non-cascading tables:** `ohrm_timesheet`, `ohrm_timesheet_item`, `ohrm_attendance_record` must be cleaned up explicitly.
+- Give each created record a unique identifier and retain the application-returned ID with its test owner.
+- Clean up only test-owned records, using a supported OrangeHRM lifecycle operation where one exists. Verify the resulting state instead of assuming cleanup succeeded.
+- Do not use direct SQL deletion or `deleteWhere()` as routine test cleanup.
+- The framework DB client is read-only and accepts only non-locking `SELECT` queries. Keep the database account read-only as a second boundary where the environment permits it.
+- Employee deletion is a hard delete. If an explicitly authorized administrative operation requires it, first check dependent records, including timesheets and attendance, then verify the employee is absent and inspect orphan integrity afterward.
+- `findOrphanedTimesheets()` is a post-delete integrity check only; its result is not permission to delete an employee.
 - **`hs_hr_unique_id`:** `last_id` is not reset by employee deletion; IDs keep advancing.
-- `DbClient` rejects direct `DELETE`, `TRUNCATE`, and `DROP` statements. Use `deleteWhere(table, conditions)` for test cleanup; it requires at least one condition, uses `IS NULL` for null values, and binds other values as parameters. Prefer deleting only test records identified by their generated IDs, and perform cleanup in `finally` blocks.
 
 ### 8.5 Permission and Workflow Tests
 

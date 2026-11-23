@@ -4,7 +4,7 @@ const { ApiError } = require('./errors');
 const { normalizeSuccess, normalizeError } = require('./envelope');
 
 class ApiClient {
-  constructor({ baseUrl, tokenManager, logger } = {}) {
+  constructor({ baseUrl, tokenManager, logger, timeoutMs = 30_000 } = {}) {
     if (typeof baseUrl !== 'string' || !baseUrl.trim()) {
       throw new TypeError('baseUrl is required');
     }
@@ -31,6 +31,9 @@ class ApiClient {
     if (typeof tokenManager?.getAccessToken !== 'function') {
       throw new TypeError('tokenManager.getAccessToken is required');
     }
+    if (!Number.isInteger(timeoutMs) || timeoutMs < 1) {
+      throw new TypeError('timeoutMs must be a positive integer');
+    }
 
     this.baseUrl = parsedBaseUrl.toString().replace(/\/+$/, '');
     this.apiOrigin = parsedBaseUrl.origin;
@@ -40,6 +43,7 @@ class ApiClient {
 
     this.http = axios.create({
       baseURL: this.baseUrl,
+      timeout: timeoutMs,
       allowAbsoluteUrls: false,
       headers: { Accept: 'application/json' },
       maxRedirects: 0,
@@ -111,6 +115,16 @@ class ApiClient {
 
   async request(config) {
     const response = await this._send(config);
+    if (
+      typeof response.data === 'string' &&
+      /^application\/(?:[\w.+-]+\+)?json(?:\s*;|$)/i.test(response.headers['content-type'] ?? '')
+    ) {
+      throw new ApiError('API returned malformed JSON', {
+        status: response.status,
+        code: 'MALFORMED_JSON',
+        raw: response,
+      });
+    }
     return normalizeSuccess(response.data);
   }
 
