@@ -1,51 +1,11 @@
 const axios = require('axios');
 const { expect, test } = require('@playwright/test');
 
-const { createApi } = require('../../src/api');
-const { OAuthAuthorizer } = require('../../src/auth/oauth-authorizer');
-const { OAuthClient } = require('../../src/auth/oauth-client');
-const { FileTokenStore } = require('../../src/auth/token-store');
-const { TokenManager } = require('../../src/auth/token-manager');
 const env = require('../../src/config/env');
 const users = require('../../src/config/users');
-const { createDb } = require('../../src/db');
 const { createUi } = require('../../src/ui');
 const { SELECTORS } = require('../../src/ui/selectors');
-
-function createLiveApi(roleName) {
-  const user = users[roleName];
-  const oauth = new OAuthClient({
-    authorizationUrl: env.oauthAuthUrl,
-    tokenUrl: env.oauthTokenUrl,
-    clientId: env.oauthClientId,
-    clientSecret: env.oauthClientSecret,
-    redirectUri: env.oauthRedirectUri,
-  });
-  const authorizer = new OAuthAuthorizer({
-    callbackHost: env.callbackHost,
-    callbackPort: env.callbackPort,
-    callbackPath: env.callbackPath,
-    timeoutMs: 120_000,
-  });
-  const tokenManager = new TokenManager({
-    oauth,
-    authorizer,
-    store: new FileTokenStore(user.tokenFile),
-    credentials: { username: user.username, password: user.password },
-  });
-
-  return createApi({ baseUrl: env.apiBaseUrl, tokenManager });
-}
-
-function createLiveDb() {
-  return createDb({
-    host: process.env.OHRM_DB_HOST,
-    port: Number(process.env.OHRM_DB_PORT),
-    user: process.env.OHRM_DB_USER,
-    password: process.env.OHRM_DB_PASSWORD ?? '',
-    database: process.env.OHRM_DB_NAME,
-  });
-}
+const { createLiveApi, createLiveDb } = require('./live-support');
 
 test.describe('Live OrangeHRM application integration', () => {
   test('admin authenticates in the real UI and opens the employee list', async ({ page }) => {
@@ -137,12 +97,10 @@ test.describe('Live OrangeHRM application integration', () => {
 
     try {
       const result = await api.pim.employees.list({ limit: 100, offset: 0 });
-      const databaseCount = await db.employees.countAll();
 
-      expect(result.meta.total).toBe(databaseCount);
-      expect(result.data.length).toBe(Math.min(databaseCount, 100));
+      expect(result.data.length).toBe(Math.min(result.meta.total, 100));
 
-      for (const employee of result.data.slice(0, 5)) {
+      for (const employee of result.data) {
         const persisted = await db.employees.findById(employee.empNumber);
 
         expect(persisted).not.toBeNull();

@@ -7,5 +7,6 @@ dotenvExpand.expand(dotenv.config());
 module.exports = defineConfig({
   ...require('./playwright.config'),
   testDir: './tests/live',
+  reporter: 'html',
   workers: 1,
 });

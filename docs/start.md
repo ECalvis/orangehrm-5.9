@@ -1075,10 +1075,11 @@ createPool({ host, port, user, password, database, connectionLimit }) → mysql2
 select(sql, params?) → Row[]
 selectOne(sql, params?) → Row | null
 selectValue(sql, params?) → any
-execute(sql, params?) → { affectedRows, insertId, changedRows }
 transaction(fn) → any // fn receives a scoped client
 close() → void
 }
+
+The DB layer is read-only: `select()` accepts non-locking `SELECT` statements only. `execute()` and `deleteWhere()` reject writes. Use supported OrangeHRM lifecycle operations for test-data cleanup; do not treat direct DB writes as cleanup.
 
 // Row — plain JS objects with column names as-is (snake_case)
 {
@@ -1213,15 +1214,12 @@ if (!row) return null;
 return Object.values(row)[0] ?? null;
 }
 
-async execute(sql, params = []) {
-return this._run(sql, params, async (conn) => {
-const [result] = await conn.execute(sql, params);
-return {
-affectedRows: result.affectedRows ?? 0,
-insertId: result.insertId ?? null,
-changedRows: result.changedRows ?? 0,
-};
-});
+async execute() {
+throw new TypeError('Database client is read-only; write statements are not supported');
+}
+
+async deleteWhere() {
+throw new TypeError('Database client is read-only; deleteWhere is not supported');
 }
 
 // fn receives a client bound to one connection so all queries are in one tx
@@ -1328,16 +1326,7 @@ return this.client.selectValue(
 );
 }
 
-// NOTE: This is a HARD delete. Research doc §7.1 confirms DELETE cascades
-// leave but NOT timesheet. Cleanup scripts must handle orphans explicitly.
-async deleteById(empNumber) {
-return this.client.execute(
-`DELETE FROM hs_hr_employee WHERE emp_number = ?`,
-[empNumber],
-);
-}
-
-// Explicit orphan check — used only by cleanup and cascade tests.
+// Post-delete integrity check only; this does not authorize deletion.
 async findOrphanedTimesheets(empNumber) {
 return this.client.select(
 `SELECT timesheet_id, employee_id, state
@@ -1355,9 +1344,7 @@ The repository names the tables and columns. This is where OrangeHRM schema know
 
 purged_at IS NULL is included on read queries because your research showed that the API filters by it and the uniqueness rule uses it. Tests should match production semantics.
 
-deleteById is a hard delete. The comment is there so no test author is surprised.
-
-findOrphanedTimesheets is a specific, meaningful query — not a general "get everything for employee". Query methods should be named for the question they answer.
+Do not delete test records through this repository. Use uniquely identifiable records and supported OrangeHRM lifecycle operations, then verify cleanup. Employee hard deletion is an explicitly authorized administrative operation requiring dependency checks and post-delete verification. findOrphanedTimesheets is only an integrity check after deletion.
 
 src/db/repositories/permissions.js
 The permission tables are read-only from the framework's perspective. This repository exists so tests can assert on the permission model without knowing the joins.
@@ -1646,6 +1633,7 @@ src/ui/
 │ ├── dashboard-page.js
 │ ├── employee-list-page.js
 │ ├── add-employee-page.js
+│ ├── employee-personal-details-page.js
 │ ├── leave-list-page.js
 │ └── admin-users-page.js
 ├── workflows/ # multi-page business flows
@@ -1656,7 +1644,9 @@ src/ui/
 └── index.js # composition root
 Not oxd-input.js, oxd-button.js, oxd-icon.js, oxd-checkbox.js. Those are OXD components; wrapping them 1:1 produces no value — Playwright's own locators already handle them. Wrap them only when a reusable interaction pattern exists that would otherwise be duplicated.
 
-Six components, six pages, four workflows. That's a Phase 4 that stays small enough to be honest.
+Six components, seven pages, four UI-only workflows. That's a Phase 4 that stays small enough to be honest.
+
+Cross-layer business workflows live in a separate `src/workflows/` layer. They receive the existing API, DB, and UI interfaces; no UI page or component imports API or DB code.
 
 Part 2 — The Boundaries (This Is the Whole Architecture)
 File Knows About MUST NOT Know About
@@ -1668,7 +1658,7 @@ workflows/*.js pages, components API, DB, auth (unless the workflow is explicitl
 index.js everything (composition root) nothing — it constructs
 Rule of thumb that will save you: components never import pages. Pages never import workflows. Workflows import pages and components. If a page starts importing another page, you have a workflow that hasn't been named yet.
 
-And: no UI file imports src/api/ or src/db/. UI speaks DOM. Cross-layer coordination belongs in a cross-layer workflow — a small, explicit, opt-in construct you'll add in Phase 5 if you actually need it. Not in page objects.
+And: no UI file imports src/api/ or src/db/. UI speaks DOM. Cross-layer coordination belongs in `src/workflows/`, not in page objects.
 
 Part 3 — Data Contracts (Freeze These)
 js
@@ -2502,16 +2492,20 @@ UI: What does the user see?
 Each has one composition root. Each has one boundary file. Each hides exactly the things the layer above should not see. Test code composes them:
 
 js
-const api = await buildApi('admin'); // Phase 1 + 2
-const db = createDb({ /* from env */ }); // Phase 3
-const ui = createUi(page, baseUrl); // Phase 4
+const api = await buildApi('admin');
+const db = createDb({ /* from env */ });
+const ui = createUi(page, baseUrl);
 
-// Verify a cross-layer workflow without coupling any layer to another
-const created = await api.employees.create({ firstName: 'X', lastName: 'Y' });
-const row = await db.employees.findById(created.data.empNumber);
-expect(row.emp_firstname).toBe('X');
-await ui.pages.employees.goto();
-expect(await ui.components.table.hasRow('Y')).toBe(true);
-That's the whole framework. Four independent layers, each with one entry point, each replaceable, each honest about what it knows.
+const employee = await createEmployeeLifecycle({
+  api,
+  db,
+  ui,
+  employee: { firstName: 'X', lastName: 'Y', employeeId: 'QA1234ABCD' },
+  owner: testInfo.testId,
+  updatedMiddleName: 'Workflow',
+});
+expect(employee.employee.middleName).toBe('Workflow');
+
+The workflow owns composition for one business scenario. Auth, API, DB, and UI remain independently replaceable and honest about what they know.
 
 Build it. Tell me what breaks.

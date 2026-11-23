@@ -233,6 +233,8 @@ Strict mode is on by default. Sending an unknown parameter produces:
   }
 }
 Empty string semantics: notRequiredParamRule with excludeEmptyString: true rejects "" but accepts null. Used for middleName and employeeId on employee create.
+
+The HTTP client uses a 30-second request timeout by default (`timeoutMs` can override it). Network failures preserve their transport code, and a 2xx response advertised as JSON but containing malformed JSON fails with `MALFORMED_JSON` rather than becoming an empty success envelope.
 ```
 
 Missing required fields produce a combined 422:
@@ -739,14 +741,13 @@ ohrm_user_role.id → user_role_id
 Use POST /api/v2/pim/employees with a valid Bearer token or session cookie. This is faster and more reliable than UI navigation. The created employee appears immediately in the UI on next data refresh.
 ```
 
-8.2 Cleanup via API
-Use DELETE /api/v2/pim/employees with {"ids": [...]}. Be aware:
+8.2 Test-data lifecycle
 
-Hard delete — data is gone from hs_hr_employee
+Create uniquely identifiable records and keep the IDs returned by OrangeHRM together with their test owner. Clean up only records created by that test, through a supported application lifecycle operation, and verify the resulting state.
 
-Partial cascade — ohrm_leave cascades, ohrm_timesheet does NOT
+`DELETE /api/v2/pim/employees` is a hard delete, not routine test cleanup. It can leave non-cascaded timesheet and attendance rows. Use it only as an explicitly authorized administrative operation after dependency checks; verify the employee is gone and perform post-delete orphan checks. Orphan detection is an integrity check, not permission to delete.
 
-Orphan risk — modules that do not cascade leave orphaned rows referencing the deleted employee
+The live timesheet lifecycle test creates a uniquely named customer, project, activity, employee, and timesheet; submits and approves the timesheet; and verifies API, database, and Admin UI state. It terminates only its owned employee through the supported PIM lifecycle operation. Timesheets and their referenced project/activity/customer records are retained as history; customer/project DELETE operations are not available to the test account. The test attaches the returned IDs and owner for follow-up; it never hard-deletes test data.
 
 8.3 Test Data Setup Prerequisites
 OAuth client registration — must be done once per environment (via UI or API). Fresh DBs have no OAuth clients.
@@ -798,11 +799,11 @@ Row-level access (Supervisor can access subordinates but not unrelated employees
 8.8 Suitability Classification (per endpoint)
 Use case Criteria Examples
 Test-data setup POST/PUT that creates entities needed by tests POST /api/v2/pim/employees
-Cleanup DELETE that removes entities without cascading surprises DELETE /api/v2/pim/employees (aware of orphans)
+Cleanup Supported OrangeHRM lifecycle operations for test-owned records; no direct SQL deletion
 State preparation PUT/PATCH that sets up preconditions PUT /api/v2/pim/employees/{id}/personal-details
 Verification GET that returns authoritative state GET /api/v2/pim/employees/{id}
 API-only testing Endpoint with meaningful validation/authorization behavior All GET endpoints with filters
-Not suitable Endpoint with irreversible side effects DELETE /api/v2/pim/employees (hard delete) unless isolated 9. Known Quirks and Gotchas
+Not suitable Endpoint with irreversible side effects DELETE /api/v2/pim/employees (hard delete) except for an explicitly authorized administrative operation after dependency checks 9. Known Quirks and Gotchas
 error.status type inconsistency: 422 and 404 → string; 401 and 403 → integer.
 
 meta shape inconsistency: [] (array) for single resources and errors; {} (object) for collections with total.
