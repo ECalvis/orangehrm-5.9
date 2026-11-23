@@ -14,23 +14,6 @@ RUN echo "ServerName localhost" > /etc/apache2/conf-available/servername.conf \
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
     && echo "date.timezone = ${TZ}" > /usr/local/etc/php/conf.d/timezone.ini
 
-RUN printf '%s\n' \
-    'Types: deb' \
-    'URIs: https://snapshot.debian.org/archive/debian/20260918T000000Z' \
-    'Suites: bookworm' \
-    'Components: main' \
-    'Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg' \
-    '' \
-    'Types: deb' \
-    'URIs: https://snapshot.debian.org/archive/debian-security/20260918T000000Z' \
-    'Suites: bookworm-security' \
-    'Components: main' \
-    'Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg' \
-    > /etc/apt/sources.list.d/debian.sources \
-    && printf '%s\n' \
-    'Acquire::Check-Valid-Until "false";' \
-    > /etc/apt/apt.conf.d/99snapshot
-
 RUN set -ex; \
     savedAptMark="$(apt-mark showmanual)"; \
     apt-get update; \

@@ -1,6 +1,7 @@
 services:
   orangehrm:
     image: orangehrm:5.9
+    pull_policy: build
     build:
       context: .
       dockerfile: Dockerfile

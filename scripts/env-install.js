@@ -273,10 +273,10 @@ async function install(page, baseUrl) {
   await page.getByRole('button', { name: 'Next' }).click();
 
   await expectRoute(page, baseUrl, '/installer/index.php/installer/instance-creation');
-  await selectDropdown(page, 'Country', 'Philippines');
-  await selectDropdown(page, 'Language', 'English (United States)');
-  await selectDropdown(page, 'Timezone', 'Asia/Manila');
-  await fillField(page, 'Organization Name', 'ECalvis');
+  await selectDropdown(page, 'Country', requiredEnv('OHRM_COUNTRY'));
+  await selectDropdown(page, 'Language', requiredEnv('OHRM_LANGUAGE'));
+  await selectDropdown(page, 'Timezone', requiredEnv('OHRM_TIMEZONE'));
+  await fillField(page, 'Organization Name', requiredEnv('OHRM_ORGANIZATION_NAME'));
 
   await expect(
     page
@@ -289,10 +289,10 @@ async function install(page, baseUrl) {
   await page.getByRole('button', { name: 'Next' }).click();
 
   await expectRoute(page, baseUrl, '/installer/index.php/installer/admin-user-creation');
-  await page.getByPlaceholder('First Name').fill('Caummo');
-  await page.getByPlaceholder('Last Name').fill('Bunummu');
+  await page.getByPlaceholder('First Name').fill(requiredEnv('OHRM_ADMIN_FIRST_NAME'));
+  await page.getByPlaceholder('Last Name').fill(requiredEnv('OHRM_ADMIN_LAST_NAME'));
   await fillField(page, 'Email', requiredEnv('OHRM_ADMIN_USERNAME'));
-  await fillField(page, 'Contact Number', '09123456789');
+  await fillField(page, 'Contact Number', requiredEnv('OHRM_ADMIN_CONTACT_NUMBER'));
   await fillField(page, 'Admin Username', requiredEnv('OHRM_ADMIN_USERNAME'));
   await fillField(page, 'Password', requiredEnv('OHRM_ADMIN_PASSWORD'));
   await fillField(page, 'Confirm Password', requiredEnv('OHRM_ADMIN_PASSWORD'));
@@ -333,10 +333,10 @@ async function createEmployee(page, baseUrl) {
   await page.getByRole('link', { name: 'PIM' }).click();
   await page.getByRole('button', { name: 'Add' }).click();
   await expectRoute(page, baseUrl, '/web/index.php/pim/addEmployee');
-  await page.locator('input[name="firstName"]').fill('Zephyr');
-  await page.locator('input[name="middleName"]').fill('Kite');
-  await page.locator('input[name="lastName"]').fill('Bloom');
-  await fillField(page, 'Employee Id', 'EMP002');
+  await page.locator('input[name="firstName"]').fill(requiredEnv('OHRM_ESS_FIRST_NAME'));
+  await page.locator('input[name="middleName"]').fill(requiredEnv('OHRM_ESS_MIDDLE_NAME'));
+  await page.locator('input[name="lastName"]').fill(requiredEnv('OHRM_ESS_LAST_NAME'));
+  await fillField(page, 'Employee Id', requiredEnv('OHRM_ESS_EMPLOYEE_ID'));
   await setSwitch(page.locator('.oxd-switch-wrapper'), true, 'Create Login Details');
   await fillField(page, 'Username', requiredEnv('OHRM_ESS_USERNAME'));
   await fillField(page, 'Password', requiredEnv('OHRM_ESS_PASSWORD'));
@@ -378,9 +378,9 @@ async function configureAdmin(page, baseUrl) {
   await selectRadioByValue(page, 'none', 'No');
 
   // Now fill the SMTP fields.
-  await fillField(page, 'Mail Sent As', 'orangehrm@5.9.test');
-  await fillField(page, 'SMTP Host', 'mailpit');
-  await fillField(page, 'SMTP Port', '1025');
+  await fillField(page, 'Mail Sent As', requiredEnv('OHRM_MAIL_FROM'));
+  await fillField(page, 'SMTP Host', requiredEnv('OHRM_SMTP_HOST'));
+  await fillField(page, 'SMTP Port', requiredEnv('OHRM_SMTP_PORT'));
 
   // Verify them before saving.
   await expect(
@@ -390,7 +390,7 @@ async function configureAdmin(page, baseUrl) {
         has: page.locator('label.oxd-label:text-is("Mail Sent As")'),
       })
       .locator('input'),
-  ).toHaveValue('orangehrm@5.9.test');
+  ).toHaveValue(requiredEnv('OHRM_MAIL_FROM'));
 
   await expect(
     page
@@ -399,7 +399,7 @@ async function configureAdmin(page, baseUrl) {
         has: page.locator('label.oxd-label:text-is("SMTP Host")'),
       })
       .locator('input'),
-  ).toHaveValue('mailpit');
+  ).toHaveValue(requiredEnv('OHRM_SMTP_HOST'));
 
   await expect(
     page
@@ -408,7 +408,7 @@ async function configureAdmin(page, baseUrl) {
         has: page.locator('label.oxd-label:text-is("SMTP Port")'),
       })
       .locator('input'),
-  ).toHaveValue('1025');
+  ).toHaveValue(requiredEnv('OHRM_SMTP_PORT'));
 
   // Enable test mail.
   const sendTestMailSwitch = page
@@ -426,7 +426,7 @@ async function configureAdmin(page, baseUrl) {
     }),
   ).toBeVisible();
 
-  await fillField(page, 'Test Email Address', 'orangehrm@5.9.test.example');
+  await fillField(page, 'Test Email Address', requiredEnv('OHRM_TEST_EMAIL'));
 
   await page.getByRole('button', { name: 'Save' }).click();
   await expectSaved(page);
@@ -454,7 +454,9 @@ async function main() {
 
     const mailpitUrl = `http://localhost:${requiredEnv('MAILPIT_WEB_HOST_PORT')}`;
     await page.goto(mailpitUrl, { waitUntil: 'domcontentloaded' });
-    await expect(page.getByText('To: orangehrm@5.9.test.example', { exact: false })).toBeVisible({
+    await expect(
+      page.getByText(`To: ${requiredEnv('OHRM_TEST_EMAIL')}`, { exact: false }),
+    ).toBeVisible({
       timeout: 30_000,
     });
     console.log('OrangeHRM installation and local test data setup completed.');
