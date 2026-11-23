@@ -18,7 +18,7 @@ class EmployeeListPage extends BasePage {
   }
 
   async addEmployee() {
-    await this.page.getByRole('link', { name: 'Add', exact: true }).click();
+    await this.page.getByRole('button', { name: /Add/i }).click();
     await this.page.waitForLoadState('domcontentloaded');
     await this.waitForReady();
   }

@@ -1,5 +1,4 @@
 /* eslint-disable no-console */
-/* eslint-disable no-unused-vars */
 
 const fs = require('fs');
 const path = require('path');
@@ -75,10 +74,6 @@ const IGNORED_FILES = new Set([
   'package-lock.json',
   'yarn.lock',
   'pnpm-lock.yaml',
-
-  //Auth
-  'auth/admin.token.json',
-  'auth/ess.token.json',
 ]);
 
 // ============================================================
@@ -91,14 +86,20 @@ const EXTENSIONS = new Set(['.js', '.jsx', '.ts', '.tsx', '.json', '.yaml', '.ym
 // HELPERS
 // ============================================================
 
-function shouldIgnore(name) {
+function shouldIgnore(name, fullPath) {
   // Ignore explicitly listed names
   if (IGNORE.has(name)) {
     return true;
   }
 
   // Ignore sensitive / unwanted files
-  if (IGNORED_FILES.has(name)) {
+  const relativePath = fullPath && path.relative(ROOT, fullPath);
+  const isAuthCredential =
+    relativePath &&
+    relativePath.split(path.sep)[0] === 'auth' &&
+    path.extname(name).toLowerCase() === '.json';
+
+  if (IGNORED_FILES.has(name) || isAuthCredential) {
     return true;
   }
 
@@ -110,8 +111,8 @@ function shouldIgnore(name) {
   return false;
 }
 
-function shouldIncludeFile(filename) {
-  if (shouldIgnore(filename)) {
+function shouldIncludeFile(filename, fullPath) {
+  if (shouldIgnore(filename, fullPath)) {
     return false;
   }
 
@@ -121,7 +122,7 @@ function shouldIncludeFile(filename) {
 function getEntries(dir) {
   return fs
     .readdirSync(dir, { withFileTypes: true })
-    .filter((entry) => !shouldIgnore(entry.name))
+    .filter((entry) => !shouldIgnore(entry.name, path.join(dir, entry.name)))
     .sort((a, b) => {
       // Directories first
       if (a.isDirectory() && !b.isDirectory()) {
@@ -186,7 +187,7 @@ function getFileBlocks() {
       }
 
       // Only collect allowed extensions
-      if (!shouldIncludeFile(entry.name)) {
+      if (!shouldIncludeFile(entry.name, fullPath)) {
         continue;
       }
 
@@ -197,7 +198,7 @@ function getFileBlocks() {
       try {
         contents = fs.readFileSync(fullPath, 'utf8');
       } catch (error) {
-        console.warn(`Skipping unreadable file: ${relativePath}`);
+        console.warn(`Skipping unreadable file: ${relativePath} (${error.message})`);
 
         continue;
       }

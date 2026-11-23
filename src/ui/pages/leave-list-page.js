@@ -19,7 +19,9 @@ class LeaveListPage extends BasePage {
 
   async applyLeave({ leaveType, fromDate, toDate, comment = '' }) {
     await super.goto('/web/index.php/leave/applyLeave');
+    await this.form.waitForLoad();
     await this.select.select('Leave Type', leaveType);
+    await this.form.waitForLoad();
     await this.date.set('From Date', fromDate);
     await this.date.set('To Date', toDate);
     if (comment) {

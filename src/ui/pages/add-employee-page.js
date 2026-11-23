@@ -12,9 +12,10 @@ class AddEmployeePage extends BasePage {
   }
 
   async fill({ firstName, lastName, middleName = '', employeeId }) {
-    await this.form.fillByLabel('First Name', firstName);
-    await this.form.fillByLabel('Middle Name', middleName);
-    await this.form.fillByLabel('Last Name', lastName);
+    const nameGroup = this.form.group('Employee Full Name');
+    await nameGroup.getByPlaceholder('First Name').fill(firstName);
+    await nameGroup.getByPlaceholder('Middle Name').fill(middleName);
+    await nameGroup.getByPlaceholder('Last Name').fill(lastName);
     if (employeeId !== undefined) {
       await this.form.fillByLabel('Employee Id', String(employeeId));
     }

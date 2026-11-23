@@ -1,12 +1,10 @@
-const { SELECTORS } = require('../selectors');
-
 class OxdDialog {
   constructor(page) {
     this.page = page;
   }
 
   root() {
-    return this.page.locator(SELECTORS.overlay);
+    return this.page.getByRole('dialog');
   }
 
   async waitFor() {

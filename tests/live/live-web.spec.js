@@ -10,6 +10,7 @@ const env = require('../../src/config/env');
 const users = require('../../src/config/users');
 const { createDb } = require('../../src/db');
 const { createUi } = require('../../src/ui');
+const { SELECTORS } = require('../../src/ui/selectors');
 
 function createLiveApi(roleName) {
   const user = users[roleName];
@@ -46,7 +47,7 @@ function createLiveDb() {
   });
 }
 
-test.describe('Live OrangeHRM integration', () => {
+test.describe('Live OrangeHRM application integration', () => {
   test('admin authenticates in the real UI and opens the employee list', async ({ page }) => {
     const ui = createUi(page, env.baseUrl);
 
@@ -64,6 +65,70 @@ test.describe('Live OrangeHRM integration', () => {
 
     await ui.pages.login.loginAs('ess');
     await expect(page).toHaveURL(/\/web\/index\.php\/dashboard\/index/);
+  });
+
+  test('OXD label selectors address real employee form fields', async ({ page }) => {
+    const ui = createUi(page, env.baseUrl);
+
+    await ui.pages.login.loginAs('admin');
+    await ui.pages.employees.goto();
+    await ui.pages.employees.addEmployee();
+
+    await ui.pages.addEmployee.fill({
+      firstName: 'Selector',
+      middleName: '',
+      lastName: 'Smoke',
+    });
+
+    const firstName = page.getByPlaceholder('First Name');
+    await expect(firstName).toHaveValue('Selector');
+  });
+
+  test('Admin user Add button opens the real user form', async ({ page }) => {
+    const ui = createUi(page, env.baseUrl);
+
+    await ui.pages.login.loginAs('admin');
+    await ui.pages.users.goto();
+    await ui.pages.users.addUser();
+
+    await expect(ui.pages.users.form.fieldByLabel('Username')).toBeVisible();
+  });
+
+  test('OXD select exposes real employment status options', async ({ page }) => {
+    const ui = createUi(page, env.baseUrl);
+
+    await ui.pages.login.loginAs('admin');
+    await ui.pages.employees.goto();
+    await ui.components.select.open('Employment Status');
+
+    await expect(page.locator(SELECTORS.selectDropdown)).toBeVisible();
+    expect(await page.getByRole('option').count()).toBeGreaterThan(0);
+  });
+
+  test('ESS can select QA leave and open the real date picker', async ({ page }) => {
+    const ui = createUi(page, env.baseUrl);
+
+    await ui.pages.login.loginAs('ess');
+    await ui.base.goto('/web/index.php/leave/applyLeave');
+    await ui.components.form.waitForLoad();
+    await ui.components.select.select('Leave Type', 'QA Automation Leave');
+    await ui.components.form.waitForLoad();
+    await ui.components.date.open('From Date');
+
+    await expect(page.locator(SELECTORS.dateCalendar)).toBeVisible();
+  });
+
+  test('OXD employee delete dialog can be cancelled without changing data', async ({ page }) => {
+    const ui = createUi(page, env.baseUrl);
+
+    await ui.pages.login.loginAs('admin');
+    await ui.pages.employees.goto();
+    await ui.pages.employees.table.clickAction('EMP002', 'trash');
+    await ui.pages.employees.dialog.waitFor();
+    await expect(ui.pages.employees.dialog.root()).toBeVisible();
+
+    await ui.pages.employees.dialog.cancel();
+    await expect(ui.pages.employees.table.rowByText('EMP002')).toBeVisible();
   });
 
   test('admin API employee data matches live database records', async () => {

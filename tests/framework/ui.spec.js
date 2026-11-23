@@ -46,6 +46,10 @@ function mockPage({ countFor } = {}) {
       return new Locator(`${this.selector} >> role=${role} ${JSON.stringify(options || {})}`);
     }
 
+    getByPlaceholder(text, options) {
+      return new Locator(`${this.selector} >> placeholder=${text} ${JSON.stringify(options || {})}`);
+    }
+
     getByText(text, options) {
       return new Locator(`${this.selector} >> text=${text} ${JSON.stringify(options || {})}`);
     }
@@ -77,7 +81,7 @@ function mockPage({ countFor } = {}) {
     async innerText() {
       if (this.selector.includes(SELECTORS.inputFieldError)) return ' Required field ';
       if (this.selector.includes(SELECTORS.selectTrigger)) return ' Admin ';
-      if (this.selector.includes(SELECTORS.overlay)) return ' Delete Ada? ';
+      if (this.selector.includes('role=dialog')) return ' Delete Ada? ';
       if (this.selector.includes(SELECTORS.toast)) return ' Saved ';
       return ' text ';
     }
