@@ -6,6 +6,8 @@ const { chromium } = require('playwright');
 
 const { AuthenticationError } = require('./errors');
 
+const callbackLocks = new Map();
+
 /* eslint-disable no-console */
 
 class OAuthAuthorizer {
@@ -29,6 +31,7 @@ class OAuthAuthorizer {
 
     this.callbackHost = callbackHost;
     this.callbackPort = callbackPort;
+    this.callbackLockKey = callbackPort === 0 ? this : callbackPort;
     this.callbackPath = callbackPath;
     this.timeoutMs = timeoutMs;
     this.headless = headless;
@@ -36,6 +39,27 @@ class OAuthAuthorizer {
   }
 
   async authorize({ authorizationUrl, expectedState, credentials }) {
+    const lockKey = this.callbackLockKey;
+    const previous = callbackLocks.get(lockKey) || Promise.resolve();
+    let release;
+    const current = new Promise((resolve) => {
+      release = resolve;
+    });
+
+    callbackLocks.set(lockKey, current);
+    await previous;
+
+    try {
+      return await this._authorize({ authorizationUrl, expectedState, credentials });
+    } finally {
+      release();
+      if (callbackLocks.get(lockKey) === current) {
+        callbackLocks.delete(lockKey);
+      }
+    }
+  }
+
+  async _authorize({ authorizationUrl, expectedState, credentials }) {
     if (!authorizationUrl) {
       throw new TypeError('authorizationUrl is required');
     }

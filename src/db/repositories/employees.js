@@ -29,7 +29,7 @@ class EmployeesRepository {
   }
 
   async deleteById(empNumber) {
-    return this.client.execute('DELETE FROM hs_hr_employee WHERE emp_number = ?', [empNumber]);
+    return this.client.deleteWhere('hs_hr_employee', { emp_number: empNumber });
   }
 
   async findOrphanedTimesheets(empNumber) {
