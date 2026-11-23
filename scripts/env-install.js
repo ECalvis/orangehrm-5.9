@@ -441,7 +441,7 @@ async function main() {
   const authRedirectUrl = requiredEnv('OHRM_AUTH_REDIRECT_URL').replace(/\/+$/, '');
   process.env.OHRM_AUTH_REDIRECT_URL = authRedirectUrl;
 
-  const browser = await chromium.launch({ headless: false });
+  const browser = await chromium.launch({ headless: true });
 
   try {
     const page = await browser.newPage();

@@ -1,18 +1,18 @@
 const { test, expect } = require('@playwright/test');
 
-const { BasePage } = require('../src/ui/base-page');
-const { createUi } = require('../src/ui');
-const { SELECTORS, byLabelText, iconButton } = require('../src/ui/selectors');
-const { OxdForm } = require('../src/ui/components/oxd-form');
-const { OxdSelect } = require('../src/ui/components/oxd-select');
-const { OxdTable } = require('../src/ui/components/oxd-table');
-const { OxdDatePicker } = require('../src/ui/components/oxd-date-picker');
-const { OxdDialog } = require('../src/ui/components/oxd-dialog');
-const { OxdToast } = require('../src/ui/components/oxd-toast');
-const { login } = require('../src/ui/workflows/login');
-const { createEmployee } = require('../src/ui/workflows/create-employee');
-const { applyLeave } = require('../src/ui/workflows/apply-leave');
-const { createUser } = require('../src/ui/workflows/create-user');
+const { BasePage } = require('../../src/ui/base-page');
+const { createUi } = require('../../src/ui');
+const { SELECTORS, byLabelText, iconButton } = require('../../src/ui/selectors');
+const { OxdForm } = require('../../src/ui/components/oxd-form');
+const { OxdSelect } = require('../../src/ui/components/oxd-select');
+const { OxdTable } = require('../../src/ui/components/oxd-table');
+const { OxdDatePicker } = require('../../src/ui/components/oxd-date-picker');
+const { OxdDialog } = require('../../src/ui/components/oxd-dialog');
+const { OxdToast } = require('../../src/ui/components/oxd-toast');
+const { login } = require('../../src/ui/workflows/login');
+const { createEmployee } = require('../../src/ui/workflows/create-employee');
+const { applyLeave } = require('../../src/ui/workflows/apply-leave');
+const { createUser } = require('../../src/ui/workflows/create-user');
 
 function mockPage({ countFor } = {}) {
   const calls = [];

@@ -10,7 +10,7 @@ const SELECTORS = Object.freeze({
   form: 'form.oxd-form',
   formLoader: '.oxd-form-loader',
   inputGroup: '.oxd-input-group',
-  inputGroupLabel: '.oxd-input-group__label',
+  inputGroupLabel: '.oxd-label',
   inputFieldError: '.oxd-input-field-error-message',
   input: 'input.oxd-input',
   textarea: 'textarea.oxd-textarea',

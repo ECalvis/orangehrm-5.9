@@ -13,20 +13,21 @@ const CHUNK_PREFIX = 'project-export-';
 // SETTINGS
 // ============================================================
 
-const MAX_CHARS_PER_CHUNK = 50000;
+const MAX_CHARS_PER_CHUNK = 100000;
 
 // ============================================================
 // DIRECTORIES / FILES TO IGNORE
 // ============================================================
 
 const IGNORE = new Set([
+  'orangehrm-v2.json',
   // Dependencies
   'node_modules',
 
   // Project folders
   'images',
   'archive',
-  'auth',
+  //'auth',
 
   // Git / IDE
   '.git',
@@ -44,12 +45,12 @@ const IGNORE = new Set([
   'build',
 
   // Files that aren't relevant to the AI export
-  'Dockerfile',
+  //'Dockerfile',
   'eslint.config.mjs',
   'oauth-debug.png',
   'orangehrm-5.9.zip',
   '.env.example',
-  'compose.yml',
+  //'compose.yml',
   '.gitignore',
   '.prettierignore',
   '.prettierrc',
@@ -74,6 +75,10 @@ const IGNORED_FILES = new Set([
   'package-lock.json',
   'yarn.lock',
   'pnpm-lock.yaml',
+
+  //Auth
+  'auth/admin.token.json',
+  'auth/ess.token.json',
 ]);
 
 // ============================================================
@@ -246,6 +251,30 @@ function createFullExport(structure, files) {
 // GPT CHUNKS
 // ============================================================
 
+// Split a single large string into slices of at most `max` chars,
+// trying to break on newlines so slices stay readable.
+function splitContent(text, max) {
+  const slices = [];
+  let start = 0;
+
+  while (start < text.length) {
+    let end = Math.min(start + max, text.length);
+
+    // Prefer to break at a newline near the end of the slice
+    if (end < text.length) {
+      const lastNewline = text.lastIndexOf('\n', end);
+      if (lastNewline > start) {
+        end = lastNewline + 1; // include the newline
+      }
+    }
+
+    slices.push(text.slice(start, end));
+    start = end;
+  }
+
+  return slices;
+}
+
 function createGPTChunks(structure, files) {
   // Remove old GPT chunks
   const existingFiles = fs
@@ -257,7 +286,6 @@ function createGPTChunks(structure, files) {
   }
 
   let chunkNumber = 1;
-
   let currentChunk = structure + '\n# File Contents\n\n';
 
   function writeChunk() {
@@ -266,29 +294,42 @@ function createGPTChunks(structure, files) {
     }
 
     const filename = `${CHUNK_PREFIX}${String(chunkNumber).padStart(3, '0')}.txt`;
-
     fs.writeFileSync(path.join(ROOT, filename), currentChunk, 'utf8');
-
     console.log(`Created ${filename} ` + `(${currentChunk.length.toLocaleString()} chars)`);
 
     chunkNumber++;
-
     currentChunk = '';
   }
 
   for (const file of files) {
     const fileSize = file.content.length;
 
-    // Keep individual files intact.
-    // Start a new chunk if adding this file
-    // would exceed the maximum size.
-    if (currentChunk.length > 0 && currentChunk.length + fileSize > MAX_CHARS_PER_CHUNK) {
-      writeChunk();
-
-      currentChunk = '# Project Export — Continued\n\n' + '# File Contents\n\n';
+    // Case 1: file fits in the current chunk
+    if (currentChunk.length + fileSize <= MAX_CHARS_PER_CHUNK) {
+      currentChunk += file.content;
+      continue;
     }
 
-    currentChunk += file.content;
+    // Case 2: flush current chunk, then handle the file
+    writeChunk();
+
+    // Case 2a: file itself is too big -> split it into slices
+    if (fileSize > MAX_CHARS_PER_CHUNK) {
+      const slices = splitContent(file.content, MAX_CHARS_PER_CHUNK);
+
+      for (let i = 0; i < slices.length; i++) {
+        currentChunk =
+          '# Project Export — Continued\n\n' +
+          `# File (part ${i + 1}/${slices.length}): ${file.path}\n\n` +
+          slices[i];
+        writeChunk();
+      }
+
+      currentChunk = '# Project Export — Continued\n\n# File Contents\n\n';
+    } else {
+      // Case 2b: normal file, start a fresh chunk with it
+      currentChunk = '# Project Export — Continued\n\n# File Contents\n\n' + file.content;
+    }
   }
 
   writeChunk();

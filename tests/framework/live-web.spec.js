@@ -1,15 +1,15 @@
 const axios = require('axios');
 const { expect, test } = require('@playwright/test');
 
-const { createApi } = require('../src/api');
-const { OAuthAuthorizer } = require('../src/auth/oauth-authorizer');
-const { OAuthClient } = require('../src/auth/oauth-client');
-const { FileTokenStore } = require('../src/auth/token-store');
-const { TokenManager } = require('../src/auth/token-manager');
-const env = require('../src/config/env');
-const users = require('../src/config/users');
-const { createDb } = require('../src/db');
-const { createUi } = require('../src/ui');
+const { createApi } = require('../../src/api');
+const { OAuthAuthorizer } = require('../../src/auth/oauth-authorizer');
+const { OAuthClient } = require('../../src/auth/oauth-client');
+const { FileTokenStore } = require('../../src/auth/token-store');
+const { TokenManager } = require('../../src/auth/token-manager');
+const env = require('../../src/config/env');
+const users = require('../../src/config/users');
+const { createDb } = require('../../src/db');
+const { createUi } = require('../../src/ui');
 
 function createLiveApi(roleName) {
   const user = users[roleName];

@@ -7,12 +7,12 @@ const path = require('node:path');
 
 const { expect, test } = require('@playwright/test');
 
-const { AuthenticationError, OAuthRejectedError } = require('../src/auth/errors');
-const { OAuthAuthorizer } = require('../src/auth/oauth-authorizer');
-const { OAuthClient } = require('../src/auth/oauth-client');
-const { createChallenge, createState, createVerifier } = require('../src/auth/pkce');
-const { TokenManager } = require('../src/auth/token-manager');
-const { FileTokenStore } = require('../src/auth/token-store');
+const { AuthenticationError, OAuthRejectedError } = require('../../src/auth/errors');
+const { OAuthAuthorizer } = require('../../src/auth/oauth-authorizer');
+const { OAuthClient } = require('../../src/auth/oauth-client');
+const { createChallenge, createState, createVerifier } = require('../../src/auth/pkce');
+const { TokenManager } = require('../../src/auth/token-manager');
+const { FileTokenStore } = require('../../src/auth/token-store');
 
 function listen(server) {
   return new Promise((resolve, reject) => {
@@ -933,7 +933,7 @@ test.describe('AuthenticationError metadata', () => {
 });
 
 test.describe('Config validation', () => {
-  const envModulePath = path.resolve(__dirname, '..', 'src', 'config', 'env.js');
+  const envModulePath = path.resolve(__dirname, '..', '..', 'src', 'config', 'env.js');
 
   // Runs env.js in a fresh child process with a controlled environment.
   // Returns a function that throws with the child's stderr if the module

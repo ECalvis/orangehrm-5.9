@@ -2,9 +2,9 @@ const http = require('node:http');
 
 const { expect, test } = require('@playwright/test');
 
-const { AuthenticationError } = require('../src/auth/errors');
-const { normalizeError, normalizeSuccess } = require('../src/api/envelope');
-const { ApiError, createApi } = require('../src/api');
+const { AuthenticationError } = require('../../src/auth/errors');
+const { normalizeError, normalizeSuccess } = require('../../src/api/envelope');
+const { ApiError, createApi } = require('../../src/api');
 
 function listen(server) {
   return new Promise((resolve, reject) => {

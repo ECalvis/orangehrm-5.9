@@ -4,7 +4,7 @@ const { test: base, expect } = require('@playwright/test');
 
 dotenvExpand.expand(dotenv.config());
 
-const { createUi } = require('../../src/ui');
+const { createUi } = require('../../../src/ui');
 
 const test = base.extend({
   ui: async ({ page }, use) => {

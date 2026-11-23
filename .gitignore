@@ -6,6 +6,9 @@
 # Dependencies
 node_modules/
 
+# Generated project exports
+project-export*.txt
+
 # Authentication tokens / credentials
 auth/*.token.json
 auth/*.json

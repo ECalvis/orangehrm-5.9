@@ -1,8 +1,8 @@
 const { expect, test } = require('@playwright/test');
 
-const { DbClient } = require('../src/db/client');
-const { DbError } = require('../src/db/errors');
-const { toCamel, toSnake } = require('../src/db/row');
+const { DbClient } = require('../../src/db/client');
+const { DbError } = require('../../src/db/errors');
+const { toCamel, toSnake } = require('../../src/db/row');
 
 function createConnection({ execute, failures = {} } = {}) {
   const calls = [];
