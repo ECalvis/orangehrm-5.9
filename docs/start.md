@@ -2450,16 +2450,16 @@ Named for the question they answer ✅ ✅ ✅ ✅ page/workflow methods
 The same shape repeats four times. If you can hold one of these layers in your head, you can hold all four.
 
 Part 10 — Phase 4 Implementation and Verification
-The Phase 4 UI layer is implemented under src/ui/: centralized selectors, a navigation base page, six reusable OXD interaction components, six page objects, four UI-only workflows, and the createUi composition root. Playwright fixtures are in tests/fixtures/ui.js, and the viewport is fixed at 1280×900 so desktop OXD table headers are available.
+The Phase 4 UI layer is implemented under src/ui/: centralized selectors, a navigation base page, six reusable OXD interaction components, six page objects, four UI-only workflows, and the createUi composition root. The isolated UI tests are in tests/framework/ui.spec.js, and the viewport is fixed at 1280×900 so desktop OXD table headers are available.
 
 The isolated UI regression suite covers selector construction, page navigation, each component's public interactions, all page/workflow entry points, and invalid-input behavior without requiring a running OrangeHRM server:
 
 sh
-npm test -- tests/ui.spec.js
-npx eslint src/ui tests/ui.spec.js tests/fixtures/ui.js playwright.config.js
-npx prettier src/ui tests/ui.spec.js tests/fixtures/ui.js playwright.config.js --check
+npm test -- tests/framework/ui.spec.js
+npx eslint src/ui tests/framework/ui.spec.js playwright.config.js
+npx prettier src/ui tests/framework/ui.spec.js playwright.config.js --check
 
-For environment-backed end-to-end tests, import { test, expect } from tests/fixtures/ui.js and use the injected ui fixture. Set OHRM_BASE_URL and the role credentials in .env before navigating to the local instance. These tests are intentionally separate from the isolated regression suite so running the latter does not require a deployed application.
+`npm test` runs only the framework regression suite and does not load `.env` or require a running OrangeHRM server. The separate `npm run test:live` command loads `.env` through playwright.live.config.js and runs the tests under tests/live.
 
 The repository also includes a no-mock integration suite against the running OrangeHRM, MariaDB, and real browser:
 

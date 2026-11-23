@@ -1,11 +1,7 @@
-const dotenv = require('dotenv');
-const dotenvExpand = require('dotenv-expand');
 const { defineConfig, devices } = require('@playwright/test');
 
-dotenvExpand.expand(dotenv.config());
-
 module.exports = defineConfig({
-  testDir: './tests',
+  testDir: './tests/framework',
   testMatch: '**/*.spec.js',
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
