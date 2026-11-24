@@ -285,7 +285,7 @@ async function install(page, baseUrl) {
         has: page.locator('label.oxd-label').getByText('Organization Name', { exact: true }),
       })
       .locator('input'),
-  ).toHaveValue('ECalvis');
+  ).toHaveValue(requiredEnv('OHRM_ORGANIZATION_NAME'));
   await page.getByRole('button', { name: 'Next' }).click();
 
   await expectRoute(page, baseUrl, '/installer/index.php/installer/admin-user-creation');
