@@ -1,10 +1,21 @@
-OrangeHRM QA Framework — Consolidated Architecture
+# OrangeHRM QA Framework — Consolidated Architecture
+
 You've given me all the research docs, the existing framework skeleton, the current 4-file auth code, and the plan to rebuild auth cleanly. Here is the consolidated answer.
 
-Part 1 — The Decision You've Already Made (Confirm It)
+## Contents
+
+- [Phase 1: Authentication](#phase-1-authentication)
+- [Phase 2: API Client Layer](#phase-2-api-client-layer)
+- [Phase 3: Database Client Framework](#phase-3-database-client-framework)
+- [Phase 4: UI and OXD Component Framework](#phase-4-ui-and-oxd-component-framework)
+
+## Phase 1: Authentication
+
+### Part 1 — The Decision You've Already Made (Confirm It)
+
 Phase 1 = auth only. Six flat files. No nesting. No roles inside auth.
 
-text
+```text
 src/auth/
 ├── pkce.js
 ├── oauth-client.js
@@ -12,20 +23,26 @@ src/auth/
 ├── token-store.js
 ├── token-manager.js
 └── errors.js
+```
+
 That is the right call. Everything below is the concrete implementation that matches your research findings, so you can write the six files and stop deliberating.
 
-Part 2 — The Boundaries (This Is the Whole Architecture)
-File Knows About MUST NOT Know About
-pkce.js crypto Everything else
-errors.js nothing nothing
-oauth-client.js axios, config object, ./pkce, ./errors Playwright, files, roles, @playwright/test
-oauth-authorizer.js playwright (not @playwright/test), http, config object Tokens, axios, files, refresh logic
-token-store.js fs OAuth, Playwright, refresh logic, roles
-token-manager.js the four above (injected) HTTP details, Playwright details, file paths, roles
+### Part 2 — The Boundaries (This Is the Whole Architecture)
+
+| File                  | Knows about                                                | Must not know about                                 |
+| --------------------- | ---------------------------------------------------------- | --------------------------------------------------- |
+| `pkce.js`             | `crypto`                                                   | Everything else                                     |
+| `errors.js`           | Nothing                                                    | Nothing                                             |
+| `oauth-client.js`     | `axios`, config object, `./pkce`, `./errors`               | Playwright, files, roles, `@playwright/test`        |
+| `oauth-authorizer.js` | Playwright (not `@playwright/test`), `http`, config object | Tokens, axios, files, refresh logic                 |
+| `token-store.js`      | `fs`                                                       | OAuth, Playwright, refresh logic, roles             |
+| `token-manager.js`    | The four above (injected)                                  | HTTP details, Playwright details, file paths, roles |
+
 If you ever want to import Playwright into oauth-client.js, or roles into token-manager.js, you've broken the design. Re-read this table.
 
-Part 3 — Data Contracts (Freeze These)
-js
+### Part 3 — Data Contracts (Freeze These)
+
+```js
 // pkce.js
 { createVerifier(), createChallenge(verifier), createState() }
 
@@ -50,73 +67,85 @@ authorize({ authorizationUrl, expectedState }) → { code, state }
 
 // token-manager.js
 { getAccessToken() → string, clear() }
+```
+
 The single most important rule: access_token, refresh_token, expires_in are wire format. They are translated once, inside oauth-client.js. Nowhere else in the framework should ever see snake_case.
 
 Auth tests live in `tests/auth.spec.js` and run with `npm test`. They cover PKCE, OAuth token requests and normalization, callback state validation, token refresh/caching, and file-store behavior. A local browser integration test exercises the authorizer's login, consent, and callback flow without OrangeHRM credentials. The four live OrangeHRM scenarios (cold, warm, expired with refresh, and expired with invalid refresh) are separate manual integration checks and are not part of `npm test`.
 
-Part 4 — What Your Current Code Gets Wrong (Concretely)
-Violation Location Fix
-Protocol layer imports chromium from @playwright/test oauth-client.js Move browser code to oauth-authorizer.js; import playwright (not @playwright/test)
-TokenManager knows about roles token-manager.js constructor(roleName) Inject collaborators; roles live in src/config/users.js
-Snake_case leaks everywhere normalizeTokenResponse returns access_token, expires_at Return camelCase Token; convert at boundary
-OAuthClient reaches into global config require('../../../config/config') Constructor takes a plain config object
-Redundant await on callbackPromise Promise.all([allowButton.click(), callbackPromise]) then await callbackPromise Restructure: const cb = waitForCallback(...); await allowButton.click(); const { code } = await cb;
-AuthenticationError from ../../core/errors creates unused hierarchy Own errors.js in src/auth/
-@playwright/test in auth infra can't run outside test runner Use playwright package
-Part 5 — Concrete File Sketches
-src/auth/pkce.js
-js
+### Part 4 — What Your Current Code Gets Wrong (Concretely)
+
+| Violation                                                                  | Location                                                                           | Fix                                                                                       |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Protocol layer imports `chromium` from `@playwright/test`                  | `oauth-client.js`                                                                  | Move browser code to `oauth-authorizer.js`; import `playwright` (not `@playwright/test`). |
+| `TokenManager` knows about roles                                           | `token-manager.js` constructor takes `roleName`                                    | Inject collaborators; roles live in `src/config/users.js`.                                |
+| Snake_case leaks everywhere                                                | `normalizeTokenResponse` returns `access_token`, `expires_at`                      | Return camelCase `Token`; convert at the boundary.                                        |
+| `OAuthClient` reaches into global config                                   | `require('../../../config/config')`                                                | Constructor takes a plain config object.                                                  |
+| Redundant await on `callbackPromise`                                       | `Promise.all([allowButton.click(), callbackPromise])` then await `callbackPromise` | Restructure: create `cb = waitForCallback(...)`, click, then await `cb`.                  |
+| `AuthenticationError` from `../../core/errors` creates an unused hierarchy | `../../core/errors`                                                                | Own `errors.js` in `src/auth/`.                                                           |
+| `@playwright/test` in auth infra can't run outside the test runner         | Auth infrastructure                                                                | Use `playwright` package.                                                                 |
+
+### Part 5 — Concrete File Sketches
+
+#### `src/auth/pkce.js`
+
+```js
 const crypto = require('crypto');
 
 function base64url(buf) {
-return buf.toString('base64')
-.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
 function createVerifier() {
-return base64url(crypto.randomBytes(64));
+  return base64url(crypto.randomBytes(64));
 }
 
 function createChallenge(verifier) {
-return base64url(crypto.createHash('sha256').update(verifier).digest());
+  return base64url(crypto.createHash('sha256').update(verifier).digest());
 }
 
 function createState() {
-return crypto.randomBytes(16).toString('hex');
+  return crypto.randomBytes(16).toString('hex');
 }
 
 module.exports = { createVerifier, createChallenge, createState };
+```
+
 No classes. No config. No logging. Just PKCE.
 
-src/auth/errors.js
-js
+#### `src/auth/errors.js`
+
+```js
 class AuthenticationError extends Error {
-constructor(message, meta = {}) {
-super(message);
-this.name = 'AuthenticationError';
-Object.assign(this, meta);
-}
+  constructor(message, meta = {}) {
+    super(message);
+    this.name = 'AuthenticationError';
+    Object.assign(this, meta);
+  }
 }
 
 module.exports = { AuthenticationError };
-src/auth/oauth-client.js
-js
+```
+
+#### `src/auth/oauth-client.js`
+
+```js
 const axios = require('axios');
 const { createVerifier, createChallenge, createState } = require('./pkce');
 const { AuthenticationError } = require('./errors');
 
 class OAuthClient {
-constructor({ authorizationUrl, tokenUrl, clientId, redirectUri }) {
-this.authorizationUrl = authorizationUrl;
-this.tokenUrl = tokenUrl;
-this.clientId = clientId;
-this.redirectUri = redirectUri;
-}
+  constructor({ authorizationUrl, tokenUrl, clientId, redirectUri }) {
+    this.authorizationUrl = authorizationUrl;
+    this.tokenUrl = tokenUrl;
+    this.clientId = clientId;
+    this.redirectUri = redirectUri;
+  }
 
-createAuthorizationRequest() {
-const verifier = createVerifier();
-const challenge = createChallenge(verifier);
-const state = createState();
+  createAuthorizationRequest() {
+    const verifier = createVerifier();
+    const challenge = createChallenge(verifier);
+    const state = createState();
 
     const url = new URL(this.authorizationUrl);
     url.searchParams.set('response_type', 'code');
@@ -127,75 +156,83 @@ const state = createState();
     url.searchParams.set('state', state);
 
     return { url: url.toString(), verifier, state };
+  }
 
-}
+  async exchangeCode({ code, verifier }) {
+    return this._tokenRequest(
+      {
+        grant_type: 'authorization_code',
+        code,
+        client_id: this.clientId,
+        redirect_uri: this.redirectUri,
+        code_verifier: verifier,
+      },
+      'Token exchange',
+    );
+  }
 
-async exchangeCode({ code, verifier }) {
-return this._tokenRequest({
-grant_type: 'authorization_code',
-code,
-client_id: this.clientId,
-redirect_uri: this.redirectUri,
-code_verifier: verifier,
-}, 'Token exchange');
-}
+  async refresh(refreshToken) {
+    return this._tokenRequest(
+      {
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+        client_id: this.clientId,
+      },
+      'Token refresh',
+    );
+  }
 
-async refresh(refreshToken) {
-return this._tokenRequest({
-grant_type: 'refresh_token',
-refresh_token: refreshToken,
-client_id: this.clientId,
-}, 'Token refresh');
-}
+  async _tokenRequest(params, label) {
+    const body = new URLSearchParams(params).toString();
+    try {
+      const { data } = await axios.post(this.tokenUrl, body, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      });
+      return this._normalize(data);
+    } catch (err) {
+      const wire = err.response?.data;
+      throw new AuthenticationError(`${label} failed: ${wire?.error || err.message}`, {
+        status: err.response?.status,
+        hint: wire?.hint,
+      });
+    }
+  }
 
-async _tokenRequest(params, label) {
-const body = new URLSearchParams(params).toString();
-try {
-const { data } = await axios.post(this.tokenUrl, body, {
-headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-});
-return this._normalize(data);
-} catch (err) {
-const wire = err.response?.data;
-throw new AuthenticationError(
-`${label} failed: ${wire?.error || err.message}`,
-{ status: err.response?.status, hint: wire?.hint },
-);
-}
-}
-
-// The ONLY place snake_case is allowed.
-_normalize(data) {
-if (!data?.access_token) {
-throw new AuthenticationError('Token response missing access_token');
-}
-return {
-accessToken: data.access_token,
-refreshToken: data.refresh_token ?? null,
-tokenType: data.token_type ?? 'Bearer',
-expiresAt: data.expires_in ? Date.now() + data.expires_in * 1000 : null,
-};
-}
+  // The ONLY place snake_case is allowed.
+  _normalize(data) {
+    if (!data?.access_token) {
+      throw new AuthenticationError('Token response missing access_token');
+    }
+    return {
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token ?? null,
+      tokenType: data.token_type ?? 'Bearer',
+      expiresAt: data.expires_in ? Date.now() + data.expires_in * 1000 : null,
+    };
+  }
 }
 
 module.exports = { OAuthClient };
+```
+
 Note: no Playwright. No file I/O. No roles. No global config.
 
-src/auth/oauth-authorizer.js
-js
+#### `src/auth/oauth-authorizer.js`
+
+```js
 const http = require('http');
 const { chromium } = require('playwright'); // NOT @playwright/test
 const { AuthenticationError } = require('./errors');
 
 class OAuthAuthorizer {
-constructor({ callbackHost, callbackPort, callbackPath }) {
-this.callbackHost = callbackHost;
-this.callbackPort = callbackPort;
-this.callbackPath = callbackPath;
-}
+  constructor({ callbackHost, callbackPort, callbackPath }) {
+    this.callbackHost = callbackHost;
+    this.callbackPort = callbackPort;
+    this.callbackPath = callbackPath;
+  }
 
-async authorize({ authorizationUrl, expectedState, credentials }) {
-const callback = this._listen(expectedState); // start BEFORE browser
+  async authorize({ authorizationUrl, expectedState, credentials }) {
+    const callback = this._listen(expectedState); // start BEFORE browser
 
     const browser = await chromium.launch({ headless: true });
     const context = await browser.newContext();
@@ -208,8 +245,7 @@ const callback = this._listen(expectedState); // start BEFORE browser
       const username = page.getByRole('textbox', { name: 'Username' });
       if (await username.isVisible().catch(() => false)) {
         await username.fill(credentials.username);
-        await page.getByRole('textbox', { name: 'Password' })
-          .fill(credentials.password);
+        await page.getByRole('textbox', { name: 'Password' }).fill(credentials.password);
         await page.getByRole('button', { name: 'Login' }).click();
       }
 
@@ -222,22 +258,23 @@ const callback = this._listen(expectedState); // start BEFORE browser
     } finally {
       await browser.close();
     }
+  }
 
-}
-
-_listen(expectedState) {
-return new Promise((resolve, reject) => {
-let settled = false;
-const finish = (err, val) => {
-if (settled) return;
-settled = true;
-server.close(() => (err ? reject(err) : resolve(val)));
-};
+  _listen(expectedState) {
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const finish = (err, val) => {
+        if (settled) return;
+        settled = true;
+        server.close(() => (err ? reject(err) : resolve(val)));
+      };
 
       const server = http.createServer((req, res) => {
         const url = new URL(req.url, `http://${this.callbackHost}:${this.callbackPort}`);
         if (url.pathname !== this.callbackPath) {
-          res.writeHead(404); res.end(); return;
+          res.writeHead(404);
+          res.end();
+          return;
         }
         const code = url.searchParams.get('code');
         const state = url.searchParams.get('state');
@@ -257,79 +294,95 @@ server.close(() => (err ? reject(err) : resolve(val)));
       server.on('error', finish);
       server.listen(this.callbackPort, this.callbackHost);
     });
-
-}
+  }
 }
 
 module.exports = { OAuthAuthorizer };
+```
+
 Note: no axios, no tokens, no file paths, no roles.
 
-src/auth/token-store.js
-js
+#### `src/auth/token-store.js`
+
+```js
 const fs = require('fs');
 const path = require('path');
 
 class FileTokenStore {
-constructor(filePath) { this.filePath = filePath; }
+  constructor(filePath) {
+    this.filePath = filePath;
+  }
 
-load() {
-try {
-if (!fs.existsSync(this.filePath)) return null;
-return JSON.parse(fs.readFileSync(this.filePath, 'utf8'));
-} catch { return null; }
-}
+  load() {
+    try {
+      if (!fs.existsSync(this.filePath)) return null;
+      return JSON.parse(fs.readFileSync(this.filePath, 'utf8'));
+    } catch {
+      return null;
+    }
+  }
 
-save(tokens) {
-fs.mkdirSync(path.dirname(this.filePath), { recursive: true });
-fs.writeFileSync(this.filePath, JSON.stringify(tokens, null, 2), {
-mode: 0o600,
-});
-}
+  save(tokens) {
+    fs.mkdirSync(path.dirname(this.filePath), { recursive: true });
+    fs.writeFileSync(this.filePath, JSON.stringify(tokens, null, 2), {
+      mode: 0o600,
+    });
+  }
 
-clear() {
-try { fs.unlinkSync(this.filePath); } catch { /* ignore */ }
-}
+  clear() {
+    try {
+      fs.unlinkSync(this.filePath);
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
 module.exports = { FileTokenStore };
+```
+
 Note: no refresh, no expiry decisions, no OAuth, no Playwright, no roles.
 
-src/auth/token-manager.js
-js
+#### `src/auth/token-manager.js`
+
+```js
 const { AuthenticationError } = require('./errors');
 
 class TokenManager {
-// All collaborators injected. No role. No file path. No config.
-constructor({ oauth, authorizer, store, credentials, refreshSafetyMs = 60_000 }) {
-this.oauth = oauth;
-this.authorizer = authorizer;
-this.store = store;
-this.credentials = credentials;
-this.refreshSafetyMs = refreshSafetyMs;
-this.inFlight = null;
-}
+  // All collaborators injected. No role. No file path. No config.
+  constructor({ oauth, authorizer, store, credentials, refreshSafetyMs = 60_000 }) {
+    this.oauth = oauth;
+    this.authorizer = authorizer;
+    this.store = store;
+    this.credentials = credentials;
+    this.refreshSafetyMs = refreshSafetyMs;
+    this.inFlight = null;
+  }
 
-async getAccessToken() {
-const cached = this.store.load();
-if (this._isValid(cached)) return cached.accessToken;
+  async getAccessToken() {
+    const cached = this.store.load();
+    if (this._isValid(cached)) return cached.accessToken;
 
     // Deduplicate concurrent calls
     if (!this.inFlight) {
-      this.inFlight = this._acquire().finally(() => { this.inFlight = null; });
+      this.inFlight = this._acquire().finally(() => {
+        this.inFlight = null;
+      });
     }
     return (await this.inFlight).accessToken;
+  }
 
-}
-
-async _acquire() {
-const cached = this.store.load();
+  async _acquire() {
+    const cached = this.store.load();
 
     if (cached?.refreshToken) {
       try {
         const refreshed = await this.oauth.refresh(cached.refreshToken);
         this.store.save(refreshed);
         return refreshed;
-      } catch { /* fall through to full auth */ }
+      } catch {
+        /* fall through to full auth */
+      }
     }
 
     const authReq = this.oauth.createAuthorizationRequest();
@@ -339,50 +392,58 @@ const cached = this.store.load();
       credentials: this.credentials,
     });
     const tokens = await this.oauth.exchangeCode({
-      code, verifier: authReq.verifier,
+      code,
+      verifier: authReq.verifier,
     });
     this.store.save(tokens);
     return tokens;
+  }
 
-}
+  _isValid(t) {
+    if (!t?.accessToken) return false;
+    if (!t.expiresAt) return true;
+    return Date.now() + this.refreshSafetyMs < t.expiresAt;
+  }
 
-_isValid(t) {
-if (!t?.accessToken) return false;
-if (!t.expiresAt) return true;
-return Date.now() + this.refreshSafetyMs < t.expiresAt;
-}
-
-clear() { this.store.clear(); }
+  clear() {
+    this.store.clear();
+  }
 }
 
 module.exports = { TokenManager };
+```
+
 That is the whole design. TokenManager orchestrates; it knows nothing about the wire, the browser, or the file system details.
 
-Part 6 — Where Roles Belong (Not in Auth)
-js
+### Part 6 — Where Roles Belong (Not in Auth)
+
+```js
 // src/config/users.js
 const path = require('path');
 
 const AUTH_DIR = path.resolve(__dirname, '../../auth');
 
 module.exports = {
-admin: {
-username: process.env.OHRM_ADMIN_USERNAME,
-password: process.env.OHRM_ADMIN_PASSWORD,
-tokenFile: path.join(AUTH_DIR, 'admin.token.json'),
-},
-ess: {
-username: process.env.OHRM_ESS_USERNAME,
-password: process.env.OHRM_ESS_PASSWORD,
-tokenFile: path.join(AUTH_DIR, 'ess.token.json'),
-},
+  admin: {
+    username: process.env.OHRM_ADMIN_USERNAME,
+    password: process.env.OHRM_ADMIN_PASSWORD,
+    tokenFile: path.join(AUTH_DIR, 'admin.token.json'),
+  },
+  ess: {
+    username: process.env.OHRM_ESS_USERNAME,
+    password: process.env.OHRM_ESS_PASSWORD,
+    tokenFile: path.join(AUTH_DIR, 'ess.token.json'),
+  },
 };
+```
+
 Roles are a fixture-layer concept. Auth never sees the word "admin."
 
-Part 7 — Composition Root (scripts/obtain-token.js)
+### Part 7 — Composition Root (scripts/obtain-token.js)
+
 One file wires everything. This is the only place that constructs concrete collaborators.
 
-js
+```js
 require('dotenv').config();
 const { OAuthClient } = require('../src/auth/oauth-client');
 const { OAuthAuthorizer } = require('../src/auth/oauth-authorizer');
@@ -391,50 +452,58 @@ const { TokenManager } = require('../src/auth/token-manager');
 const users = require('../src/config/users');
 
 async function main(roleName) {
-const role = users[roleName];
-if (!role) throw new Error(`Unknown role: ${roleName}`);
+  const role = users[roleName];
+  if (!role) throw new Error(`Unknown role: ${roleName}`);
 
-const baseUrl = process.env.OHRM_BASE_URL;
+  const baseUrl = process.env.OHRM_BASE_URL;
 
-const oauth = new OAuthClient({
-authorizationUrl: `${baseUrl}/web/index.php/oauth2/authorize`,
-tokenUrl: `${baseUrl}/web/index.php/oauth2/token`,
-clientId: process.env.OHRM_OAUTH_CLIENT_ID,
-redirectUri: process.env.OHRM_OAUTH_REDIRECT_URI,
-});
+  const oauth = new OAuthClient({
+    authorizationUrl: `${baseUrl}/web/index.php/oauth2/authorize`,
+    tokenUrl: `${baseUrl}/web/index.php/oauth2/token`,
+    clientId: process.env.OHRM_OAUTH_CLIENT_ID,
+    redirectUri: process.env.OHRM_OAUTH_REDIRECT_URI,
+  });
 
-const authorizer = new OAuthAuthorizer({
-callbackHost: 'localhost',
-callbackPort: 9876,
-callbackPath: '/oauth/callback',
-});
+  const authorizer = new OAuthAuthorizer({
+    callbackHost: 'localhost',
+    callbackPort: 9876,
+    callbackPath: '/oauth/callback',
+  });
 
-const store = new FileTokenStore(role.tokenFile);
+  const store = new FileTokenStore(role.tokenFile);
 
-const manager = new TokenManager({
-oauth, authorizer, store,
-credentials: { username: role.username, password: role.password },
-});
+  const manager = new TokenManager({
+    oauth,
+    authorizer,
+    store,
+    credentials: { username: role.username, password: role.password },
+  });
 
-console.log(await manager.getAccessToken());
+  console.log(await manager.getAccessToken());
 }
 
-main(process.argv[2] || 'admin').catch(err => {
-console.error(err);
-process.exit(1);
+main(process.argv[2] || 'admin').catch((err) => {
+  console.error(err);
+  process.exit(1);
 });
-Part 8 — Phase 1 Acceptance Criteria
+```
+
+### Part 8 — Phase 1 Acceptance Criteria
+
 Write these four specs before moving on. They are your regression net for everything else.
 
-# Setup Expected
+#### Setup Expected
 
-1 No token file Full flow: browser → login → consent → write file
-2 Valid token file (expiresAt far future) Returns immediately, no browser
-3 Expired token file, valid refresh_token Calls refresh, writes new file, no browser
-4 Expired token + expired refresh_token Falls back to full flow
-If all four pass, Phase 1 is done.
+| Scenario                                      | Expected behavior                                 |
+| --------------------------------------------- | ------------------------------------------------- |
+| No token file                                 | Full flow: browser → login → consent → write file |
+| Valid token file (`expiresAt` far future)     | Returns immediately, no browser                   |
+| Expired token file with valid `refresh_token` | Calls refresh, writes new file, no browser        |
+| Expired token and expired refresh token       | Falls back to full flow                           |
+| If all four pass, Phase 1 is done.            |
 
-Part 9 — Principles You're Actually Applying (Defensible Naming)
+### Part 9 — Principles You're Actually Applying (Defensible Naming)
+
 SRP — six files, six responsibilities
 
 DIP — TokenManager depends on injected collaborators, not concrete classes
@@ -449,7 +518,8 @@ No speculative generality — no core/, no orangehrm/, no browser/; add folders 
 
 Explicit over implicit — config passed in, not read from globals
 
-Part 10 — Full Project Structure (Phases Ahead, Not Now)
+### Part 10 — Full Project Structure (Phases Ahead, Not Now)
+
 Keep this in mind but do not create folders until you have code for them. Empty folders are lies about progress.
 
 text
@@ -474,7 +544,8 @@ orangehrm-qa/
 └── tests/ # Phase 4+
 Add each folder when the phase begins. Not before.
 
-Part 11 — The Four Guiding Rules You Keep Coming Back To
+### Part 11 — The Four Guiding Rules You Keep Coming Back To
+
 External representation stays at the boundary. Internal representation is yours. (access_token → accessToken, once.)
 
 Each file has one reason to change. (Table in Part 2.)
@@ -483,7 +554,8 @@ Nothing constructs its own dependencies except the composition root. (scripts/ob
 
 No abstraction without a second concrete use case. (Don't add orangehrm/, core/, browser/ until you actually need them.)
 
-Part 12 — What To Do Right Now (Concrete Order)
+### Part 12 — What To Do Right Now (Concrete Order)
+
 Make a fresh folder. npm init -y. Install playwright axios dotenv.
 
 Write .env, .env.example, .gitignore (include auth/*.token.json).
@@ -519,12 +591,15 @@ Build it. Then tell me what broke.
 
 supposed we now know how auth can be compose, what about api client and usage? since it was kind of connected to auth framework
 i also need to have one for api
-Phase 2 — API Client Layer
+
+## Phase 2: API Client Layer
+
 The API client is where the auth framework finally pays off. Phase 1 gave you a TokenManager that yields a valid accessToken on demand. Phase 2 is where you turn that token into HTTP requests against OrangeHRM's /api/v2/... and normalize responses at the boundary — exactly the same discipline you applied in auth.
 
 Here is the decisive plan.
 
-Part 1 — The One Decision That Matters
+### Part 1 — The One Decision That Matters
+
 text
 src/api/
 ├── client.js # HTTP transport + auth + envelope unwrap + error mapping
@@ -533,11 +608,11 @@ src/api/
 ├── resource.js # shared method/path route-group builder
 ├── index.js # createApi composition root
 └── endpoints/
-    ├── admin.js, attendance.js, authentication.js, branding.js, buzz.js
-    ├── claim.js, core.js, dashboard.js, directory.js, employees.js
-    ├── ldap.js, leave.js, maintenance.js, mobile.js, openid.js
-    ├── performance.js, pim.js, recruitment.js, system.js, time.js
-    ├── users.js, workspace-notifications.js
+├── admin.js, attendance.js, authentication.js, branding.js, buzz.js
+├── claim.js, core.js, dashboard.js, directory.js, employees.js
+├── ldap.js, leave.js, maintenance.js, mobile.js, openid.js
+├── performance.js, pim.js, recruitment.js, system.js, time.js
+├── users.js, workspace-notifications.js
 
 The facade covers all **523 HTTP method + path operations** declared in the 23
 plugin `routes.yaml` files in the bundled OrangeHRM 5.9 source archive. It
@@ -545,7 +620,8 @@ excludes non-API file routes and legacy API v1, consistent with `docs/api.md`.
 
 Do not add schemas/, resources/, models/, or contracts/ yet. Those belong to Phase 3 (contract validation) when you actually have a reason to add them.
 
-Part 2 — The Boundaries (This Is the Whole Architecture)
+### Part 2 — The Boundaries (This Is the Whole Architecture)
+
 File Knows About MUST NOT Know About
 errors.js nothing nothing
 envelope.js nothing but JS objects axios, auth, config
@@ -553,7 +629,8 @@ client.js axios, TokenManager (injected), ./envelope, ./errors, base config Play
 endpoints/*.js the client, endpoint paths, param shapes auth, env, axios, envelope shape
 If you ever want to import TokenManager into endpoints/employees.js, stop. If you ever want to import axios into endpoints/employees.js, stop. The endpoint files speak domain language. The client speaks HTTP.
 
-Part 3 — Data Contracts (Freeze These)
+### Part 3 — Data Contracts (Freeze These)
+
 js
 // client.js — public surface
 {
@@ -587,7 +664,9 @@ this.data = data; // error.data (invalidParamKeys, etc.)
 this.raw = raw;
 }
 }
-Part 4 — Concrete File Sketches
+
+### Part 4 — Concrete File Sketches
+
 src/api/errors.js
 js
 class ApiError extends Error {
@@ -852,7 +931,8 @@ _client: client, // escape hatch for tests that need to hit a path directly
 module.exports = { createApi };
 Nowhere else in the framework constructs ApiClient or endpoint classes.
 
-Part 5 — Composition Root (the whole framework so far)
+### Part 5 — Composition Root (the whole framework so far)
+
 scripts/obtain-token.js — Phase 1, unchanged.
 
 Add a second script for smoke-checking the API:
@@ -904,7 +984,8 @@ console.log(JSON.stringify(result, null, 2));
 main().catch(err => { console.error(err); process.exit(1); });
 Run it. If you see { data: [...], meta: { total: N }, rels: [] }, Phase 2 is working.
 
-Part 6 — Error Handling You Actually Care About (from your research)
+### Part 6 — Error Handling You Actually Care About (from your research)
+
 Because your research docs catalogued OrangeHRM's exact error shapes, the API client's error handling must match them. Here's the mapping you get for free from envelope.js:
 
 Case ApiError.code ApiError.status ApiError.data
@@ -927,7 +1008,8 @@ Clean. Explicit. Matches the wire.
 
 One quirk to handle explicitly: invalid Bearer on GET redirects (302) to /auth/login and returns HTML, not JSON. Your interceptor's validateStatus only accepts 2xx, so 302 falls into normalizeError — but there's no error body. The result is ApiError with code: 'UNKNOWN' and status: 302. That's acceptable. If it ever matters, add a specific branch. Don't over-engineer it now.
 
-Part 7 — What Phase 2 Does NOT Do (Yet)
+### Part 7 — What Phase 2 Does NOT Do (Yet)
+
 No schema validation. You have schemas/ in your old tree. Don't add it yet. When you have three endpoints that need response-shape assertions, add src/api/schemas/ with an AJV wrapper. Not before.
 
 No retries. OrangeHRM's APIs are idempotent enough that retries hurt more than help. Add retries when you have a flaky endpoint, not speculatively.
@@ -942,7 +1024,8 @@ No GraphQL / Batch. Not relevant to OrangeHRM.
 
 Each of these is a "later" that you'll know you need because a test will fail. Add them then.
 
-Part 8 — The Layers as They Now Stand
+### Part 8 — The Layers as They Now Stand
+
 text
 ┌─────────────────────────────────────────────────┐
 │ tests/ (Phase 4+) │
@@ -974,7 +1057,8 @@ text
 └─────────────────────────────────────────────────┘
 The whole stack composes from two roots: scripts/obtain-token.js (auth only) and src/api/index.js (auth + API). No other file constructs anything.
 
-Part 9 — Consistency With Phase 1 (Same Rules, Applied Again)
+### Part 9 — Consistency With Phase 1 (Same Rules, Applied Again)
+
 Principle from Phase 1 Phase 2 Application
 External representation at the boundary {data, meta, rels} and {error: {...}} die inside envelope.js
 Camel-case internally ApiError.code, ApiError.status — never error_description, never invalidParamKeys outside data
@@ -983,7 +1067,9 @@ No construction outside composition root Only src/api/index.js builds the client
 Injected dependencies TokenManager is passed in, never imported by the client
 No speculative generality No retries, no schemas, no caches until a test fails
 Playwright never in infrastructure API layer is pure Node + axios; runs in scripts, CI, and tests
-Part 10 — Phase 2 Verification
+
+### Part 10 — Phase 2 Verification
+
 Run the isolated client and boundary tests with `npm test -- tests/api.spec.js`. They use a local HTTP server and do not require OrangeHRM credentials.
 
 Run `npm run api:smoke -- admin` (or `npm run api:smoke -- ess`) to verify the complete OAuth + API composition against a configured OrangeHRM instance. This smoke check lists up to five employees; it does not create or delete data.
@@ -995,7 +1081,8 @@ authentication failure propagation.
 
 Stop here. Do not add schemas, retries, or other speculative API infrastructure.
 
-Part 11 — Naming the Whole Thing (for your own defense)
+### Part 11 — Naming the Whole Thing (for your own defense)
+
 SRP — client.js transports; envelope.js normalizes; errors.js types; endpoints/* speaks domain.
 
 DIP — ApiClient depends on a TokenManager interface (getAccessToken()), not a concrete class.
@@ -1024,7 +1111,9 @@ You will never think about axios, access_token, Content-Type, or the {error: {st
 Build it. Tell me what breaks.
 
 supposed we now know how auth and api can be compose, what about db client framework
-Phase 3 — Database Client Framework
+
+## Phase 3: Database Client Framework
+
 DB is the third layer and it's structurally different from auth and API in one important way: it does not depend on auth. It's a leaf. It authenticates with credentials that come from src/config/env.js, and it exposes queries. That makes it simpler than API, not harder.
 
 But it also carries two risks you must design against:
@@ -1035,7 +1124,8 @@ Scope risk — the DB layer must not become an ORM. OrangeHRM has 150+ tables, t
 
 Here's the decisive plan.
 
-Part 1 — The One Decision That Matters
+### Part 1 — The One Decision That Matters
+
 text
 src/db/
 ├── pool.js # mysql2 pool + connection lifecycle
@@ -1053,7 +1143,8 @@ Six files, same flat shape as auth/ and api/. Same composition-root discipline. 
 
 Do not add migrations/, models/, entities/, schemas/, or orm/. OrangeHRM owns the schema. Your job is to read and write the subset that tests require.
 
-Part 2 — The Boundaries (This Is the Whole Architecture)
+### Part 2 — The Boundaries (This Is the Whole Architecture)
+
 File Knows About MUST NOT Know About
 errors.js nothing nothing
 row.js nothing but JS objects mysql2, config, auth
@@ -1064,7 +1155,8 @@ Repositories speak SQL and table names. The client speaks SQL and parameters. Th
 
 If you ever want to import the API client into a repository, stop. If you ever want to import TokenManager, stop. DB is a leaf layer. It has no downstream dependencies on auth or API.
 
-Part 3 — Data Contracts (Freeze These)
+### Part 3 — Data Contracts (Freeze These)
+
 js
 // pool.js
 createPool({ host, port, user, password, database, connectionLimit }) → mysql2.Pool
@@ -1107,7 +1199,8 @@ this.raw = raw;
 }
 The sql, params, sqlState, and sqlMessage fields are what make DB failures diagnosable. Do not skip them.
 
-Part 4 — Concrete File Sketches
+### Part 4 — Concrete File Sketches
+
 src/db/errors.js
 js
 const MYSQL_CODE_MAP = {
@@ -1418,7 +1511,8 @@ async close() { await client.close(); },
 module.exports = { createDb };
 One function. One pool. One client. Repositories hang off it.
 
-Part 5 — Composition Root (the whole framework so far)
+### Part 5 — Composition Root (the whole framework so far)
+
 text
 scripts/
 ├── obtain-token.js # Phase 1 composition root (auth only)
@@ -1455,7 +1549,8 @@ await db.close();
 main().catch(err => { console.error(err); process.exit(1); });
 Run it. If you see employee count and the Admin/ESS/Supervisor permission rows from your research, Phase 3 is working.
 
-Part 6 — The Rule That Keeps DB From Becoming a Hidden Dependency
+### Part 6 — The Rule That Keeps DB From Becoming a Hidden Dependency
+
 This is the most important thing in Phase 3, more important than any code.
 
 The DB client must never be auto-injected into a test by default.
@@ -1503,7 +1598,8 @@ Nothing about db leaks into tests that don't request it. The pool is not created
 
 Tests that request db are visibly doing so at the top. A reviewer sees test('...', async ({ db }) => ...) and immediately knows this test touches the DB. That's the point.
 
-Part 7 — What Phase 3 Does NOT Do (Yet)
+### Part 7 — What Phase 3 Does NOT Do (Yet)
+
 No migrations. The schema is OrangeHRM's. If you need schema variants, that's a Phase 4+ problem.
 
 No ORM. No entity classes. No relation loading. No lazy associations. Every query is explicit SQL.
@@ -1522,7 +1618,8 @@ No connection retries. If the DB is down at startup, fail fast.
 
 Each of these is a "later" that a test will earn for you.
 
-Part 8 — The Layers as They Now Stand
+### Part 8 — The Layers as They Now Stand
+
 text
 ┌──────────────────────────────────────────────────┐
 │ tests/ (Phase 4+) │
@@ -1555,7 +1652,8 @@ text
 └────────────────────────────────────────────┘
 Two independent leaf stacks. API depends on auth. DB depends on nothing but mysql2. UI (Phase 4) depends on both. That is the whole architecture.
 
-Part 9 — Consistency Across the Three Phases
+### Part 9 — Consistency Across the Three Phases
+
 Principle Auth (Phase 1) API (Phase 2) DB (Phase 3)
 One reason to change per file ✅ ✅ ✅
 Boundary translation once ✅ snake_case in _normalize ✅ envelope in envelope.js ✅ toCamel opt-in
@@ -1567,7 +1665,8 @@ Error taxonomy ✅ AuthenticationError ✅ ApiError ✅ DbError
 No hidden deps in tests n/a ✅ ✅ (explicit opt-in)
 That table is the whole point of doing this in phases: the shape repeats, so the mental model transfers. You solved auth once, and now API and DB are the same problem with different payloads.
 
-Part 10 — Phase 3 Implementation and Verification
+### Part 10 — Phase 3 Implementation and Verification
+
 The initial DB layer is implemented in src/db/. It includes the MySQL pool, query client and transactions, DB error normalization, opt-in row conversion, and the employees and permissions repositories. scripts/db-smoke.js composes the layer without auth or API dependencies.
 
 Run npm run db:smoke to verify that:
@@ -1582,7 +1681,8 @@ Run npx playwright test tests/db.spec.js for the focused client and row-helper t
 
 Stop here for Phase 3. Do not add cleanup helpers, migrations, or ORM features until Phase 4 needs them.
 
-Part 11 — Naming the Whole Thing (for your own defense)
+### Part 11 — Naming the Whole Thing (for your own defense)
+
 SRP — pool connection lifecycle, client query interface, row translation, and repositories are four different concerns.
 
 DIP — DbClient depends on a pool object with getConnection / end, not on mysql2.
@@ -1609,14 +1709,17 @@ All three share the same answer shape: inject dependencies, translate at the bou
 Build it. Tell me what breaks.
 
 supposed we now know how auth and api and db can be compose, what about front end/oxd component framework
-Phase 4 — UI / OXD Component Framework
+
+## Phase 4: UI and OXD Component Framework
+
 This is the phase where everything you've read in the frontend research doc gets turned into something a test can actually use. It's also the phase that will tempt you to over-build the most, because OXD has 61 components, three table components, four select/autocomplete variants, custom date pickers, and the notorious "label without for" quirk. If you try to write a class per component, you will end up with 61 files of shims, and you will have built the exact thing your principles forbid: a framework for the sake of the framework.
 
 The decisive answer is: don't wrap components. Wrap behaviors.
 
 Here's the plan.
 
-Part 1 — The One Decision That Matters
+### Part 1 — The One Decision That Matters
+
 text
 src/ui/
 ├── selectors.js # one file: every stable selector string, keyed by name
@@ -1648,7 +1751,8 @@ Six components, seven pages, four UI-only workflows. That's a Phase 4 that stays
 
 Cross-layer business workflows live in a separate `src/workflows/` layer. They receive the existing API, DB, and UI interfaces; no UI page or component imports API or DB code.
 
-Part 2 — The Boundaries (This Is the Whole Architecture)
+### Part 2 — The Boundaries (This Is the Whole Architecture)
+
 File Knows About MUST NOT Know About
 selectors.js OXD DOM classes, roles, data-* attributes from the frontend doc pages, workflows, business meaning, HTTP
 base-page.js page, selectors API, DB, auth, other pages
@@ -1660,7 +1764,8 @@ Rule of thumb that will save you: components never import pages. Pages never imp
 
 And: no UI file imports src/api/ or src/db/. UI speaks DOM. Cross-layer coordination belongs in `src/workflows/`, not in page objects.
 
-Part 3 — Data Contracts (Freeze These)
+### Part 3 — Data Contracts (Freeze These)
+
 js
 // components/oxd-table.js
 {
@@ -1720,7 +1825,8 @@ goto() → Promise<void>
 }
 Every component's return values are either a Promise<void>, a Locator, or a primitive. Nothing returns raw DOM. Nothing returns an ElementHandle. That rule is what keeps the UI layer replaceable.
 
-Part 4 — Concrete File Sketches
+### Part 4 — Concrete File Sketches
+
 src/ui/selectors.js
 One file. Every stable selector from the frontend doc. This is the file that changes when OXD changes. Everything else uses it symbolically.
 
@@ -2323,7 +2429,8 @@ await ui.components.table.waitForRowCount(4);
 await ui.components.toast.waitForSuccess();
 Notice what's not there: no new EmployeeListPage(page), no page.locator('.oxd-table-card'), no waitForTimeout. That's what the composition root buys you.
 
-Part 5 — The One Rule That Keeps This From Becoming the Framework Monster
+### Part 5 — The One Rule That Keeps This From Becoming the Framework Monster
+
 If a component method is called from exactly one page, it is not a component method — it's a page method.
 
 Wrapping a component is justified only when at least two pages share the interaction. OxdTable, OxdDialog, OxdToast, OxdForm, OxdSelect, OxdDatePicker — those six patterns appear on every list/form/detail page. OxdPagination, OxdTab, OxdTreeView, OxdDropdownMenu — do not add these as components until a second page needs them.
@@ -2339,7 +2446,8 @@ OxdDialog Delete confirmation Every confirm in the app
 OxdToast Every action Every action
 You add the seventh component only when the second concrete use case appears. Until then, put the method on the page that needs it.
 
-Part 6 — The Frontend-Doc Quirks, Handled Once and Only Once
+### Part 6 — The Frontend-Doc Quirks, Handled Once and Only Once
+
 Your frontend research doc catalogued these. Each one lives in exactly one place in this framework. That's the point.
 
 Quirk Handled In
@@ -2356,7 +2464,8 @@ unselectableEmpNumbers hides the checkbox Documented; test asserts on presence, 
 Only first error per field shown OxdForm.errorFor() returns a single string or null
 Each quirk is one place. If OXD changes, you update one entry in selectors.js or one method in a component. That's the whole point of the layer.
 
-Part 7 — What Phase 4 Does NOT Do (Yet)
+### Part 7 — What Phase 4 Does NOT Do (Yet)
+
 No page object per screen the tests don't touch. You have six pages. The app has ~80 screens. Add pages as tests need them, one at a time.
 
 No component per OXD export. Six components. OXD has 61. If you tried to wrap all 61, you'd have 61 files of shims and you'd rebuild Playwright's own locators.
@@ -2377,7 +2486,8 @@ No custom expect extensions yet. Add one when the same three-line assertion appe
 
 Each of these is a "later" that a specific test earns for you.
 
-Part 8 — The Full Framework as It Now Stands
+### Part 8 — The Full Framework as It Now Stands
+
 text
 scripts/
 ├── obtain-token.js # Phase 1
@@ -2427,7 +2537,8 @@ UI's boundary: selectors.js
 
 Change OXD → touch one file. Change envelope → touch one file. Change auth wire format → touch one file. That is the whole architecture.
 
-Part 9 — Consistency Across the Four Phases
+### Part 9 — Consistency Across the Four Phases
+
 Principle Auth API DB UI
 One reason to change per file ✅ ✅ ✅ ✅
 Boundary translation once ✅ ✅ ✅ ✅ selectors.js
@@ -2439,7 +2550,8 @@ Error taxonomy ✅ ✅ ✅ ✗ (Playwright's native errors suffice)
 Named for the question they answer ✅ ✅ ✅ ✅ page/workflow methods
 The same shape repeats four times. If you can hold one of these layers in your head, you can hold all four.
 
-Part 10 — Phase 4 Implementation and Verification
+### Part 10 — Phase 4 Implementation and Verification
+
 The Phase 4 UI layer is implemented under src/ui/: centralized selectors, a navigation base page, six reusable OXD interaction components, six page objects, four UI-only workflows, and the createUi composition root. The isolated UI tests are in tests/framework/ui.spec.js, and the viewport is fixed at 1280×900 so desktop OXD table headers are available.
 
 The isolated UI regression suite covers selector construction, page navigation, each component's public interactions, all page/workflow entry points, and invalid-input behavior without requiring a running OrangeHRM server:
@@ -2459,7 +2571,8 @@ npm run test:live
 
 Create `.env` from `.env.example`, start the documented Compose services, configure the Admin and ESS credentials, OAuth client, and database connection, then run the command. The suite checks real Admin and ESS UI login, authenticated employee API reads, ESS row-level authorization, unauthenticated API rejection, API-to-database employee consistency, and a read-only database transaction. It creates or deletes no business records. Normal login audit events are produced by the application. The focused `npm test` regression suite remains independent of a running instance.
 
-Part 11 — Naming the Whole Thing (for Your Own Defense)
+### Part 11 — Naming the Whole Thing (for Your Own Defense)
+
 SRP — selectors, base navigation, one component per interaction pattern, one page per screen, one workflow per business flow.
 
 DIP — pages depend on components (injected in the constructor); components depend on page (injected).
@@ -2497,15 +2610,13 @@ const db = createDb({ /* from env */ });
 const ui = createUi(page, baseUrl);
 
 const employee = await createEmployeeLifecycle({
-  api,
-  db,
-  ui,
-  employee: { firstName: 'X', lastName: 'Y', employeeId: 'QA1234ABCD' },
-  owner: testInfo.testId,
-  updatedMiddleName: 'Workflow',
+api,
+db,
+ui,
+employee: { firstName: 'X', lastName: 'Y', employeeId: 'QA1234ABCD' },
+owner: testInfo.testId,
+updatedMiddleName: 'Workflow',
 });
 expect(employee.employee.middleName).toBe('Workflow');
 
 The workflow owns composition for one business scenario. Auth, API, DB, and UI remain independently replaceable and honest about what they know.
-
-Build it. Tell me what breaks.

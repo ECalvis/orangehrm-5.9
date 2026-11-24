@@ -4,6 +4,21 @@
 
 Every claim is traceable to a specific file, a pasted `app.js` trace, or a DB row. Version discipline is enforced: **OXD is locked to 2.0.3**; the main-app version is **OrangeHRM 5.9.0**. Items that could not be verified are listed explicitly in §11.
 
+## Contents
+
+- [Scope](#1-scope)
+- [What It Is](#2-what-it-is)
+- [OrangeHRM 5.9 Behavior](#3-orangehrm-59-behavior)
+- [Architecture](#4-architecture)
+- [Important Concepts](#5-important-concepts)
+- [Objects, Components, and Entities](#6-important-objects--components--endpoints--entities)
+- [Relationships to Other Layers](#7-relationships-to-other-orangehrm-layers)
+- [Testing Implications](#8-testing-implications)
+- [Known Quirks](#9-known-quirks--gotchas)
+- [Version-Specific Notes](#10-version-specific-notes)
+- [Facts, Inferences, and Assumptions](#11-facts-vs-inferences-vs-assumptions)
+- [Sources](#12-sources)
+
 ---
 
 ## 1. Scope
@@ -63,6 +78,8 @@ The architecture was introduced in OrangeHRM 5.0 and is shared by all 5.x versio
 ### 3.2 Application structure (FACT)
 
 Frontend source lives under `src/client/src/`:
+
+```text
 src/client/src/
 ├── core/ # Shared infrastructure
 │ ├── components/ # Reusable core components
@@ -73,9 +90,6 @@ src/client/src/
 ├── orangehrm{Module}Plugin/ # One directory per functional module
 │ ├── components/ # Module-specific components
 │ └── pages/ # Module page components
-
-```text
-
 ```
 
 Modules follow the naming pattern `orangehrmPimPlugin`, `orangehrmLeavePlugin`, `orangehrmAdminPlugin`, `orangehrmClaimPlugin`, `orangehrmRecruitmentPlugin`, `orangehrmTimePlugin`, `orangehrmPerformancePlugin`, `orangehrmAuthenticationPlugin`, `orangehrmBuzzPlugin`, `orangehrmDashboardPlugin`.
@@ -84,10 +98,12 @@ Modules follow the naming pattern `orangehrmPimPlugin`, `orangehrmLeavePlugin`, 
 
 Routes are defined **server-side** in Symfony `routes.yaml` files (one per plugin). Each route maps a URL path to a PHP controller method. That controller (typically extending `AbstractVueController`) sets the Vue component to render:
 
-````php
+```php
 $component = new Component('x-widget-list');
 $this->setComponent($component);
-The Vue page component lives at src/client/src/orangehrm{X}Plugin/pages/widget-list/WidgetList.vue and is registered in src/client/src/pages.ts.
+```
+
+The Vue page component lives at `src/client/src/orangehrm{X}Plugin/pages/widget-list/WidgetList.vue` and is registered in `src/client/src/pages.ts`.
 
 Client-side navigation is accomplished via two helpers in the main app:
 
@@ -97,22 +113,24 @@ reloadPage() — calls window.location.reload(). Called on any 401 response by A
 
 There is no client-side route table; the browser navigates to a URL and the server renders the appropriate shell.
 
-3.4 API communication (FACT)
+### 3.4 API communication (FACT)
+
 All frontend-to-backend data flow goes through a single APIService class. It is an Axios wrapper.
 
 Constructor: new APIService(baseUrl, path) — baseUrl is window.appGlobal.baseUrl; path is the API endpoint path (e.g. /api/v2/pim/employees).
 
 Methods:
 
-Method	HTTP	URL
-getAll(params?)	GET	this._apiSection
-get(id, params?)	GET	${this._apiSection}/${id}
-create(data)	POST	this._apiSection
-update(id, data)	PUT	${this._apiSection}/${id}
-delete(id)	DELETE	${this._apiSection}/${id}
-deleteAll(data?)	DELETE	this._apiSection (body in data)
-request(options)	any	this._apiSection + options
-Headers:
+| Method             | HTTP   | URL                                 |
+| ------------------ | ------ | ----------------------------------- |
+| `getAll(params?)`  | GET    | `this._apiSection`                  |
+| `get(id, params?)` | GET    | `${this._apiSection}/${id}`         |
+| `create(data)`     | POST   | `this._apiSection`                  |
+| `update(id, data)` | PUT    | `${this._apiSection}/${id}`         |
+| `delete(id)`       | DELETE | `${this._apiSection}/${id}`         |
+| `deleteAll(data?)` | DELETE | `this._apiSection` (body in `data`) |
+| `request(options)` | any    | `this._apiSection + options`        |
+| Headers:           |
 
 getAll sets Content-Type: application/json, Accept: application/json, Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0.
 
@@ -130,7 +148,8 @@ Other errors → $toast.unexpectedError(response?.error.message) (using the Oran
 
 ETag caching (non-development only): if process.env.NODE_ENV !== 'development', the service attaches If-None-Match from a cached ETag and, on 304, resolves with the cached body as a 200. This caching is disabled in dev mode.
 
-3.5 State management (FACT)
+### 3.5 State management (FACT)
+
 There is no Vuex or Pinia. State is managed through:
 
 Local component state — ref, reactive, Options API data().
@@ -145,10 +164,11 @@ Event bus (mitt) — for the card table's internal cell ↔ header ↔ row commu
 
 There is no cross-page caching of entity data. Each page fetches on mount.
 
-3.6 Forms (FACT)
+### 3.6 Forms (FACT)
+
 Forms use OXD components in a nested pattern:
 
-vue
+```vue
 <oxd-form @submit-valid="filterItems" @reset="filterItems">
   <oxd-form-row>
     <oxd-grid :cols="4" class="orangehrm-full-width-grid">
@@ -163,6 +183,8 @@ vue
     <oxd-button display-type="secondary" label="Search" type="submit" />
   </oxd-form-actions>
 </oxd-form>
+```
+
 OxdForm (Form.vue):
 
 Root is a real <form class="oxd-form" novalidate>.
@@ -179,7 +201,8 @@ isFormBusy blocks submit while any field is processing or the form is loading.
 
 OxdFormRow, OxdFormActions, OxdDivider — layout primitives. OxdGrid + OxdGridItem provide the responsive column grid (.oxd-grid-{cols}, .oxd-grid-item, --gutters).
 
-3.7 Validation (FACT)
+### 3.7 Validation (FACT)
+
 Validation lives in three composables.
 
 useFormValidation(isLoading) — provides a form context via formKey (a Symbol('form')):
@@ -214,7 +237,8 @@ Rule signature: (value?: any) => string | boolean | Promise<string | boolean>.
 
 Required + typing hint: OxdInputField shows * when required is true (class .oxd-input-field-required), and the message text when hasError is true (class .oxd-input-field-error-message).
 
-3.8 Tables / data grids (FACT)
+### 3.8 Tables / data grids (FACT)
+
 Three table components exist.
 
 OxdCardTable (primary list views — PIM, Leave, Admin, Claim, Recruitment, Time, Performance, Buzz):
@@ -263,7 +287,8 @@ Footer text: .oxd-text--footer.
 
 Pagination: OxdPagination.
 
-3.9 Inputs (FACT)
+### 3.9 Inputs (FACT)
+
 Every input type is wrapped by OxdInputField, which:
 
 Renders an <oxd-input-group> (label + input + message).
@@ -278,21 +303,24 @@ Uses useField for validation.
 
 Input DOM summary:
 
-Type	DOM root	Notes
-Text	input.oxd-input	Native <input>
-Textarea	textarea.oxd-textarea	Native <textarea>
-Password	input.oxd-input (inside PasswordInput)	With password-strength-indicator chip
-Checkbox	input[type=checkbox] inside .oxd-checkbox-wrapper > label	Label wraps input → getByLabel works
-Radio	input[type=radio] inside .oxd-radio-wrapper > label	Label wraps input → getByLabel works
-Switch	input[type=checkbox] inside .oxd-switch-wrapper > label	Visual is a <span>; native element is a checkbox
-Select	<div class="oxd-select-text-input" tabindex="0">	NOT a native <select>
-MultiSelect	Same trigger as select; chips in .oxd-multiselect-chips-area	Selected values shown as .oxd-chip
-Autocomplete	<input> inside .oxd-autocomplete-text-input	800ms debounce; options in .oxd-autocomplete-dropdown with role="listbox"
-Date	input.oxd-input inside .oxd-date-wrapper	Picker opens on click; shortcut links Today/Clear/Close
-Time	input.oxd-input inside .oxd-time-wrapper	Displays hh:mm a; stores HH:mm; AM/PM radios in picker
-File	<input type="file" class="oxd-file-input"> (hidden) + .oxd-file-div (visible)	Playwright setInputFiles() targets the hidden input
-Color	<div class="oxd-color-input"> with preview swatch	Picker uses canvas palette, hue slider, HEX input
-3.10 Dialogs, modals, toasts, alerts (FACT)
+| Type         | DOM root                                                                        | Notes                                                                       |
+| ------------ | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Text         | `input.oxd-input`                                                               | Native `<input>`                                                            |
+| Textarea     | `textarea.oxd-textarea`                                                         | Native `<textarea>`                                                         |
+| Password     | `input.oxd-input` (inside PasswordInput)                                        | With password-strength-indicator chip                                       |
+| Checkbox     | `input[type=checkbox]` inside `.oxd-checkbox-wrapper > label`                   | Label wraps input → `getByLabel` works                                      |
+| Radio        | `input[type=radio]` inside `.oxd-radio-wrapper > label`                         | Label wraps input → `getByLabel` works                                      |
+| Switch       | `input[type=checkbox]` inside `.oxd-switch-wrapper > label`                     | Visual is a `<span>`; native element is a checkbox                          |
+| Select       | `<div class="oxd-select-text-input" tabindex="0">`                              | Not a native `<select>`                                                     |
+| MultiSelect  | Same trigger as select; chips in `.oxd-multiselect-chips-area`                  | Selected values shown as `.oxd-chip`                                        |
+| Autocomplete | `<input>` inside `.oxd-autocomplete-text-input`                                 | 800ms debounce; options in `.oxd-autocomplete-dropdown` with role `listbox` |
+| Date         | `input.oxd-input` inside `.oxd-date-wrapper`                                    | Picker opens on click; shortcut links Today/Clear/Close                     |
+| Time         | `input.oxd-input` inside `.oxd-time-wrapper`                                    | Displays hh:mm a; stores HH:mm; AM/PM radios in picker                      |
+| File         | Hidden `<input type="file" class="oxd-file-input">` and visible `.oxd-file-div` | Playwright `setInputFiles()` targets the hidden input                       |
+| Color        | `<div class="oxd-color-input">` with preview swatch                             | Picker uses canvas palette, hue slider, HEX input                           |
+
+### 3.10 Dialogs, modals, toasts, alerts (FACT)
+
 OxdDialog: wrapper around <oxd-overlay role="dialog"> → <oxd-sheet class="oxd-dialog-sheet"> → <oxd-dialog-close-button class="oxd-dialog-close-button-position">. Root container class .oxd-dialog-container-default. Dismisses on overlay click unless persistent.
 
 OxdOverlay: <div role="dialog" class="oxd-overlay oxd-overlay--flex oxd-overlay--flex-centered">.
@@ -311,18 +339,21 @@ App-level $toast API (in app.js, not OXD): notify, show, success, error, info, w
 
 Dialogs in the main app: DeleteConfirmationDialog and ConfirmationDialog — teleported to #app, expose a showDialog() Promise resolving 'ok' or 'cancel'. Delete dialog buttons: general.no_cancel, general.yes_delete.
 
-3.11 Navigation (FACT)
+### 3.11 Navigation (FACT)
+
 Sidepanel: <aside class="oxd-sidepanel" :class="{toggled}"> > <nav class="oxd-navbar-nav" role="navigation" aria-label="Sidepanel"> > .oxd-sidepanel-header (with branding and close button) + .oxd-sidepanel-body > <oxd-main-menu>.
 
 OxdMainMenu renders .oxd-main-menu with a search input filtering by regex on item.name, and <ul class="oxd-main-menu"> containing <oxd-main-menu-item> per entry. Each item is:
 
-vue
+```vue
 <li class="oxd-main-menu-item-wrapper">
   <a :class="{ 'oxd-main-menu-item': true, active, toggle }" :href="url">
     <oxd-icon :name="icon" class="oxd-main-menu-item--icon" />
     <oxd-text class="oxd-main-menu-item--name">{{ name }}</oxd-text>
   </a>
 </li>
+```
+
 Menu items are real <a href="..."> links. Navigation triggers a full page load.
 
 Menu items are passed via the menuItems prop, populated server-side. The frontend does not filter by permission; permission filtering happens before menuItems reaches the sidepanel.
@@ -341,14 +372,16 @@ Sub-menu links have role="menuitem" and class .oxd-topbar-body-nav-tab-link.
 
 Navigation uses window.location.replace(item.url) — full page navigation.
 
-3.12 Loading states (FACT)
+### 3.12 Loading states (FACT)
+
 Form-level: .oxd-form-loader inside OxdForm, containing <oxd-loading-spinner>.
 
 Table-level: .oxd-table-loader inside OxdCardTable when loading is true.
 
 Spinner: .oxd-loading-spinner (inner) inside .oxd-loading-spinner-container (or --block when withContainer is false).
 
-3.13 Errors (FACT)
+### 3.13 Errors (FACT)
+
 API errors: handled by APIService response interceptor. 401 → reloadPage(). 422/400 with ignore-path → suppressed; rejected with error.response. Other errors → $toast.unexpectedError(response?.error.message).
 
 Validation errors: rendered inline by OxdInputGroup as <oxd-text> with class .oxd-input-group__message.oxd-input-field-error-message. Only the first error per field is shown.
@@ -357,7 +390,8 @@ Validation errors: rendered inline by OxdInputGroup as <oxd-text> with class .ox
 
 400 page: BadRequest.vue renders <oxd-alert type="warn" :message="$t('general.bad_request')">.
 
-3.14 Success messages (FACT)
+### 3.14 Success messages (FACT)
+
 Success messages are rendered as toasts.
 
 EmployeeList.vue calls $toast.deleteSuccess() after a delete; $toast.cannotDelete() when a row is undeletable.
@@ -366,16 +400,21 @@ The toast component has stable classes .oxd-toast--success etc.
 
 The exact text of each $toast.X() method lives in the app's toast service (NOT VERIFIED).
 
-3.15 Permissions (FACT)
+### 3.15 Permissions (FACT)
+
 Frontend permission rendering uses a $can global:
 
-vue
+```vue
 <div v-if="$can.create('employee_list')"> ... </div>
 <oxd-card-table :selectable="$can.delete('employee_list')" ... />
-js
+```
+
+```js
 if (this.$can.delete('employee_list') && !this.unselectableEmpNumbers.includes(row.id)) {
   // render delete icon
 }
+```
+
 The screen identifier is a string key (e.g. 'employee_list').
 
 $can.create / $can.delete are the frontend gates. The backend gate is EmployeeController::preRender(), which supplies canCreate and canDelete from the workflow state machine.
@@ -388,20 +427,24 @@ Direct URL access to a forbidden screen produces a 403 page rendered server-side
 
 v-if removes elements from the DOM entirely — permission assertions must be made against element presence, not CSS visibility.
 
-3.16 API ↔ frontend relationship (FACT)
+### 3.16 API ↔ frontend relationship (FACT)
+
 Every API call is made through APIService. Endpoints follow /api/v2/{module}/{resource}. The frontend never accesses the database directly. The API request/response format is defined by the backend ({data, meta, rels} for success; {error: {status, message, data?}} for errors).
 
-Live trace: the SPA at /web/index.php/pim/viewEmployeeList issues:
+Live trace: the SPA at `/web/index.php/pim/viewEmployeeList` issues:
 
-http
+```http
 GET /web/index.php/api/v2/pim/employees?limit=50&offset=0&model=detailed&includeEmployees=onlyCurrent&sortField=employee.firstName&sortOrder=ASC
 Accept: application/json
 Cookie: _orangehrm=...
 → 200 OK, {"data": [...], "meta": {"total": 2}, "rels": []}
-3.17 usePaginate (FACT)
+```
+
+### 3.17 usePaginate (FACT)
+
 Composable used by list pages. Default options:
 
-js
+```js
 {
   query: {},
   normalizer: identity,
@@ -409,6 +452,8 @@ js
   toastNoRecords: true,
   pageSize: 50,
 }
+```
+
 Behavior:
 
 currentPage starts at 1.
@@ -429,23 +474,27 @@ On total === 0, calls $toast.noRecordsFound() (if toastNoRecords).
 
 Watches currentPage and re-fetches.
 
-3.18 useResponsive and breakpoints (FACT)
+### 3.18 useResponsive and breakpoints (FACT)
+
 useResponsive returns reactive {windowWidth, windowHeight, screenType}, updated on mount and resize.
 
 Breakpoints:
 
-Device	Min	Max
-xs	0	599
-sm	600	799
-md	800	999
-lg	1000	1199
-xl	1200	4000
-DEVICE_LG and DEVICE_XL are the desktop breakpoints. Tables render the header and desktop layout only on these. Below lg, the table uses the mobile card layout and the table filter is collapsed by default.
+| Device                                                                                                                                                                                                        |  Min |  Max |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---: | ---: |
+| xs                                                                                                                                                                                                            |    0 |  599 |
+| sm                                                                                                                                                                                                            |  600 |  799 |
+| md                                                                                                                                                                                                            |  800 |  999 |
+| lg                                                                                                                                                                                                            | 1000 | 1199 |
+| xl                                                                                                                                                                                                            | 1200 | 4000 |
+| DEVICE_LG and DEVICE_XL are the desktop breakpoints. Tables render the header and desktop layout only on these. Below lg, the table uses the mobile card layout and the table filter is collapsed by default. |
 
-3.19 usei18n (FACT)
+### 3.19 usei18n (FACT)
+
 usei18n returns a t(key, fallback) function that looks up key in the app's config (getConfig('language')) and falls back to fallback when the key is absent. Translation files are loaded from app config — the translation text may differ from the key.
 
-3.20 navigate and reloadPage (FACT)
+### 3.20 navigate and reloadPage (FACT)
+
 From the main app's navigation.ts (bundled into app.js):
 
 buildUrl(path, pathParams, queryParams) — replaces {name} placeholders in path with pathParams[name]; appends query params (arrays as key[]=v).
@@ -456,8 +505,10 @@ reloadPage() — window.location.reload().
 
 Every navigation in OrangeHRM triggers a full page load.
 
-4. Architecture
-4.1 High-level
+## 4. Architecture
+
+### 4.1 High-level
+
 ```text
 Browser
   │
@@ -473,9 +524,11 @@ Browser
         ├── Symfony routes.yaml (page routing)
         ├── AbstractVueController (renders Vue component shell)
         └── REST API Controllers (JSON responses)
-4.2 Page lifecycle
+```
+
+### 4.2 Page lifecycle
+
 Browser requests a page URL (e.g. /web/index.php/pim/viewEmployeeList).
-````
 
 Symfony router matches routes.yaml entry.
 
@@ -493,7 +546,8 @@ Page component onMounted → calls APIService to fetch data.
 
 User interactions → component state updates → API calls → UI updates.
 
-4.3 Form lifecycle
+### 4.3 Form lifecycle
+
 OxdForm calls useFormValidation(isLoading), which provide()s a FormAPI under formKey.
 
 Each OxdInputField calls useField({fieldLabel, rules, modelValue, onReset, disabled}).
@@ -508,7 +562,8 @@ On form submit, OxdForm.validate() runs all registered field validate() calls in
 
 On reset, each field calls its reset(), which resets state and restarts the watcher.
 
-4.4 Card table lifecycle
+### 4.4 Card table lifecycle
+
 Page passes headers and items to OxdCardTable.
 
 OxdCardTable generates a nanoid(8) tableId and provide()s tableProps and screenState via injection keys.
@@ -525,27 +580,32 @@ Row clicks, checkbox changes, select-all, and sort all emit through the mitt eve
 
 CardTable.vue listens to the bus and re-emits as public Vue events (update:selected, update:order, click, clickCheckbox, update:selectAll).
 
-5. Important Concepts
-   Concept Description
-   OXD Orange eXperience Design — the Vue 3 component library used throughout the app.
-   AbstractVueController PHP base class for page controllers. Sets the Vue component to render.
-   APIService Centralized Axios wrapper for all API calls.
-   Screen permission DB-backed (role × screen × CRUD). Controls page access and menu visibility. Enforced server-side on page load.
-   $can global Frontend permission object with methods like .create(screen), .delete(screen). Gates UI element rendering.
-   unselectableEmpNumbers Server-provided prop listing empNumbers whose per-row delete is blocked.
-   useFormValidation Form-level state manager providing formKey.
-   useField Field-level registration, validation, and reset.
-   errorbag Array of {cid, errors} entries managed by the form.
-   cid nanoid() identifier assigned per field; used to look up errors.
-   tableProps Injection key providing table configuration to header/body/cell components.
-   screenState Injection key providing responsive screen type to components.
-   Event bus (mitt) Internal table communication bus, scoped by tableId.
-   Toast types default, success, warn, error, info.
-   navigate() Full-page navigation helper.
-   reloadPage() Full page reload — invoked on any 401.
-6. Important Objects / Components / Endpoints / Entities
-   6.1 OXD component export list (2.0.3)
-   Full public export list from src/index.ts:
+## 5. Important Concepts
+
+| Concept                  | Description                                                                                                       |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| OXD                      | Orange eXperience Design — the Vue 3 component library used throughout the app.                                   |
+| `AbstractVueController`  | PHP base class for page controllers. Sets the Vue component to render.                                            |
+| `APIService`             | Centralized Axios wrapper for all API calls.                                                                      |
+| Screen permission        | DB-backed (role × screen × CRUD). Controls page access and menu visibility. Enforced server-side on page load.    |
+| `$can` global            | Frontend permission object with methods like `.create(screen)` and `.delete(screen)`. Gates UI element rendering. |
+| `unselectableEmpNumbers` | Server-provided prop listing `empNumbers` whose per-row delete is blocked.                                        |
+| `useFormValidation`      | Form-level state manager providing `formKey`.                                                                     |
+| `useField`               | Field-level registration, validation, and reset.                                                                  |
+| `errorbag`               | Array of `{cid, errors}` entries managed by the form.                                                             |
+| `cid`                    | `nanoid()` identifier assigned per field; used to look up errors.                                                 |
+| `tableProps`             | Injection key providing table configuration to header/body/cell components.                                       |
+| `screenState`            | Injection key providing responsive screen type to components.                                                     |
+| Event bus (`mitt`)       | Internal table communication bus, scoped by `tableId`.                                                            |
+| Toast types              | `default`, `success`, `warn`, `error`, `info`.                                                                    |
+| `navigate()`             | Full-page navigation helper.                                                                                      |
+| `reloadPage()`           | Full-page reload, invoked on any 401.                                                                             |
+
+## 6. Important Objects / Components / Endpoints / Entities
+
+### 6.1 OXD component export list (2.0.3)
+
+Full public export list from `src/index.ts`:
 
 Components: OxdAlert, OxdButton, OxdIconButton, OxdGlassButton, OxdBuzzPostInput, OxdCalendar, OxdCardTable, OxdTableDropdown, OxdBarChart, OxdLegend, OxdPieChart, OxdChip, OxdDialog, OxdOverlay, OxdDivider, OxdDropdownMenu, OxdForm, OxdFormRow, OxdFormActions, OxdGrid, OxdGridItem, OxdIcon, OxdInputField, OxdInputGroup, OxdLabel, OxdLayout, OxdSpinner, OxdPageItem, OxdPagination, OxdProgressbar, OxdReportTable, OxdMultilineCell, OxdSheet, OxdSidePanel, OxdTabPanel, OxdTabContainer, OxdClassicTable, OxdTableFilter, OxdText, OxdToast, OxdToastContainer, OxdTopbar, OxdUserDropdown, OxdNotificationDropdown, OxdTreeView, OxdInput, OxdFileInput, OxdDateInput, OxdRadioInput, OxdSwitchInput, OxdTimeInput, OxdTextarea, OxdPasswordInput, OxdCheckboxInput, OxdColorInput, OxdSelectInput, OxdMultiSelectInput, OxdMultiSelectChips, OxdAutocompleteInput.
 
@@ -553,43 +613,47 @@ Helpers: useField, debounce, useResize, CellAdapter, buildLocale, StoreService, 
 
 Constants: CHART_COLORS, TOAST_TYPES, DEVICE_TYPES, formKey, tablePropsKey, tableScreenStateKey.
 
-6.2 Main-app-only components (not OXD)
+### 6.2 Main-app-only components (not OXD)
+
 employee-autocomplete, delete-confirmation, table-header, jobtitle-dropdown, subunit-dropdown, employment-status-dropdown, include-employee-dropdown, password-strength-indicator, required-text, reports-table, and various page-specific components.
 
-6.3 Input types (from TYPE_MAP)
+### 6.3 Input types (from TYPE_MAP)
+
 oxd-input, oxd-textarea, oxd-file-input, oxd-date-input, oxd-time-input, oxd-radio-input, oxd-select-input, oxd-switch-input, oxd-password-input, oxd-checkbox-input, oxd-color-input, oxd-multiselect-input, oxd-autocomplete-input.
 
-6.4 Cell types (from CardTable/Cell/)
-cellType Component Notes
-oxd-table-cell-default Default.vue Plain text; <div>{{item}}</div> on desktop
-oxd-table-cell-actions Actions.vue <div class="oxd-table-cell-actions"> with per-action buttons
-oxd-table-cell-checkbox Checkbox.vue .oxd-table-card-cell-checkbox with OxdCheckboxInput
-oxd-table-cell-truncate Truncate.vue Truncates at 50 chars with show more/less toggle
-6.5 Card header config
+### 6.4 Cell types (from CardTable/Cell/)
+
+| Cell type                 | Component      | Notes                                                          |
+| ------------------------- | -------------- | -------------------------------------------------------------- |
+| `oxd-table-cell-default`  | `Default.vue`  | Plain text; `<div>{{item}}</div>` on desktop                   |
+| `oxd-table-cell-actions`  | `Actions.vue`  | `<div class="oxd-table-cell-actions">` with per-action buttons |
+| `oxd-table-cell-checkbox` | `Checkbox.vue` | `.oxd-table-card-cell-checkbox` with OxdCheckboxInput          |
+| `oxd-table-cell-truncate` | `Truncate.vue` | Truncates at 50 characters with show more/less toggle          |
+
+### 6.5 Card header config
+
 CardHeader interface: {name, title, slot?, cellType?, cellConfig?, sortField?, cellRenderer?}. Order values: 'ASC' | 'DESC' | 'DEFAULT'. RowItem supports isSelectable? and isDisabled?.
 
-7. Relationships to Other OrangeHRM Layers
-   Frontend → API: every data operation goes through APIService → /api/v2/.... There is no direct DB access.
+## 7. Relationships to Other OrangeHRM Layers
 
-Frontend → Database (indirect): state reflects what the API returns. The frontend has no schema knowledge.
+- Frontend → API: every data operation goes through `APIService` → `/api/v2/...`. There is no direct DB access.
+- Frontend → Database (indirect): state reflects what the API returns. The frontend has no schema knowledge.
+- API → Frontend: the API envelope `{data, meta, rels}` (success) or `{error: {status, message, data?}}` (error) is the contract.
+- Permissions → Frontend: screen permissions are checked server-side on page load. CRUD permissions are surfaced via `$can` for conditional rendering. Data-group permissions affect API results; the frontend is unaware of them.
+- Menu → Frontend: menu structure is delivered from the DB, filtered by user permissions, and rendered by the sidepanel/topbar.
+- OXD → Everything: every visual element is an OXD component. The version is pinned per OrangeHRM release (OXD 2.0.3 in 5.9).
+- Auth → Frontend: the browser SPA uses a session cookie; API clients use OAuth Bearer tokens. On session loss, `APIService` triggers `reloadPage()`, which redirects to login.
 
-API → Frontend: the API envelope {data, meta, rels} (success) or {error: {status, message, data?}} (error) is the contract.
+## 8. Testing Implications
 
-Permissions → Frontend: screen permissions checked server-side on page load. CRUD permissions surfaced via $can for conditional rendering. Data-group permissions affect API results (frontend unaware).
+### 8.1 Navigation
 
-Menu → Frontend: menu structure delivered from DB, filtered by user permissions, rendered by the sidepanel/topbar.
-
-OXD → Everything: every visual element is an OXD component. Version is pinned per OrangeHRM release (OXD 2.0.3 in 5.9).
-
-Auth → Frontend: session cookie for browser SPA; OAuth Bearer for API clients. On session loss, APIService triggers reloadPage() which redirects to the login page.
-
-8. Testing Implications
-   8.1 Navigation
-   Every navigation triggers a full page load (window.location.href or window.location.replace). Playwright must use waitForURL or waitForLoadState, not just DOM assertions.
+Every navigation triggers a full page load (window.location.href or window.location.replace). Playwright must use waitForURL or waitForLoadState, not just DOM assertions.
 
 reloadPage() on 401 causes the SPA to reload → redirect to login. Playwright should expect this on session loss.
 
-8.2 Selectors
+### 8.2 Selectors
+
 Do not use getByLabel() for OXD form fields. OxdLabel renders a <label> without a for attribute. Use .oxd-input-group filtering by label text and then locate the input within the group.
 
 Do not use selectOption() for OXD select inputs. They are not native <select> elements — the trigger is .oxd-select-text-input.
@@ -600,7 +664,8 @@ Prefer role-based selectors where available: role="dialog", role="alert", role="
 
 Use .oxd-icon.bi-{icon-name} for icon-based buttons (bi-pencil-fill, bi-trash, bi-caret-up-fill, etc.).
 
-8.3 Forms
+### 8.3 Forms
+
 Invalid submissions do not call the API. Assert on inline error messages (.oxd-input-group__message) and toast absence.
 
 Validation is reactive — errors can appear as the user types. Wait for the state, don't assume it appears at submit time only.
@@ -609,14 +674,16 @@ Only the first error per field is displayed.
 
 Async rules (e.g. password strength) are debounced (500ms in PasswordInput).
 
-8.4 Autocomplete / Select
+### 8.4 Autocomplete / Select
+
 Autocomplete search is debounced at 800ms. Wait before asserting options.
 
 The dropdown is v-if — it doesn't exist until opened.
 
 Options use @mousedown, not @click — Playwright's click() performs both, so it works.
 
-8.5 Tables
+### 8.5 Tables
+
 On viewports < 1000px, the desktop header and layout are replaced with the mobile card layout. Set the viewport ≥ 1200px for stable table automation.
 
 Rows are identified by .oxd-table-card — filter by content (:has-text("...")) rather than by index when possible.
@@ -625,89 +692,70 @@ Checkbox cells use @click.stop — clicks on the checkbox do not trigger the row
 
 Row clicks (when clickable: true) navigate to the edit page.
 
-8.6 Toasts
+### 8.6 Toasts
+
 Toast root: .oxd-toast.oxd-toast--{type}.
 
 aria-live="assertive" is set.
 
 Auto-dismiss timing is controlled by the app-level toast service (NOT VERIFIED).
 
-8.7 Permissions
+### 8.7 Permissions
+
 Assert permission behavior by DOM presence (not CSS visibility) — v-if removes elements entirely.
 
 Menu items reflect server-side permissions; to test permission scenarios, log in as different users.
 
-8.8 API-assisted setup
+### 8.8 API-assisted setup
+
 All CRUD endpoints are accessible via Bearer token or session cookie.
 
 APIService uses the same endpoints Playwright can hit directly. Test setup via API is viable and reduces flakiness.
 
-8.9 Database verification
+### 8.9 Database verification
+
 The frontend has no DB layer. To verify persisted state, either re-fetch via API or reload the page and assert UI state.
 
-9. Known Quirks / Gotchas
-   OxdLabel has no for attribute — getByLabel() fails for OXD form fields.
+## 9. Known Quirks / Gotchas
 
-OxdSelectInput is not a native <select> — selectOption() does not work.
+- `OxdLabel` has no `for` attribute — `getByLabel()` fails for OXD form fields.
+- `OxdSelectInput` is not a native `<select>` — `selectOption()` does not work.
+- Autocomplete debounce is 800ms — assertions must wait.
+- Card table rows are `<div class="oxd-table-card">`, not `<tr>` at the top level. The `<tr>` inside may be hoisted by the browser.
+- Header is rendered only at viewports ≥1000px. Mobile layout uses `.oxd-table-card-cell` with `.header`/`.data`.
+- Row checkboxes use `@click.stop` — no row navigation from checkbox clicks.
+- `v-if` vs `v-show`: menu items, table headers on mobile, dropdowns, and toasts use `v-if`; filter areas and dropdown menus use `v-show`. Assertions must account for this.
+- 401 → full page reload. `APIService` calls `reloadPage()`, so Playwright must handle navigation.
+- Full page navigation on every click-through. Even SPA-internal links use `window.location.href`.
+- `unselectableEmpNumbers` hides the checkbox, not disables it. The cell renders a hidden placeholder to keep column alignment.
+- First error per field is displayed. Multiple rules may be defined; only the first failure surfaces.
+- Sequential rule execution short-circuits. A rule returning non-true stops later rules.
+- `useFormValidation.validate()` catches rejected promises and logs them. A buggy rule does not block form submission.
+- `OxdTableFilter` is `v-show`. The filter area is in the DOM even when collapsed.
+- File input is single-file only. The output is `{name, type, size, base64}`.
+- Color input is a `<div>`, not a native `<input type="color">`. The picker uses canvas and hex input.
+- i18n lookup falls back when a key is missing — assertions should target the resolved text, not the key.
+- Topbar overflow — items beyond viewport width collapse into a "More" menu.
+- ETag caching is disabled in development mode.
+- `usePaginate` strips null and `''` from query params — an empty filter value does not appear in the request.
 
-Autocomplete debounce is 800ms — assertions must wait.
+## 10. Version-Specific Notes
 
-Card table rows are <div class="oxd-table-card">, not <tr> at the top level. The <tr> inside may be hoisted by the browser.
+- OrangeHRM version: 5.9.0 (`hs_hr_config.instance.version = 5.9.0`).
+- OXD version: 2.0.3 (from `@ohrm/oxd/package.json`).
+- Vue: `^3.2.45` (OXD dependency constraint; the main app's exact Vue version is **not verified**).
+- `date-fns`: `^2.29.3`.
+- `nanoid`: `^4.0.0`.
+- `mitt`: `^3.0.0`.
+- OXD 2.0.3 does not bundle Vue Router, Vuex/Pinia, `vue-i18n`, or Axios; the main app supplies Axios.
+- The 5.9 release notes list Workspace Notifications (Slack/Google Chat) as the primary new feature; it is a backend/configuration feature. The frontend framework architecture is unchanged from 5.0 through 5.9.
+- Legacy OAuth tables (`ohrm_oauth__`) exist in the DB but are unreferenced; the active OAuth2 tables are `ohrm_oauth2__`.
 
-Header is rendered only at viewports ≥1000px. Mobile layout uses .oxd-table-card-cell with .header/.data.
+## 11. Facts vs Inferences vs Assumptions
 
-Row checkboxes use @click.stop — no row navigation from checkbox clicks.
+### FACT (traceable to a specific file, DB row, HTTP response, or app.js trace)
 
-v-if vs v-show: menu items, table headers on mobile, dropdowns, toasts use v-if; filter areas and dropdown menus use v-show. Assertions must account for this.
-
-401 → full page reload. APIService calls reloadPage(), so Playwright must handle navigation.
-
-Full page navigation on every click-through. Even SPA-internal links use window.location.href.
-
-unselectableEmpNumbers hides the checkbox, not disables it. The cell renders a hidden placeholder to keep column alignment.
-
-First error per field is displayed. Multiple rules may be defined; only the first failure surfaces.
-
-Sequential rule execution short-circuits. A rule returning non-true stops later rules.
-
-useFormValidation.validate() catches rejected promises and logs them. A buggy rule does not block form submission.
-
-OxdTableFilter is v-show. The filter area is in the DOM even when collapsed.
-
-File input is single-file only. The output is {name, type, size, base64}.
-
-Color input is a <div>, not a native <input type="color">. Picker uses canvas + hex input.
-
-i18n lookup falls back to fallback when key missing — assertions should target the resolved text, not the key.
-
-Topbar overflow — items beyond viewport width collapse into a "More" menu.
-
-ETag caching is disabled in development mode.
-
-usePaginate strips null and '' from query params — an empty filter value does not appear in the request.
-
-10. Version-Specific Notes
-    OrangeHRM version: 5.9.0 (hs_hr_config.instance.version = 5.9.0).
-
-OXD version: 2.0.3 (from @ohrm/oxd package.json).
-
-Vue: ^3.2.45 (OXD dependency constraint; the main app's exact Vue version is NOT VERIFIED).
-
-date-fns: ^2.29.3.
-
-nanoid: ^4.0.0.
-
-mitt: ^3.0.0.
-
-No Vue Router, no Vuex/Pinia, no vue-i18n, no axios are bundled in OXD 2.0.3. The main app supplies axios.
-
-5.9 release notes list Workspace Notifications (Slack/Google Chat) as the primary new feature; it is a backend/configuration feature. The frontend framework architecture is unchanged from 5.0 through 5.9.
-
-Legacy OAuth tables (ohrm_oauth__) exist in the DB but are unreferenced; the active OAuth2 tables are ohrm_oauth2__.
-
-11. Facts vs Inferences vs Assumptions
-    FACT (traceable to a specific file, DB row, HTTP response, or app.js trace)
-    Technology & project structure:
+#### Technology & project structure
 
 Frontend is Vue 3 SPA with TypeScript, Axios, OXD 2.0.3, SASS.
 
@@ -717,7 +765,7 @@ OXD does not bundle Vue Router, Vuex, Pinia, axios, or vue-i18n.
 
 Source layout is src/client/src/core/ + src/client/src/orangehrm{Module}Plugin/.
 
-Routing & navigation:
+#### Routing & navigation
 
 Routes are defined server-side in Symfony routes.yaml.
 
@@ -727,7 +775,7 @@ navigate() sets window.location.href; reloadPage() calls window.location.reload(
 
 All navigations trigger full page loads.
 
-API communication:
+#### API communication
 
 APIService is an Axios wrapper with getAll, get, create, update, delete, deleteAll, request.
 
@@ -741,11 +789,11 @@ Other errors → $toast.unexpectedError(response?.error.message).
 
 ETag caching enabled in non-development builds only.
 
-State:
+#### State
 
 No Vuex/Pinia. Local state + composables + provide/inject + mitt event bus.
 
-Forms & validation:
+#### Forms & validation
 
 OxdForm renders <form class="oxd-form" novalidate>, emits submitValid/submitInvalid.
 
@@ -759,7 +807,7 @@ message = first error per field.
 
 Disabled fields skip validation.
 
-Inputs:
+#### Inputs
 
 Every input is wrapped by OxdInputField → OxdInputGroup.
 
@@ -783,7 +831,7 @@ OxdFileInput renders a hidden <input type="file" class="oxd-file-input"> + a vis
 
 OxdColorInput is a <div> with preview swatch; picker has canvas + hue + hex input.
 
-Tables:
+#### Tables
 
 OxdCardTable is the primary list-table component.
 
@@ -807,7 +855,7 @@ OxdClassicTable is a real <table> with <thead>/<tbody>/<tr>/<th>/<td>; uses raw 
 
 OxdReportTable uses @revolist/vue3-datagrid.
 
-Feedback:
+#### Feedback
 
 Toast types: default, success, warn, error, info.
 
@@ -823,7 +871,7 @@ Loading spinner: .oxd-loading-spinner.
 
 App-level $toast API: notify, show, success, error, info, warn, clear, clearAll, saveSuccess, addSuccess, updateSuccess, deleteSuccess, cannotDelete, noRecordsFound.
 
-Navigation:
+#### Navigation
 
 Sidepanel: aside.oxd-sidepanel, nav[aria-label="Sidepanel"], .oxd-main-menu, .oxd-main-menu-item, .oxd-main-menu-item--name.
 
@@ -831,7 +879,7 @@ Topbar: nav[aria-label="Topbar Menu"], .oxd-topbar-body-nav-tab-item, .oxd-topba
 
 Menu items are real <a href="..."> links.
 
-Pagination:
+#### Pagination
 
 usePaginate default pageSize: 50.
 
@@ -843,13 +891,13 @@ normalizer applied to response.data.data.
 
 showPaginator true only when total > pageSize.
 
-Responsive:
+#### Responsive
 
 Breakpoints: xs<600, sm<800, md<1000, lg<1200, xl≥1200.
 
 DEVICE_LG/DEVICE_XL = desktop.
 
-Permissions:
+#### Permissions
 
 $can.create(screen), $can.delete(screen) gate UI rendering.
 
@@ -857,17 +905,18 @@ unselectableEmpNumbers prop blocks per-row delete.
 
 Menu is pre-filtered server-side.
 
-i18n:
+#### i18n
 
 usei18n returns t(key, fallback); reads from getConfig('language').
 
-403 / 400 pages:
+#### 403 / 400 pages
 
 403 page is the auth-forbidden Vue component with <h1>403</h1> and i18n strings general.module_forbidden, general.module_access_restriction.
 
 400 page is BadRequest.vue with <oxd-alert type="warn" :message="$t('general.bad_request')">.
 
-INFERENCE
+### Inference
+
 The <tr> inside <div class="oxd-table-card"> may be hoisted by the browser in the rendered DOM. Playwright should not depend on ancestor chains.
 
 The exact {type, title, message} mapping of $toast.deleteSuccess() etc. is defined by the app-level toast service, not OXD.
@@ -876,10 +925,12 @@ OxdTableFilter's collapsed state uses v-show, so the filter inputs remain in the
 
 Menu permission filtering happens server-side before menuItems reaches the sidepanel; the frontend does not re-filter.
 
-ASSUMPTION
+### Assumption
+
 The OXD files pasted during research match the version bundled with OrangeHRM 5.9. @ohrm/oxd is 2.0.3 per its own package.json, but the running OrangeHRM 5.9 node_modules version was not directly inspected.
 
-NOT VERIFIED
+### Not verified
+
 The exact Vue version used by the main OrangeHRM 5.9 app (package.json in the main repo was not inspected).
 
 The $toast service implementation (mapping of each $toast.X() to {type, title, message}).
@@ -892,7 +943,8 @@ Toast auto-dismiss timing.
 
 useToast (if it exists as a distinct composable in the main app).
 
-12. Sources
+## 12. Sources
+
     OXD 2.0.3 files (pasted during research):
 
 Barrel and metadata:

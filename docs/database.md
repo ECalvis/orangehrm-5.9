@@ -4,6 +4,21 @@
 
 ---
 
+## Contents
+
+- [1. Scope](#1-scope)
+- [2. What It Is](#2-what-it-is)
+- [3. OrangeHRM 5.9 Behavior](#3-orangehrm-59-behavior)
+- [4. Architecture](#4-architecture)
+- [5. Important Concepts](#5-important-concepts)
+- [6. Important Entities, Tables, and Endpoints](#6-important-entities-tables-and-endpoints)
+- [7. Relationships to Other Layers](#7-relationships-to-other-layers)
+- [8. Testing Implications](#8-testing-implications)
+- [9. Known Quirks / Gotchas](#9-known-quirks-gotchas)
+- [10. Version-Specific Notes](#10-version-specific-notes)
+- [11. Facts vs Inferences vs Assumptions](#11-facts-vs-inferences-vs-assumptions)
+- [12. Sources](#12-sources)
+
 ## 1. Scope
 
 Covers the database layer of OrangeHRM 5.9 as deployed with MariaDB 11.4. Focuses on:

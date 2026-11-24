@@ -15,6 +15,21 @@
 
 ---
 
+## Contents
+
+- [1. Scope](#1-scope)
+- [2. What It Is](#2-what-it-is)
+- [3. OrangeHRM 5.9 Behavior](#3-orangehrm-59-behavior)
+- [4. Architecture](#4-architecture)
+- [5. Important Concepts](#5-important-concepts)
+- [6. Important Objects, Endpoints, Entities](#6-important-objects-endpoints-entities)
+- [7. Relationships to Other OrangeHRM Layers](#7-relationships-to-other-orangehrm-layers)
+- [8. Testing Implications](#8-testing-implications)
+- [9. Known Quirks and Gotchas](#9-known-quirks-and-gotchas)
+- [10. Version-Specific Notes](#10-version-specific-notes)
+- [11. Facts vs Inferences vs Assumptions](#11-facts-vs-inferences-vs-assumptions)
+- [12. Sources](#12-sources)
+
 ## 1. Scope
 
 Covers OrangeHRM 5.9 REST API v2 as verified against the cloned 5.9 source tree, the live MariaDB schema, and live HTTP traffic. Covers routing, authentication (session + OAuth), authorization, validation, response formats, error formats, resource relationships, endpoint inventory, and testing implications.
@@ -78,14 +93,18 @@ PKCE is required. The flow was verified end-to-end with `code_challenge_method=S
 
 **OAuth configuration (live DB values):**
 
-````sql
+```sql
 SELECT name, value FROM hs_hr_config WHERE name LIKE 'oauth%'
-Name	Value	Parsed
-oauth.access_token_ttl	PT30M	30 minutes
-oauth.auth_code_ttl	PT5M	5 minutes
-oauth.refresh_token_ttl	P1M	1 month
-oauth.encryption_key	(base64, 32 bytes)	Server secret
-oauth.token_encryption_key	(base64, 32 bytes)	Server secret
+```
+
+| Name                       | Value              | Parsed        |
+| -------------------------- | ------------------ | ------------- |
+| oauth.access_token_ttl     | PT30M              | 30 minutes    |
+| oauth.auth_code_ttl        | PT5M               | 5 minutes     |
+| oauth.refresh_token_ttl    | P1M                | 1 month       |
+| oauth.encryption_key       | (base64, 32 bytes) | Server secret |
+| oauth.token_encryption_key | (base64, 32 bytes) | Server secret |
+
 Key facts:
 
 Tokens are opaque, not JWT (source comment: "We are using opaque token, not JWT").
@@ -100,14 +119,17 @@ Old refresh token is invalidated after rotation (or rejected on client mismatch)
 
 Error responses for auth:
 
-Scenario	HTTP	Body
-No auth on API	401	{"error": {"status": 401, "message": "Session expired"}}
-Invalid Bearer on POST	401	{"error": {"status": 401, "message": "Unexpected error occurred while evaluating the `Bearer` token"}}`
-Invalid Bearer on GET (browser-style)	302	Redirect to /auth/login
-Authenticated but not authorized	403	{"error": {"status": 403, "message": "Unauthorized"}}
-OAuth invalid code	400	League format (see §3.10)
-OAuth invalid refresh token	401	League format (see §3.10)
-3.3 Response Envelope
+| Scenario                              | HTTP | Body                                                                                                       |
+| ------------------------------------- | ---- | ---------------------------------------------------------------------------------------------------------- |
+| No auth on API                        | 401  | `{"error": {"status": 401, "message": "Session expired"}}`                                                 |
+| Invalid Bearer on POST                | 401  | `{"error": {"status": 401, "message": "Unexpected error occurred while evaluating the \`Bearer\` token"}}` |
+| Invalid Bearer on GET (browser-style) | 302  | Redirect to /auth/login                                                                                    |
+| Authenticated but not authorized      | 403  | `{"error": {"status": 403, "message": "Unauthorized"}}`                                                    |
+| OAuth invalid code                    | 400  | League format (see §3.10)                                                                                  |
+| OAuth invalid refresh token           | 401  | League format (see §3.10)                                                                                  |
+
+### 3.3 Response Envelope
+
 Success:
 
 ```json
@@ -116,8 +138,9 @@ Success:
   "meta": <object or array>,
   "rels": <array>
 }
+```
+
 Live examples:
-````
 
 GET /api/v2/core/about:
 
@@ -127,30 +150,37 @@ GET /api/v2/core/about:
   "meta": [],
   "rels": []
 }
+```
+
 GET /api/v2/pim/employees?limit=50&offset=0:
 
-json
+```json
 {
   "data": [ {...}, {...} ],
   "meta": {"total": 2},
   "rels": []
 }
-Quirk: meta is [] (empty array) for single-resource responses and errors, but {} (object) for collections with total. Schema validators must accept both.
 ```
 
-3.4 Pagination
+Quirk: meta is [] (empty array) for single-resource responses and errors, but {} (object) for collections with total. Schema validators must accept both.
+
+### 3.4 Pagination
+
 Defaults (from FilterParams.php):
 
 ```php
 public const DEFAULT_LIMIT = 50;
 public const DEFAULT_OFFSET = 0;
+```
+
 Parameter names (from CommonParams.php):
 
-php
+```php
 public const PARAMETER_OFFSET = 'offset';
 public const PARAMETER_LIMIT = 'limit';
-Validation bounds (from AbstractEndpointTest.php):
 ```
+
+Validation bounds (from AbstractEndpointTest.php):
 
 Accepted values: null, '0', 0, 1, 2147483647, '2147483647', PHP_INT_MAX, ''
 
@@ -158,7 +188,8 @@ Invalid values are rejected (specific list not captured)
 
 meta.total reflects the full match count, not the page size.
 
-3.5 Sorting
+### 3.5 Sorting
+
 Sort parameters: sortField, sortOrder (ASC or DESC)
 
 Sort field naming: Dotted paths, not raw column names. Examples:
@@ -186,7 +217,8 @@ Candidates vacancy.name, candidate.lastName, hiringManager.lastName, candidate.d
 Admin users u.userName, u.status, r.name, e.firstName, e.lastName, r.displayName
 Invalid sortField → 422 validation error.
 
-3.6 Filtering
+### 3.6 Filtering
+
 Filter parameters are per-endpoint. Each endpoint's getValidationRuleForGetAll() defines them.
 
 Employee filters (from EmployeeAPI.php and EmployeeSearchFilterParams.php):
@@ -221,7 +253,8 @@ Candidate filters: candidateId, vacancyId, employeeId, jobTitleId, hiringManager
 
 Admin user filters: status, username, userRoleId, empNumber, hasPassword.
 
-3.7 Validation
+### 3.7 Validation
+
 Strict mode is on by default. Sending an unknown parameter produces:
 
 ```json
@@ -229,13 +262,14 @@ Strict mode is on by default. Sending an unknown parameter produces:
   "error": {
     "status": "422",
     "message": "Invalid Parameter",
-    "data": {"invalidParamKeys": ["badParam"]}
+    "data": { "invalidParamKeys": ["badParam"] }
   }
 }
+```
+
 Empty string semantics: notRequiredParamRule with excludeEmptyString: true rejects "" but accepts null. Used for middleName and employeeId on employee create.
 
 The HTTP client uses a 30-second request timeout by default (`timeoutMs` can override it). Network failures preserve their transport code, and a 2xx response advertised as JSON but containing malformed JSON fails with `MALFORMED_JSON` rather than becoming an empty success envelope.
-```
 
 Missing required fields produce a combined 422:
 
@@ -244,11 +278,12 @@ Missing required fields produce a combined 422:
   "error": {
     "status": "422",
     "message": "Invalid Parameter",
-    "data": {"invalidParamKeys": ["firstName", "lastName"]}
+    "data": { "invalidParamKeys": ["firstName", "lastName"] }
   }
 }
-Validation rules that hit the DB:
 ```
+
+Validation rules that hit the DB:
 
 ENTITY_UNIQUE_PROPERTY — uniqueness check (e.g., employeeId against non-purged employees)
 
@@ -256,7 +291,8 @@ IN_ACCESSIBLE_EMP_NUMBERS — row-level access check
 
 Validation rule exceptions → 500 (not 422), if the rule itself throws.
 
-3.8 Error Responses
+### 3.8 Error Responses
+
 Three error envelopes exist:
 
 Envelope 1 — OrangeHRM (all /api/v2/... errors):
@@ -269,46 +305,58 @@ Envelope 1 — OrangeHRM (all /api/v2/... errors):
     "data": <optional>
   }
 }
+```
+
 Envelope 2 — League OAuth2 (all /oauth2/token errors):
 
-json
+```json
 {
   "error": "<code>",
   "error_description": "<description>",
   "hint": "<specific cause>",
   "message": "<description>"
 }
+```
+
 Envelope 3 — HTML redirect (browser-style auth failures):
 
-text
+```text
 302 Found
 location: /web/index.php/auth/login
 content-type: text/html; charset=utf-8
-3.9 HTTP Status Codes
-Code	Trigger	Envelope
-200	Successful GET, POST, DELETE	OrangeHRM
-302	Browser-style auth failure	HTML
-400	OAuth invalid request	League
-401	Missing/invalid auth	OrangeHRM (API) or League (OAuth)
-403	Permission denied	OrangeHRM
-404	Lookup endpoint missing record	OrangeHRM
-422	Validation failure	OrangeHRM
-500	Unhandled server error	OrangeHRM — NOT YET VERIFIED
-501	NotImplemented	Unreachable via HTTP in stock 5.9
-Important: POST returns 200, not 201. Confirmed live.
 ```
 
-3.10 Error Status Type Inconsistency (Real Quirk)
+### 3.9 HTTP Status Codes
+
+| Code | Trigger                        | Envelope                          |
+| ---- | ------------------------------ | --------------------------------- |
+| 200  | Successful GET, POST, DELETE   | OrangeHRM                         |
+| 302  | Browser-style auth failure     | HTML                              |
+| 400  | OAuth invalid request          | League                            |
+| 401  | Missing/invalid auth           | OrangeHRM (API) or League (OAuth) |
+| 403  | Permission denied              | OrangeHRM                         |
+| 404  | Lookup endpoint missing record | OrangeHRM                         |
+| 422  | Validation failure             | OrangeHRM                         |
+| 500  | Unhandled server error         | OrangeHRM — NOT YET VERIFIED      |
+| 501  | NotImplemented                 | Unreachable via HTTP in stock 5.9 |
+
+Important: POST returns 200, not 201. Confirmed live.
+
+### 3.10 Error Status Type Inconsistency (Real Quirk)
+
 Within OrangeHRM's envelope:
 
-Status Type
-401 integer
-403 integer
-404 string "404"
-422 string "422"
+| Status | Type           |
+| ------ | -------------- |
+| 401    | integer        |
+| 403    | integer        |
+| 404    | string `"404"` |
+| 422    | string `"422"` |
+
 No rule. JSON schema validation must accept both. Test assertions must handle both.
 
-3.11 Live Error Response Examples
+### 3.11 Live Error Response Examples
+
 422 — Unknown query parameter:
 
 ```json
@@ -316,66 +364,91 @@ No rule. JSON schema validation must accept both. Test assertions must handle bo
   "error": {
     "status": "422",
     "message": "Invalid Parameter",
-    "data": {"invalidParamKeys": ["badParam"]}
+    "data": { "invalidParamKeys": ["badParam"] }
   }
 }
+```
+
 422 — Inaccessible employee:
 
-json
+```json
 {
   "error": {
     "status": "422",
     "message": "Invalid Parameter",
-    "data": {"invalidParamKeys": ["empNumber"]}
+    "data": { "invalidParamKeys": ["empNumber"] }
   }
 }
+```
+
 422 — Missing required fields:
 
-json
+```json
 {
   "error": {
     "status": "422",
     "message": "Invalid Parameter",
-    "data": {"invalidParamKeys": ["firstName", "lastName"]}
+    "data": { "invalidParamKeys": ["firstName", "lastName"] }
   }
 }
+```
+
 401 — No auth:
 
-json
-{"error": {"status": 401, "message": "Session expired"}}
+```json
+{ "error": { "status": 401, "message": "Session expired" } }
+```
+
 401 — Invalid Bearer on POST:
 
-json
-{"error": {"status": 401, "message": "Unexpected error occurred while evaluating the `Bearer` token"}}
+```json
+{
+  "error": {
+    "status": 401,
+    "message": "Unexpected error occurred while evaluating the `Bearer` token"
+  }
+}
+```
+
 403 — ESS creates employee:
 
-json
-{"error": {"status": 403, "message": "Unauthorized"}}
+```json
+{ "error": { "status": 403, "message": "Unauthorized" } }
+```
+
 404 — Lookup endpoint missing record:
 
-json
-{"error": {"status": "404", "message": "Record Not Found"}}
+```json
+{ "error": { "status": "404", "message": "Record Not Found" } }
+```
+
 400 — OAuth invalid code:
 
-json
+```json
 {
   "error": "invalid_request",
   "error_description": "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed.",
   "hint": "Cannot decrypt the authorization code",
   "message": "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed."
 }
+```
+
 401 — OAuth invalid refresh token:
 
-json
+```json
 {
   "error": "invalid_request",
   "error_description": "The refresh token is invalid.",
   "hint": "Cannot decrypt the refresh token",
   "message": "The refresh token is invalid."
 }
-4. Architecture
-4.1 Request Lifecycle
-text
+```
+
+## 4. Architecture
+
+### 4.1 Request Lifecycle
+
+```text
 HTTP request
   ↓
 Symfony kernel
@@ -401,8 +474,11 @@ GenericRestController::handle(HttpRequest)
 ExceptionEvent
   → ApiAuthorizationSubscriber (priority 0) handles ForbiddenException → 403 JSON
   → ExceptionSubscriber (priority -65) sets status/headers
-4.2 Layering
-text
+```
+
+### 4.2 Layering
+
+```text
 Endpoint (e.g. EmployeeAPI)
     ↓
 Service (e.g. EmployeeService)
@@ -412,8 +488,11 @@ DAO (e.g. EmployeeDao)
 Doctrine Entity (e.g. Employee)
     ↓
 Database
-4.3 Response Path
-text
+```
+
+### 4.3 Response Path
+
+```text
 Entity / Array
     ↓
 Model Class (Normalizable) — e.g. EmployeeModel, EmployeeDetailedModel
@@ -423,49 +502,60 @@ EndpointResourceResult / EndpointCollectionResult
 Response::formatData() → {data, meta, rels}
     ↓
 JSON HTTP Response
-5. Important Concepts
-Concept	Description
-_api	Routes.yaml default pointing to the endpoint class.
-_key	Optional param name used for getOne vs getAll distinction.
-CrudEndpoint	Interface bundling getAll, getOne, create, update, delete.
-Normalizable	Interface for JSON-serializable models.
-ModelTrait	Standard implementation: wire entity, declare filters, get JSON.
-EndpointResourceResult	Single-resource response wrapper.
-EndpointCollectionResult	Collection response wrapper with meta.
-ParameterBag	Holds the meta object.
-ParamRuleCollection	Strict parameter validation container.
-ParamRule	Single parameter validation rule.
-ValidationDecorator	Wraps rules as required or not-required.
-ALLOWED_SORT_FIELDS	Per-resource constant listing valid sortField values.
-MODEL_MAP	Pattern for ?model= variant selection (default/detailed).
-ResourcePermission	OR-reduced permission flags from DataGroupPermission.
-self flag	Restricts a role to its own data rows.
-IN_ACCESSIBLE_EMP_NUMBERS	Row-level authorization rule.
-ENTITY_UNIQUE_PROPERTY	DB-backed uniqueness validation rule.
-WorkflowStateMachine	DB table of allowed state transitions.
-CapableViewController	Marker interface for endpoints that bypass permission checks.
-6. Important Objects, Endpoints, Entities
-6.1 Core Framework Classes
-Component	Namespace
-Endpoint	OrangeHRM\Core\Api\V2
-CrudEndpoint	OrangeHRM\Core\Api\V2
-GenericRestController	OrangeHRM\Core\Controller\Rest\V2
-AbstractRestController	OrangeHRM\Core\Controller\Rest\V2
-ApiAuthorizationSubscriber	OrangeHRM\Core\Subscriber
-ExceptionSubscriber	OrangeHRM\Core\Subscriber
-Validator	OrangeHRM\Core\Api\V2\Validator
-ParamRuleCollection	OrangeHRM\Core\Api\V2\Validator
-Response	OrangeHRM\Core\Api\V2
-AbstractEndpointResult	OrangeHRM\Core\Api\V2\Serializer
-EndpointResourceResult	OrangeHRM\Core\Api\V2
-EndpointCollectionResult	OrangeHRM\Core\Api\V2
-UserRoleManagerService	OrangeHRM\Core\Authorization\Service
-DataGroupService	OrangeHRM\Core\Authorization\Service
-BasicUserRoleManager	OrangeHRM\Core\Authorization\Manager
-6.2 Employee Lifecycle Endpoints (Fully Verified)
-GET /api/v2/pim/employees
 ```
 
+## 5. Important Concepts
+
+| Concept                    | Description                                                      |
+| -------------------------- | ---------------------------------------------------------------- |
+| `_api`                     | Routes.yaml default pointing to the endpoint class.              |
+| `_key`                     | Optional param name used for getOne vs getAll distinction.       |
+| `CrudEndpoint`             | Interface bundling getAll, getOne, create, update, delete.       |
+| `Normalizable`             | Interface for JSON-serializable models.                          |
+| `ModelTrait`               | Standard implementation: wire entity, declare filters, get JSON. |
+| `EndpointResourceResult`   | Single-resource response wrapper.                                |
+| `EndpointCollectionResult` | Collection response wrapper with meta.                           |
+| `ParameterBag`             | Holds the meta object.                                           |
+| `ParamRuleCollection`      | Strict parameter validation container.                           |
+| ParamRule                  | Single parameter validation rule.                                |
+| ---                        | ---                                                              |
+| ValidationDecorator        | Wraps rules as required or not-required.                         |
+| ALLOWED_SORT_FIELDS        | Per-resource constant listing valid sortField values.            |
+| MODEL_MAP                  | Pattern for ?model= variant selection (default/detailed).        |
+| ResourcePermission         | OR-reduced permission flags from DataGroupPermission.            |
+| self flag                  | Restricts a role to its own data rows.                           |
+| IN_ACCESSIBLE_EMP_NUMBERS  | Row-level authorization rule.                                    |
+| ENTITY_UNIQUE_PROPERTY     | DB-backed uniqueness validation rule.                            |
+| WorkflowStateMachine       | DB table of allowed state transitions.                           |
+| CapableViewController      | Marker interface for endpoints that bypass permission checks.    |
+
+## 6. Important Objects, Endpoints, Entities
+
+### 6.1 Core Framework Classes
+
+| Component                  | Namespace                            |
+| -------------------------- | ------------------------------------ |
+| Endpoint                   | OrangeHRM\Core\Api\V2                |
+| CrudEndpoint               | OrangeHRM\Core\Api\V2                |
+| GenericRestController      | OrangeHRM\Core\Controller\Rest\V2    |
+| AbstractRestController     | OrangeHRM\Core\Controller\Rest\V2    |
+| ApiAuthorizationSubscriber | OrangeHRM\Core\Subscriber            |
+| ExceptionSubscriber        | OrangeHRM\Core\Subscriber            |
+| Validator                  | OrangeHRM\Core\Api\V2\Validator      |
+| ParamRuleCollection        | OrangeHRM\Core\Api\V2\Validator      |
+| Response                   | OrangeHRM\Core\Api\V2                |
+| AbstractEndpointResult     | OrangeHRM\Core\Api\V2\Serializer     |
+| EndpointResourceResult     | OrangeHRM\Core\Api\V2                |
+| EndpointCollectionResult   | OrangeHRM\Core\Api\V2                |
+| UserRoleManagerService     | OrangeHRM\Core\Authorization\Service |
+| DataGroupService           | OrangeHRM\Core\Authorization\Service |
+| BasicUserRoleManager       | OrangeHRM\Core\Authorization\Manager |
+
+### 6.2 Employee Lifecycle Endpoints (Fully Verified)
+
+GET /api/v2/pim/employees
+
+```text
 Purpose: List/filter employees
 
 Auth: Session cookie or Bearer token
@@ -475,6 +565,7 @@ Permissions: apiv2_pim_employee (data_group_id 96). Admin: read=1; ESS: read=1, 
 Behavior: Results are automatically narrowed to accessible employees. If empNumber filter is supplied, only that employee is returned (if accessible).
 
 Request: Query params: limit, offset, model, includeEmployees, name, nameOrId, employeeId, empStatusId, jobTitleId, subunitId, supervisorEmpNumbers, empNumber, sortField, sortOrder
+```
 
 Response 200:
 
@@ -515,9 +606,11 @@ Request:
   "employeeId": "string (optional, max 10, unique against purgedAt=null, excludeEmptyString)",
   "empPicture": "{name, type, base64, size} (optional)"
 }
+```
+
 Response 200 (not 201):
 
-json
+```json
 {
   "data": {
     "empNumber": <int>,
@@ -530,8 +623,9 @@ json
   "meta": [],
   "rels": []
 }
-Side effects: Creates row in hs_hr_employee, dispatches EmployeeAddedEvent
 ```
+
+Side effects: Creates row in hs_hr_employee, dispatches EmployeeAddedEvent
 
 Always returns EmployeeModel — ignores ?model= query param
 
@@ -549,23 +643,22 @@ Request:
 
 ```json
 {"ids": [<int>, <int>, ...]}
-Validation: Each ID must be positive, must not be in getUndeletableEmpNumbers()
 ```
+
+Validation: Each ID must be positive, must not be in getUndeletableEmpNumbers()
 
 Response 200:
 
 ```json
 {"data": [<deleted_id>, ...], "meta": [], "rels": []}
-Side effects:
 ```
 
-Hard delete from hs_hr_employee
+Side effects:
 
-Cascades ohrm_leave rows (52 → 0 in live test)
-
-Does NOT cascade ohrm_timesheet rows (1 → 1 in live test, orphaned)
-
-Dispatches EmployeeDeletedEvent
+- Hard delete from hs_hr_employee
+- Cascades ohrm_leave rows (52 → 0 in live test)
+- Does NOT cascade ohrm_timesheet rows (1 → 1 in live test, orphaned)
+- Dispatches EmployeeDeletedEvent
 
 PUT /api/v2/pim/employees/{empNumber}
 
@@ -573,106 +666,121 @@ Status: Throws NotImplementedException in source
 
 Unreachable via HTTP: can_update=0 for all roles on data_group 96 → 403 before the 501 path fires
 
-6.3 Leave Endpoints (Partial Verification)
+### 6.3 Leave Endpoints (Partial Verification)
+
 Full ohrm_api_permission mapping for Leave:
 
-API class data_group_id Name read create update delete
-HolidayAPI 130 apiv2_leave_holiday 1 1 1 1
-WorkWeekAPI 131 apiv2_leave_workweek 1 0 1 0
-EligibleLeaveTypeAPI 132 apiv2_leave_eligible_leave_types 1 0 0 0
-LeaveTypeAPI 133 apiv2_leave_leave_types 1 1 1 1
-LeavePeriodAPI 134 apiv2_leave_leave_period 1 0 1 0
-MyLeaveRequestAPI 135 apiv2_leave_my_leave_requests 1 1 1 0
-EmployeeLeaveRequestAPI 136 apiv2_leave_employee_leave_requests 1 1 1 0
-EmployeeBulkLeaveRequestAPI 137 apiv2_leave_employee_bulk_leave_requests 0 0 1 0
-LeaveEntitlementAPI 138 apiv2_leave_leave_entitlements 1 1 1 1
-LeaveBalanceAPI 139 apiv2_leave_leave_balance 1 0 0 0
-EmployeeLeaveEntitlementAPI 140 apiv2_leave_employee_leave_entitlements 1 0 0 0
-ValidationLeaveEntitlementValueAPI 141 apiv2_leave_leave_entitlements_validation 1 0 0 0
-LeaveOverlapAPI 142 apiv2_leave_overlap_leaves 1 0 0 0
-LeaveRequestCommentAPI 143 apiv2_leave_leave_request_comment 1 1 0 0
-LeaveCommentAPI 144 apiv2_leave_leave_comment 1 1 0 0
-LeaveAPI 145 apiv2_leave_leaves 1 0 1 0
-BulkLeaveAPI 146 apiv2_leave_bulk_leaves 0 0 1 0
-LeaveReportAPI 147 apiv2_leave_reports 1 0 0 0
-LeaveReportDataAPI 148 apiv2_leave_reports_data 1 0 0 0
-EmployeeLeaveAPI 263 apiv2_leave_employee_leave 1 0 0 0
-EmployeeLeaveBalanceAPI 264 apiv2_leave_employee_leave_balances 1 0 0 0
-Leave balance (data_group_id 139) role permissions:
+| API class                                           | data_group_id | Name                                      | read | create | update | delete |
+| --------------------------------------------------- | ------------- | ----------------------------------------- | ---- | ------ | ------ | ------ |
+| HolidayAPI                                          | 130           | apiv2_leave_holiday                       | 1    | 1      | 1      | 1      |
+| WorkWeekAPI                                         | 131           | apiv2_leave_workweek                      | 1    | 0      | 1      | 0      |
+| EligibleLeaveTypeAPI                                | 132           | apiv2_leave_eligible_leave_types          | 1    | 0      | 0      | 0      |
+| LeaveTypeAPI                                        | 133           | apiv2_leave_leave_types                   | 1    | 1      | 1      | 1      |
+| LeavePeriodAPI                                      | 134           | apiv2_leave_leave_period                  | 1    | 0      | 1      | 0      |
+| MyLeaveRequestAPI                                   | 135           | apiv2_leave_my_leave_requests             | 1    | 1      | 1      | 0      |
+| EmployeeLeaveRequestAPI                             | 136           | apiv2_leave_employee_leave_requests       | 1    | 1      | 1      | 0      |
+| EmployeeBulkLeaveRequestAPI                         | 137           | apiv2_leave_employee_bulk_leave_requests  | 0    | 0      | 1      | 0      |
+| LeaveEntitlementAPI                                 | 138           | apiv2_leave_leave_entitlements            | 1    | 1      | 1      | 1      |
+| LeaveBalanceAPI                                     | 139           | apiv2_leave_leave_balance                 | 1    | 0      | 0      | 0      |
+| EmployeeLeaveEntitlementAPI                         | 140           | apiv2_leave_employee_leave_entitlements   | 1    | 0      | 0      | 0      |
+| ValidationLeaveEntitlementValueAPI                  | 141           | apiv2_leave_leave_entitlements_validation | 1    | 0      | 0      | 0      |
+| LeaveOverlapAPI                                     | 142           | apiv2_leave_overlap_leaves                | 1    | 0      | 0      | 0      |
+| LeaveRequestCommentAPI                              | 143           | apiv2_leave_leave_request_comment         | 1    | 1      | 0      | 0      |
+| LeaveCommentAPI                                     | 144           | apiv2_leave_leave_comment                 | 1    | 1      | 0      | 0      |
+| LeaveAPI                                            | 145           | apiv2_leave_leaves                        | 1    | 0      | 1      | 0      |
+| BulkLeaveAPI                                        | 146           | apiv2_leave_bulk_leaves                   | 0    | 0      | 1      | 0      |
+| LeaveReportAPI                                      | 147           | apiv2_leave_reports                       | 1    | 0      | 0      | 0      |
+| LeaveReportDataAPI                                  | 148           | apiv2_leave_reports_data                  | 1    | 0      | 0      | 0      |
+| EmployeeLeaveAPI                                    | 263           | apiv2_leave_employee_leave                | 1    | 0      | 0      | 0      |
+| EmployeeLeaveBalanceAPI                             | 264           | apiv2_leave_employee_leave_balances       | 1    | 0      | 0      | 0      |
+| Leave balance (data_group_id 139) role permissions: |
 
-Role read create update delete self
-Admin 1 0 0 0 1
-Admin 1 0 0 0 0
-ESS 1 0 0 0 1
-Supervisor 1 0 0 0 1
-Supervisor 1 0 0 0 0
-6.4 Time Endpoints (Partial Verification)
-API class data_group_id read create update delete
-TimeConfigPeriodAPI 154 1 0 1 0
-CustomerAPI 155 1 1 1 1
-ValidationCustomerNameAPI 156 1 0 0 0
-ProjectActivityAPI 157 1 1 1 1
-ProjectAPI 158 1 1 1 1
-ValidateProjectNameAPI 159 1 0 0 0
-MyTimesheetItemAPI 160 1 0 1 0
-EmployeeTimesheetItemAPI 161 1 0 1 0
-MyTimesheetAPI 162 1 1 1 0
-TimesheetActionLogAPI 163 1 0 0 0
-TimesheetCommentAPI 164 1 1 1 0
-TimesheetTimeFormatAPI 165 1 0 0 0
-ValidationProjectActivityNameAPI 166 1 0 0 0
-TimesheetProjectActivityUniqueValidationAPI 167 1 0 0 0
-CopyProjectActivityAPI 168 1 1 0 0
-EmployeeTimesheetAPI 169 1 1 1 0
-EmployeeTimesheetListAPI 170 1 0 0 0
-DefaultTimesheetAPI 171 1 0 0 0
-TimeReportAPI 172 1 0 0 0
-TimeReportDataAPI 173 1 0 0 0
-ProjectAdminAPI 174 1 0 0 0
-6.5 Recruitment Endpoints (Partial Verification)
-API class data_group_id read create update delete
-VacancyAPI 208 1 1 1 1
-VacancyAttachmentAPI 209 1 1 1 1
-CandidateAPI 210 1 1 1 1
-CandidateAttachmentAPI 211 1 1 1 0
-CandidateStatusAPI 212 1 0 0 0
-HiringManagerAPI 213 1 0 0 0
-CandidateAllowedActionAPI 214 1 0 0 0
-CandidateRejectionAPI 215 0 0 1 0
-CandidateShortlistingAPI 216 0 0 1 0
-CandidateInterviewSchedulingAPI 217 1 1 1 0
-InterviewAttachmentAPI 218 1 1 1 0
-CandidateMarkingInterviewPassAPI 219 0 0 1 0
-CandidateMarkingInterviewFailAPI 220 0 0 1 0
-CandidateJobOfferingAPI 221 0 0 1 0
-CandidateOfferDecliningAPI 222 0 0 1 0
-CandidateHiringAPI 223 0 0 1 0
-CandidateHistoryAPI 224 1 0 1 0
-EmployeeListAPI 225 1 0 0 0
-Important: Candidate workflow endpoints (reject, shortlist, mark pass, mark fail, offer job, decline offer, hire) are UPDATE-only — read=0, create=0, update=1, delete=0. Calling them requires a user whose role grants update on those data groups.
+| Role       | read | create | update | delete | self |
+| ---------- | ---- | ------ | ------ | ------ | ---- |
+| Admin      | 1    | 0      | 0      | 0      | 1    |
+| Admin      | 1    | 0      | 0      | 0      | 0    |
+| ESS        | 1    | 0      | 0      | 0      | 1    |
+| Supervisor | 1    | 0      | 0      | 0      | 1    |
+| Supervisor | 1    | 0      | 0      | 0      | 0    |
 
-6.6 Attendance Endpoints (Partial Verification)
-API class data_group_id read create update delete
-AttendanceConfigurationAPI 175 1 0 1 0
-EmployeeLatestAttendanceRecordAPI 176 1 0 0 0
-AttendancePunchInRecordOverlapAPI 177 1 0 0 0
-AttendancePunchOutRecordOverlapAPI 178 1 0 0 0
-MyAttendanceRecordAPI 179 0 1 1 1
-EmployeeAttendanceRecordAPI 180 0 1 1 1
-TimezonesAPI 181 1 0 0 0
-CurrentDateTimeAPI 182 1 0 0 0
-AttendanceRecordAPI 183 1 0 1 0
-AttendanceEditPunchInRecordOverlapAPI 184 1 0 0 0
-AttendanceEditPunchOutRecordOverlapAPI 185 1 0 0 0
-EmployeeAttendanceSummaryAPI 186 1 0 0 0
-Quirk: MyAttendanceRecordAPI and EmployeeAttendanceRecordAPI have read=0 but create=1, update=1, delete=1 — record endpoints are write-mostly by permission.
+### 6.4 Time Endpoints (Partial Verification)
 
-6.7 Dashboard Endpoints (Partial Verification)
-API class data_group_id read create update delete
-EmployeeOnLeaveAPI 235 1 0 0 0
-EmployeeTimeAtWorkAPI 239 1 0 0 0
-EmployeeOnLeaveTodayConfigAPI 241 1 0 1 0
-6.8 Employee Entity
+| API class                                   | data_group_id | read | create | update | delete |
+| ------------------------------------------- | ------------- | ---- | ------ | ------ | ------ |
+| TimeConfigPeriodAPI                         | 154           | 1    | 0      | 1      | 0      |
+| CustomerAPI                                 | 155           | 1    | 1      | 1      | 1      |
+| ValidationCustomerNameAPI                   | 156           | 1    | 0      | 0      | 0      |
+| ProjectActivityAPI                          | 157           | 1    | 1      | 1      | 1      |
+| ProjectAPI                                  | 158           | 1    | 1      | 1      | 1      |
+| ValidateProjectNameAPI                      | 159           | 1    | 0      | 0      | 0      |
+| MyTimesheetItemAPI                          | 160           | 1    | 0      | 1      | 0      |
+| EmployeeTimesheetItemAPI                    | 161           | 1    | 0      | 1      | 0      |
+| MyTimesheetAPI                              | 162           | 1    | 1      | 1      | 0      |
+| TimesheetActionLogAPI                       | 163           | 1    | 0      | 0      | 0      |
+| TimesheetCommentAPI                         | 164           | 1    | 1      | 1      | 0      |
+| TimesheetTimeFormatAPI                      | 165           | 1    | 0      | 0      | 0      |
+| ValidationProjectActivityNameAPI            | 166           | 1    | 0      | 0      | 0      |
+| TimesheetProjectActivityUniqueValidationAPI | 167           | 1    | 0      | 0      | 0      |
+| CopyProjectActivityAPI                      | 168           | 1    | 1      | 0      | 0      |
+| EmployeeTimesheetAPI                        | 169           | 1    | 1      | 1      | 0      |
+| EmployeeTimesheetListAPI                    | 170           | 1    | 0      | 0      | 0      |
+| DefaultTimesheetAPI                         | 171           | 1    | 0      | 0      | 0      |
+| TimeReportAPI                               | 172           | 1    | 0      | 0      | 0      |
+| TimeReportDataAPI                           | 173           | 1    | 0      | 0      | 0      |
+| ProjectAdminAPI                             | 174           | 1    | 0      | 0      | 0      |
+
+### 6.5 Recruitment Endpoints (Partial Verification)
+
+| API class                                                                                                                                                                                                                                             | data_group_id | read | create | update | delete |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- | ---- | ------ | ------ | ------ |
+| VacancyAPI                                                                                                                                                                                                                                            | 208           | 1    | 1      | 1      | 1      |
+| VacancyAttachmentAPI                                                                                                                                                                                                                                  | 209           | 1    | 1      | 1      | 1      |
+| CandidateAPI                                                                                                                                                                                                                                          | 210           | 1    | 1      | 1      | 1      |
+| CandidateAttachmentAPI                                                                                                                                                                                                                                | 211           | 1    | 1      | 1      | 0      |
+| CandidateStatusAPI                                                                                                                                                                                                                                    | 212           | 1    | 0      | 0      | 0      |
+| HiringManagerAPI                                                                                                                                                                                                                                      | 213           | 1    | 0      | 0      | 0      |
+| CandidateAllowedActionAPI                                                                                                                                                                                                                             | 214           | 1    | 0      | 0      | 0      |
+| CandidateRejectionAPI                                                                                                                                                                                                                                 | 215           | 0    | 0      | 1      | 0      |
+| CandidateShortlistingAPI                                                                                                                                                                                                                              | 216           | 0    | 0      | 1      | 0      |
+| CandidateInterviewSchedulingAPI                                                                                                                                                                                                                       | 217           | 1    | 1      | 1      | 0      |
+| InterviewAttachmentAPI                                                                                                                                                                                                                                | 218           | 1    | 1      | 1      | 0      |
+| CandidateMarkingInterviewPassAPI                                                                                                                                                                                                                      | 219           | 0    | 0      | 1      | 0      |
+| CandidateMarkingInterviewFailAPI                                                                                                                                                                                                                      | 220           | 0    | 0      | 1      | 0      |
+| CandidateJobOfferingAPI                                                                                                                                                                                                                               | 221           | 0    | 0      | 1      | 0      |
+| CandidateOfferDecliningAPI                                                                                                                                                                                                                            | 222           | 0    | 0      | 1      | 0      |
+| CandidateHiringAPI                                                                                                                                                                                                                                    | 223           | 0    | 0      | 1      | 0      |
+| CandidateHistoryAPI                                                                                                                                                                                                                                   | 224           | 1    | 0      | 1      | 0      |
+| EmployeeListAPI                                                                                                                                                                                                                                       | 225           | 1    | 0      | 0      | 0      |
+| Important: Candidate workflow endpoints (reject, shortlist, mark pass, mark fail, offer job, decline offer, hire) are UPDATE-only — read=0, create=0, update=1, delete=0. Calling them requires a user whose role grants update on those data groups. |
+
+### 6.6 Attendance Endpoints (Partial Verification)
+
+| API class                                                                                                                                                    | data_group_id | read | create | update | delete |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------- | ---- | ------ | ------ | ------ |
+| AttendanceConfigurationAPI                                                                                                                                   | 175           | 1    | 0      | 1      | 0      |
+| EmployeeLatestAttendanceRecordAPI                                                                                                                            | 176           | 1    | 0      | 0      | 0      |
+| AttendancePunchInRecordOverlapAPI                                                                                                                            | 177           | 1    | 0      | 0      | 0      |
+| AttendancePunchOutRecordOverlapAPI                                                                                                                           | 178           | 1    | 0      | 0      | 0      |
+| MyAttendanceRecordAPI                                                                                                                                        | 179           | 0    | 1      | 1      | 1      |
+| EmployeeAttendanceRecordAPI                                                                                                                                  | 180           | 0    | 1      | 1      | 1      |
+| TimezonesAPI                                                                                                                                                 | 181           | 1    | 0      | 0      | 0      |
+| CurrentDateTimeAPI                                                                                                                                           | 182           | 1    | 0      | 0      | 0      |
+| AttendanceRecordAPI                                                                                                                                          | 183           | 1    | 0      | 1      | 0      |
+| AttendanceEditPunchInRecordOverlapAPI                                                                                                                        | 184           | 1    | 0      | 0      | 0      |
+| AttendanceEditPunchOutRecordOverlapAPI                                                                                                                       | 185           | 1    | 0      | 0      | 0      |
+| EmployeeAttendanceSummaryAPI                                                                                                                                 | 186           | 1    | 0      | 0      | 0      |
+| Quirk: MyAttendanceRecordAPI and EmployeeAttendanceRecordAPI have read=0 but create=1, update=1, delete=1 — record endpoints are write-mostly by permission. |
+
+### 6.7 Dashboard Endpoints (Partial Verification)
+
+| API class                     | data_group_id | read | create | update | delete |
+| ----------------------------- | ------------- | ---- | ------ | ------ | ------ |
+| EmployeeOnLeaveAPI            | 235           | 1    | 0      | 0      | 0      |
+| EmployeeTimeAtWorkAPI         | 239           | 1    | 0      | 0      | 0      |
+| EmployeeOnLeaveTodayConfigAPI | 241           | 1    | 0      | 1      | 0      |
+
+### 6.8 Employee Entity
+
 Maps to hs_hr_employee. All 48 columns match the entity @ORM\Column annotations.
 
 Notable mappings:
@@ -687,7 +795,8 @@ purged_at datetime nullable ↔ purgedAt ?DateTime
 
 sal_grd_code varchar(13) nullable ↔ salaryGradeCode ?string (@deprecated)
 
-6.9 EmployeeModel Fields (6)
+### 6.9 EmployeeModel Fields (6)
+
 Field Type
 empNumber integer
 lastName string
@@ -695,7 +804,9 @@ firstName string
 middleName string
 employeeId string
 terminationId integer or null
-6.10 EmployeeDetailedModel Fields
+
+### 6.10 EmployeeDetailedModel Fields
+
 Same 6 base fields plus:
 
 Field Type
@@ -706,17 +817,23 @@ subunit.id integer or null
 subunit.name string or null
 empStatus.id integer or null
 empStatus.name string or null
-supervisors array of {empNumber, lastName, firstName, middleName} 7. Relationships to Other OrangeHRM Layers
-7.1 UI ↔ API (Verified)
+supervisors array of {empNumber, lastName, firstName, middleName}
+
+## 7. Relationships to Other OrangeHRM Layers
+
+### 7.1 UI ↔ API (Verified)
+
 The Vue SPA at /web/index.php/pim/viewEmployeeList issues:
 
-http
+```http
 GET /web/index.php/api/v2/pim/employees?limit=50&offset=0&model=detailed&includeEmployees=onlyCurrent&sortField=employee.firstName&sortOrder=ASC
 Accept: application/json
 Cookie: _orangehrm=<session>
+```
+
 and receives {data, meta, rels}. The API is the same interface the SPA uses.
 
-7.2 API ↔ Service ↔ DAO ↔ Entity ↔ DB
+### 7.2 API ↔ Service ↔ DAO ↔ Entity ↔ DB
 
 ```text
 EmployeeAPI::getAll()
@@ -724,11 +841,14 @@ EmployeeAPI::getAll()
   → EmployeeDao::getEmployeeList() / getEmployeeCount()
   → Doctrine query on Employee entity
   → hs_hr_employee
-7.3 API ↔ Workflow
-EmployeeAPI::create() and getValidationRuleForDelete() call UserRoleManager::isActionAllowed(WorkflowStateMachine::FLOW_EMPLOYEE, state, action). The workflow state machine is stored in ohrm_workflow_state_machine.
 ```
 
-7.4 API ↔ Permissions
+### 7.3 API ↔ Workflow
+
+EmployeeAPI::create() and getValidationRuleForDelete() call UserRoleManager::isActionAllowed(WorkflowStateMachine::FLOW_EMPLOYEE, state, action). The workflow state machine is stored in ohrm_workflow_state_machine.
+
+### 7.4 API ↔ Permissions
+
 ApiAuthorizationSubscriber resolves ResourcePermission for the _api class via:
 
 ```text
@@ -736,12 +856,15 @@ ohrm_api_permission.api_name → data_group_id
 ohrm_data_group.id → data_group_id
 ohrm_user_role_data_group (user_role_id, data_group_id) → can_read, can_create, can_update, can_delete, self
 ohrm_user_role.id → user_role_id
-8. Testing Implications
-8.1 API-First Test Data Setup
-Use POST /api/v2/pim/employees with a valid Bearer token or session cookie. This is faster and more reliable than UI navigation. The created employee appears immediately in the UI on next data refresh.
 ```
 
-8.2 Test-data lifecycle
+## 8. Testing Implications
+
+### 8.1 API-First Test Data Setup
+
+Use POST /api/v2/pim/employees with a valid Bearer token or session cookie. This is faster and more reliable than UI navigation. The created employee appears immediately in the UI on next data refresh.
+
+### 8.2 Test-data lifecycle
 
 Create uniquely identifiable records and keep the IDs returned by OrangeHRM together with their test owner. Clean up only records created by that test, through a supported application lifecycle operation, and verify the resulting state.
 
@@ -749,14 +872,16 @@ Create uniquely identifiable records and keep the IDs returned by OrangeHRM toge
 
 The live timesheet lifecycle test creates a uniquely named customer, project, activity, employee, and timesheet; submits and approves the timesheet; and verifies API, database, and Admin UI state. It terminates only its owned employee through the supported PIM lifecycle operation. Timesheets and their referenced project/activity/customer records are retained as history; customer/project DELETE operations are not available to the test account. The test attaches the returned IDs and owner for follow-up; it never hard-deletes test data.
 
-8.3 Test Data Setup Prerequisites
+### 8.3 Test Data Setup Prerequisites
+
 OAuth client registration — must be done once per environment (via UI or API). Fresh DBs have no OAuth clients.
 
 Login credentials — Admin and ESS accounts must exist.
 
 Server time — token expiry is now > expiry, valid up to and including the exact second.
 
-8.4 State Preparation
+### 8.4 State Preparation
+
 Use API calls to establish prerequisite state:
 
 Create an employee with a specific leave balance before testing leave application UI
@@ -765,7 +890,8 @@ Set up a supervisor relationship before testing approval workflows
 
 Configure leave types before testing leave requests
 
-8.5 API-Only Testing
+### 8.5 API-Only Testing
+
 Test these directly:
 
 Validation: Send invalid types, missing fields, unknown params → 422
@@ -782,10 +908,12 @@ OAuth: PKCE flow, token exchange, refresh, expired/invalid tokens
 
 The repository's live integration target (`npm run test:live`) exercises the configured OrangeHRM instance without HTTP or API mocks. It verifies Admin employee reads against MariaDB, checks ESS access to its linked employee and denial for another employee, and confirms that an unauthenticated request receives the live JSON 401 response. The test is read-only apart from normal authentication audit events.
 
-8.6 Verification
+### 8.6 Verification
+
 Use GET endpoints to verify state after UI actions or API writes. For DB-level verification, query tables with mysql2 and compare with API responses.
 
-8.7 Permission Testing
+### 8.7 Permission Testing
+
 Create test users with different roles (Admin, ESS, Supervisor). Verify:
 
 Endpoint access (403 vs success)
@@ -796,14 +924,18 @@ self flag behavior (in the current live instance, ESS can GET its linked employe
 
 Row-level access (Supervisor can access subordinates but not unrelated employees)
 
-8.8 Suitability Classification (per endpoint)
+### 8.8 Suitability Classification (per endpoint)
+
 Use case Criteria Examples
 Test-data setup POST/PUT that creates entities needed by tests POST /api/v2/pim/employees
 Cleanup Supported OrangeHRM lifecycle operations for test-owned records; no direct SQL deletion
 State preparation PUT/PATCH that sets up preconditions PUT /api/v2/pim/employees/{id}/personal-details
 Verification GET that returns authoritative state GET /api/v2/pim/employees/{id}
 API-only testing Endpoint with meaningful validation/authorization behavior All GET endpoints with filters
-Not suitable Endpoint with irreversible side effects DELETE /api/v2/pim/employees (hard delete) except for an explicitly authorized administrative operation after dependency checks 9. Known Quirks and Gotchas
+Not suitable Endpoint with irreversible side effects DELETE /api/v2/pim/employees (hard delete) except for an explicitly authorized administrative operation after dependency checks
+
+## 9. Known Quirks and Gotchas
+
 error.status type inconsistency: 422 and 404 → string; 401 and 403 → integer.
 
 meta shape inconsistency: [] (array) for single resources and errors; {} (object) for collections with total.
@@ -858,7 +990,8 @@ Strict parameter mode: Unknown params trigger 422 with Unexpected Parameter ('<k
 
 hasPassword user filter: Reads as boolean, semantically "has a password set".
 
-10. Version-Specific Notes
+## 10. Version-Specific Notes
+
     Item 5.9 Status Evidence
     API v2 availability Available routes.yaml + live
     API contract version 2.8.0 /api/v2/core/public/version
@@ -874,7 +1007,8 @@ hasPassword user filter: Reads as boolean, semantically "has a password set".
     Refresh token TTL 1 month (P1M) hs_hr_config
     Important: The public API documentation at https://api-starter-orangehrm.readme.io/reference/get-started claims compatibility with "5.5 and above". Endpoint availability must be verified against the 5.9 source tree's routes.yaml files, not against the documentation alone.
 
-11. Facts vs Inferences vs Assumptions
+## 11. Facts vs Inferences vs Assumptions
+
     FACT (verified via file path, HTTP response, or DB row)
     Environment:
 
@@ -1039,7 +1173,8 @@ Whether the SPA uses Axios or another HTTP client internally
 
 Whether Config::PRODUCT_MODE in this instance is MODE_DEMO (affects undeletable empNumbers)
 
-12. Sources
+## 12. Sources
+
     All facts are from the following, which were pasted during the research process.
 
 Source files (cloned OrangeHRM 5.9 tree):

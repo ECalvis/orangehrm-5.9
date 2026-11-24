@@ -4,6 +4,22 @@
 
 ---
 
+## Contents
+
+- [1. Scope](#1-scope)
+- [Local OAuth token helper](#local-oauth-token-helper)
+- [2. What It Is](#2-what-it-is)
+- [3. OrangeHRM 5.9 Behavior](#3-orangehrm-59-behavior)
+- [4. Architecture](#4-architecture)
+- [5. Important Concepts](#5-important-concepts)
+- [6. Important Objects / Endpoints / Entities](#6-important-objects-endpoints-entities)
+- [7. Relationships to Other OrangeHRM Layers](#7-relationships-to-other-orangehrm-layers)
+- [8. Testing Implications](#8-testing-implications)
+- [9. Known Quirks / Gotchas](#9-known-quirks-gotchas)
+- [10. Version-Specific Notes](#10-version-specific-notes)
+- [11. Facts vs Inferences vs Assumptions](#11-facts-vs-inferences-vs-assumptions)
+- [12. Sources](#12-sources)
+
 ## 1. Scope
 
 Describes the authentication and authorization mechanisms of OrangeHRM 5.9. Covers:
@@ -56,12 +72,15 @@ The authentication layer establishes _who you are_. The authorization layer dete
 
 **FACT (source):** `ValidateController` uses `AuthProviderChain` with `LocalAuthProvider` registered by `AuthenticationPluginConfiguration::initialize()`:
 
-````php
+```php
 $authProviderChain = $this->getContainer()->get(Services::AUTH_PROVIDER_CHAIN);
 $authProviderChain->addProvider(new LocalAuthProvider());
+```
+
 LDAPAuthProvider is only added if LDAPSetting::isEnable() returns true (LDAPAuthenticationPluginConfiguration:54–57).
 
-3.1.2 Session mechanism
+#### 3.1.2 Session mechanism
+
 FACT (source): Session storage is chosen per request in CorePluginConfiguration::getSessionStorage():
 
 ```php
@@ -76,8 +95,9 @@ $options = [
     'cookie_path' => $path == '' ? '/' : $path,
     'cookie_samesite' => 'Lax',
 ];
+```
+
 So:
-````
 
 Bearer-token requests use MemorySessionStorage — no PHP session file is written.
 
@@ -96,7 +116,8 @@ Secure absent — consistent with HTTP localhost.
 
 path=/web — not /.
 
-3.1.3 Session idle timeout
+#### 3.1.3 Session idle timeout
+
 FACT (source): SessionSubscriber::onRequestEvent() invalidates the session when idle:
 
 ```php
@@ -118,7 +139,8 @@ INFERENCE: In this installation, the effective idle timeout is 1800 seconds (30 
 
 NOT VERIFIED: Live expiration after 30 minutes of inactivity.
 
-3.1.4 API authentication — OAuth2 with PKCE
+#### 3.1.4 API authentication — OAuth2 with PKCE
+
 FACT (live): The OAuth2 authorization-code flow with PKCE (S256) was completed end-to-end from a Node script:
 
 ```text
@@ -127,21 +149,26 @@ GET /web/index.php/oauth2/authorize
    → "Allow Access" button
    → redirect_uri?code=...&state=...
    → POST /web/index.php/oauth2/token
+```
+
 The token response was:
 
-json
+```json
 {
   "token_type": "Bearer",
   "expires_in": 1800,
   "access_token": "def50200b793ceb6...",
   "refresh_token": "def502009ac6059f..."
 }
-FACT (live): A Playwright automation explicitly waits for the OrangeHRM consent button before proceeding:
 ```
 
-js
+FACT (live): A Playwright automation explicitly waits for the OrangeHRM consent button before proceeding:
+
+```js
 const allowButton = page.getByRole('button', { name: /allow access/i });
 await allowButton.waitFor({ state: 'visible', timeout: 15_000 });
+```
+
 This confirms the consent screen is a real, interactive UI step — not skipped by the OAuth server.
 
 FACT (source): OAuth2 routes are defined in src/plugins/orangehrmCoreOAuthPlugin/config/routes.yaml:
@@ -151,33 +178,39 @@ auth_oauth2_consent:
   path: /oauth2/authorize/consent
   controller: OrangeHRM\OAuth\Controller\OAuth2\AuthorizationController::handle
   methods: [GET]
-```
 
 auth_oauth2_authorize:
 path: /oauth2/authorize
 controller: OrangeHRM\OAuth\Controller\AuthorizationController::handle
-methods: [ GET ]
+methods: [GET]
 
 auth_oauth2_token:
 path: /oauth2/token
 controller: OrangeHRM\OAuth\Controller\OAuth2\TokenController::handle
-methods: [ POST ]
+methods: [POST]
+```
+
 FACT (source): Four entities map to the active OAuth2 tables:
 
-Entity Table
-OAuthClient ohrm_oauth2_client
-OAuthAccessToken ohrm_oauth2_access_token
-OAuthAuthorizationCode ohrm_oauth2_authorization_code
-OAuthRefreshToken ohrm_oauth2_refresh_token
+| Entity                 | Table                          |
+| ---------------------- | ------------------------------ |
+| OAuthClient            | ohrm_oauth2_client             |
+| OAuthAccessToken       | ohrm_oauth2_access_token       |
+| OAuthAuthorizationCode | ohrm_oauth2_authorization_code |
+| OAuthRefreshToken      | ohrm_oauth2_refresh_token      |
+
 FACT (live DB): Three OAuth2 clients exist:
 
-id name client_id is_confidential enabled redirect_uri
-1 OrangeHRM Mobile App orangehrm_mobile_app 0 1 com.orangehrm.opensource://oauthredirect
-2 Bruno 6910f285d814e7223c3d6237a0ac8808 0 1 https://oauth.usebruno.com/callback
-3 QA Automation 350f87ae8a275c9a9fc9ef05a8792f39 0 1 http://localhost:9876/oauth/callback
+| id  | name                 | client_id                        | is_confidential | enabled | redirect_uri                             |
+| --- | -------------------- | -------------------------------- | --------------- | ------- | ---------------------------------------- |
+| 1   | OrangeHRM Mobile App | orangehrm_mobile_app             | 0               | 1       | com.orangehrm.opensource://oauthredirect |
+| 2   | Bruno                | 6910f285d814e7223c3d6237a0ac8808 | 0               | 1       | https://oauth.usebruno.com/callback      |
+| 3   | QA Automation        | 350f87ae8a275c9a9fc9ef05a8792f39 | 0               | 1       | http://localhost:9876/oauth/callback     |
+
 All three are public clients (is_confidential = 0). No client secret is required.
 
-3.1.5 Token lifetimes
+#### 3.1.5 Token lifetimes
+
 FACT (live DB): hs_hr_config rows:
 
 name value
@@ -199,7 +232,8 @@ ConfigService reads them at getOAuthAuthCodeTTL(), getOAuthRefreshTokenTTL(), ge
 
 NOT VERIFIED (live): Behavior of an actually expired access token (e.g. 401 vs 302). The TTL is verified from the response and config; the exact rejection response has not been captured live.
 
-3.1.6 Refresh-token rotation
+#### 3.1.6 Refresh-token rotation
+
 FACT (live, 2026-10-05): In a refresh run through the token helper, OrangeHRM returned a different refresh token, and the helper stored the new value. This confirms rotation for that request.
 
 NOT VERIFIED (live): Whether the server invalidates the old refresh token when a new one is issued. The earlier API research doc noted an attempted reuse returned 401 with hint Cannot decrypt the refresh token, but that test also used a mismatched client_id, so the cause is ambiguous.
@@ -212,7 +246,8 @@ Repeat with the original refresh_token. Capture the response.
 
 Do not conclude rotation behavior until both are captured.
 
-3.1.7 Logout and session invalidation
+#### 3.1.7 Logout and session invalidation
+
 FACT (live): Logout changes the _orangehrm cookie value in the browser and subsequent API calls with the old cookie return:
 
 ```json
@@ -224,7 +259,8 @@ NOT VERIFIED: Exact logout HTTP request/response (URL, method, status, Set-Cooki
 
 NOT VERIFIED: Whether the failed-login response regenerates the session cookie (relevant to session-fixation tests).
 
-3.1.8 Invalid credentials
+#### 3.1.8 Invalid credentials
+
 FACT (live): Failed login returns 302 to /auth/login. The login page shows Invalid credentials.
 
 FACT (source): ValidateController catches AuthenticationException and adds a flash:
@@ -235,7 +271,7 @@ if ($e instanceof RedirectableException) {
     return new RedirectResponse($e->getRedirectUrl());
 }
 return new RedirectResponse($loginUrl);
-3.1.9 Invalid or missing authentication on API
+#### 3.1.9 Invalid or missing authentication on API
 FACT (live): GET /api/v2/pim/employees with no auth → 401:
 
 json
@@ -249,7 +285,8 @@ html
 <meta http-equiv="refresh" content="0;url='http://localhost:8080/web/index.php/auth/login'" />
 INFERENCE: The invalid-token path in the OAuth resource-server middleware is producing a redirect rather than an API-style 401 JSON response for this endpoint.
 
-3.1.10 Password storage and policy
+#### 3.1.10 Password storage and policy
+
 FACT (live DB): ohrm_user.user_password values are bcrypt hashes:
 
 ```text
@@ -294,7 +331,8 @@ NOT VERIFIED (live): Whether posting {"password": "weak"} to POST /api/v2/admin/
 
 FACT (source): zxcvbn-php is vendored (vendor/bjeavons/zxcvbn-php/) and is the strength estimator used by PasswordStrengthValidation.
 
-3.1.11 Login audit
+#### 3.1.11 Login audit
+
 FACT (live DB): Successful logins are recorded in ohrm_login:
 
 id user_id user_name user_role_name user_role_predefined login_time
@@ -316,7 +354,8 @@ FACT (live DB): SHOW CREATE TABLE ohrm_login shows no foreign key on user_id. Lo
 
 FACT (source): LoginLog entity and LoginLogDao exist in the authentication plugin. LoginService::addLogin() writes the audit row.
 
-3.1.12 Authentication provider storage
+#### 3.1.12 Authentication provider storage
+
 FACT (live DB): There is no ohrm_user_auth table. The only auth-provider table is:
 
 ```sql
@@ -349,7 +388,8 @@ sync_status       int(11) NOT NULL
 INFERENCE: LDAP is installed as a plugin but not enabled in this instance. Local authentication is the effective provider.
 ```
 
-3.1.13 Authentication configuration keys
+#### 3.1.13 Authentication configuration keys
+
 FACT (live DB): The following auth-related keys exist in hs_hr_config:
 
 key value
@@ -365,8 +405,10 @@ FACT (live DB): No authentication.ldap key.
 
 FACT (source): UserRoleManagerService::KEY_USER_ROLE_MANAGER_CLASS = 'authorize_user_role_manager_class'. It is read at runtime to instantiate the correct role manager.
 
-3.2 Authorization
-3.2.1 Roles
+### 3.2 Authorization
+
+#### 3.2.1 Roles
+
 FACT (live DB): ohrm_user_role has 7 rows:
 
 id name display_name is_assignable is_predefined
@@ -406,7 +448,7 @@ if (!empty($empNumber)) {
     if ($this->getEmployeeService()->isSupervisor($empNumber)) { ... }
     if ($this->getPerformanceTrackerService()->getPerformanceTrackerDao()->isTrackerReviewer($empNumber)) { ... }
 }
-3.2.2 Data groups and API permissions
+#### 3.2.2 Data groups and API permissions
 FACT (source): API authorization is enforced by ApiAuthorizationSubscriber::onControllerEvent():
 ```
 
@@ -465,7 +507,7 @@ foreach ($filteredRoles as $role) {
         );
     }
 }
-3.2.3 Screen permissions
+#### 3.2.3 Screen permissions
 FACT (live DB): ohrm_user_role_screen exists and is populated. Summary counts by role:
 ```
 
@@ -486,7 +528,8 @@ $this->getEventDispatcher()->addSubscriber(new ScreenAuthorizationSubscriber());
 FACT (source): BasicUserRoleManager::getScreenPermissions() delegates to ScreenPermissionService::getScreenPermissions($module, $screen, $this->userRoles).
 ```
 
-3.2.4 Workflow state machine
+#### 3.2.4 Workflow state machine
+
 FACT (live DB): ohrm_workflow_state_machine has 138 rows. Relevant flows:
 
 Flow 3 (Employee) — 5 rows:
@@ -546,7 +589,8 @@ FACT (source): fixUserRoleNameForWorkflowStateMachine() (with a @todo fix this i
 
 FACT (source): AccessFlowStateMachineDao::isActionAllowed() builds a Doctrine query against WorkflowStateMachine with count($q) > 0.
 
-3.2.5 Endpoint-level authorization in action
+#### 3.2.5 Endpoint-level authorization in action
+
 FACT (live): Admin user (session cookie) can:
 
 GET /api/v2/pim/employees?limit=1&offset=0 → 200 with {data, meta: {total: 4}, rels: []}.
@@ -574,7 +618,8 @@ FACT (live): ESS user GET /api/v2/pim/employees → 200 but only returns the log
 This demonstrates the self = 1 flag in action.
 ```
 
-3.2.6 UI-level authorization
+#### 3.2.6 UI-level authorization
+
 FACT (live): ESS user navigating directly to /web/index.php/admin/viewSystemUsers receives 403 with an HTML body containing:
 
 html
@@ -585,7 +630,8 @@ INFERENCE: The 403 page is delivered by the server, not client-side. The SPA mou
 
 FACT (source): LoginController implements PublicControllerInterface. Screen routes for restricted modules do not.
 
-3.2.7 Row-level authorization
+#### 3.2.7 Row-level authorization
+
 FACT (source): InAccessibleEmpNumbers::validate($input):
 
 Rejects non-numeric or non-positive input.
@@ -601,10 +647,12 @@ FACT (source): EntityUniqueProperty::validate($input) builds a Doctrine query on
 ```php
 $uniqueOption->setMatchValues(['purgedAt' => null]);
 new Rule(Rules::ENTITY_UNIQUE_PROPERTY, [Employee::class, 'employeeId', $uniqueOption])
-FACT (source): EmployeeAPI::getValidationRuleForGetOne() uses Rules::IN_ACCESSIBLE_EMP_NUMBERS, so an inaccessible empNumber is rejected before the record lookup runs.
 ```
 
-3.2.8 Default admin role
+FACT (source): EmployeeAPI::getValidationRuleForGetOne() uses Rules::IN_ACCESSIBLE_EMP_NUMBERS, so an inaccessible empNumber is rejected before the record lookup runs.
+
+#### 3.2.8 Default admin role
+
 FACT (live DB): ohrm_user row 1 is the default admin:
 
 user_name = Caummobunummu9625@yopmail.com
@@ -617,8 +665,9 @@ status = 1, deleted = 0
 
 FACT (source): EmployeeService::getUndeletableEmpNumbers() returns the current user's own empNumber, plus the default admin's empNumber in demo mode. This means the logged-in admin cannot delete their own employee record.
 
-4. Architecture
-   4.1 Authentication pipeline
+## 4. Architecture
+
+### 4.1 Authentication pipeline
 
 ```text
 HTTP request
@@ -638,8 +687,11 @@ AuthenticationPluginConfiguration::initialize
   ↓
 [UI]   POST /auth/validate → ValidateController → AuthProviderChain::authenticate
 [API]  Bearer token → OAuth2 resource server → AuthUser
-4.2 Authorization pipeline (API)
-text
+```
+
+### 4.2 Authorization pipeline (API)
+
+```text
 HTTP request to /api/v2/...
   ↓
 Symfony kernel → ControllerEvent (priority 80000)
@@ -668,8 +720,11 @@ GenericRestController::handle
   ├── Validator::validate()
   ├── Endpoint method dispatch
   └── Response::formatData() → {data, meta, rels}
-4.3 Authorization pipeline (UI screen)
-text
+```
+
+### 4.3 Authorization pipeline (UI screen)
+
+```text
 HTTP request to /web/index.php/<module>/<screen>
   ↓
 ScreenAuthorizationSubscriber
@@ -681,68 +736,89 @@ ScreenPermissionService::getScreenPermissions
 ohrm_user_role_screen
   ↓
 If denied → 403 with <auth-forbidden> Vue component
-5. Important Concepts
-Concept	Description
-PublicControllerInterface	Marker; skips API authorization subscriber. Used by LoginController.
-AuthProviderChain	Ordered list of providers. LocalAuthProvider always added; LDAPAuthProvider added only if enabled.
-MemorySessionStorage	In-memory session for Bearer-token clients; avoids PHP session file I/O.
-Data group	Named set of CRUD capabilities (e.g. apiv2_pim_employee = id 96).
-API permission	Maps an API endpoint class to a data group.
-User role data group	Per-role permission flags on a data group, plus a self flag.
-self flag	When 1, scopes access to the logged-in user's own records. Endpoint code must enforce it (framework does not).
-Screen permission	Per-role, per-screen CRUD flags in ohrm_user_role_screen.
-Workflow state machine	DB table of allowed transitions per (flow, state, role, action).
-fixUserRoleNameForWorkflowStateMachine	Maps ESS → ESS User for non-Leave flows.
-authorize_user_role_manager_class	Config key selecting the UserRoleManager implementation. Default: BasicUserRoleManager.
-PKCE	Proof Key for Code Exchange. Required for public OAuth2 clients.
-Opaque tokens	Tokens are prefixed def50200... and are not JWT.
-6. Important Objects / Endpoints / Entities
-6.1 Authentication endpoints
-Route	Method	Controller	Purpose
-/auth/login	GET	LoginController	Login page
-/auth/validate	POST	ValidateController	Credential submission
-/auth/logout	GET	LogoutController	Logout
-/oauth2/authorize	GET	OAuth2\AuthorizationController	OAuth2 authorize start
-/oauth2/authorize/consent	GET	OAuth2\AuthorizationController	Consent screen
-/oauth2/token	POST	OAuth2\TokenController	Token exchange
-6.2 Authorization-relevant entities
-Entity	Table
-User	ohrm_user
-UserRole	ohrm_user_role
-DataGroup	ohrm_data_group
-DataGroupPermission	ohrm_user_role_data_group
-ApiPermission	ohrm_api_permission
-WorkflowStateMachine	ohrm_workflow_state_machine
-LoginLog	ohrm_login
-UserAuthProvider	ohrm_user_auth_provider
-OAuthClient	ohrm_oauth2_client
-OAuthAccessToken	ohrm_oauth2_access_token
-OAuthAuthorizationCode	ohrm_oauth2_authorization_code
-OAuthRefreshToken	ohrm_oauth2_refresh_token
-6.3 Role classes
-Under src/plugins/orangehrmCorePlugin/Authorization/UserRole/:
 ```
 
-AbstractUserRole, AdminUserRole, EssUserRole, SupervisorUserRole, ProjectAdminUserRole, HiringManagerUserRole, InterviewerUserRole, ReviewerUserRole.
+## 5. Important Concepts
 
-6.4 Auth configuration keys
+| Concept                                  | Description                                                                                                    |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `PublicControllerInterface`              | Marker; skips API authorization subscriber. Used by LoginController.                                           |
+| `AuthProviderChain`                      | Ordered list of providers. LocalAuthProvider always added; LDAPAuthProvider added only if enabled.             |
+| `MemorySessionStorage`                   | In-memory session for Bearer-token clients; avoids PHP session file I/O.                                       |
+| Data group                               | Named set of CRUD capabilities (e.g. apiv2_pim_employee = id 96).                                              |
+| API permission                           | Maps an API endpoint class to a data group.                                                                    |
+| User role data group                     | Per-role permission flags on a data group, plus a self flag.                                                   |
+| self flag                                | When 1, scopes access to the logged-in user's own records. Endpoint code must enforce it (framework does not). |
+| Screen permission                        | Per-role, per-screen CRUD flags in ohrm_user_role_screen.                                                      |
+| Workflow state machine                   | DB table of allowed transitions per (flow, state, role, action).                                               |
+| `fixUserRoleNameForWorkflowStateMachine` | Maps ESS → ESS User for non-Leave flows.                                                                       |
+| `authorize_user_role_manager_class`      | Config key selecting the UserRoleManager implementation. Default: BasicUserRoleManager.                        |
+| PKCE                                     | Proof Key for Code Exchange. Required for public OAuth2 clients.                                               |
+| Opaque tokens                            | Tokens are prefixed `def50200...` and are not JWT.                                                             |
+
+## 6. Important Objects / Endpoints / Entities
+
+### 6.1 Authentication endpoints
+
+| Route                     | Method | Controller                     | Purpose                |
+| ------------------------- | ------ | ------------------------------ | ---------------------- |
+| /auth/login               | GET    | LoginController                | Login page             |
+| /auth/validate            | POST   | ValidateController             | Credential submission  |
+| /auth/logout              | GET    | LogoutController               | Logout                 |
+| /oauth2/authorize         | GET    | OAuth2\AuthorizationController | OAuth2 authorize start |
+| /oauth2/authorize/consent | GET    | OAuth2\AuthorizationController | Consent screen         |
+| /oauth2/token             | POST   | OAuth2\TokenController         | Token exchange         |
+
+### 6.2 Authorization-relevant entities
+
+| Entity                 | Table                          |
+| ---------------------- | ------------------------------ |
+| User                   | ohrm_user                      |
+| UserRole               | ohrm_user_role                 |
+| DataGroup              | ohrm_data_group                |
+| DataGroupPermission    | ohrm_user_role_data_group      |
+| ApiPermission          | ohrm_api_permission            |
+| WorkflowStateMachine   | ohrm_workflow_state_machine    |
+| LoginLog               | ohrm_login                     |
+| UserAuthProvider       | ohrm_user_auth_provider        |
+| OAuthClient            | ohrm_oauth2_client             |
+| OAuthAccessToken       | ohrm_oauth2_access_token       |
+| OAuthAuthorizationCode | ohrm_oauth2_authorization_code |
+| OAuthRefreshToken      | ohrm_oauth2_refresh_token      |
+
+### 6.3 Role classes
+
+Under src/plugins/orangehrmCorePlugin/Authorization/UserRole/:
+
+```text
+AbstractUserRole, AdminUserRole, EssUserRole, SupervisorUserRole, ProjectAdminUserRole, HiringManagerUserRole, InterviewerUserRole, ReviewerUserRole.
+```
+
+### 6.4 Auth configuration keys
+
 authentication.status, authorize_user_role_manager_class, oauth.auth_code_ttl, oauth.access_token_ttl, oauth.refresh_token_ttl, oauth.encryption_key, oauth.token_encryption_key, and the eight auth.password_policy.* keys.
 
-7. Relationships to Other OrangeHRM Layers
-   Layer Authentication relationship Authorization relationship
-   UI (Vue/OXD) Login form posts to /auth/validate; session cookie set on success Hidden nav items, <auth-forbidden> component for 403
-   API Bearer token or session cookie ApiAuthorizationSubscriber checks _api class permissions before dispatch
-   Backend AuthProviderChain, LocalAuthProvider, LDAPAuthProvider BasicUserRoleManager resolves permissions from DB
-   Workflow — WorkflowStateMachine gates state transitions
-   DB ohrm_user, ohrm_login, ohrm_oauth2_* ohrm_user_role, ohrm_data_group, ohrm_user_role_data_group, ohrm_api_permission, ohrm_user_role_screen, ohrm_workflow_state_machine
-   7.1 Live UI → API → authorization → backend → DB trace
-   Scenario: ESS user requests the employee list.
+## 7. Relationships to Other OrangeHRM Layers
+
+| Layer        | Authentication relationship                                         | Authorization relationship                                                                                                          |
+| ------------ | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| UI (Vue/OXD) | Login form posts to `/auth/validate`; session cookie set on success | Hidden nav items, `<auth-forbidden>` component for 403                                                                              |
+| API          | Bearer token or session cookie                                      | ApiAuthorizationSubscriber checks `_api` class permissions before dispatch                                                          |
+| Backend      | AuthProviderChain, LocalAuthProvider, LDAPAuthProvider              | BasicUserRoleManager resolves permissions from DB                                                                                   |
+| Workflow     | —                                                                   | WorkflowStateMachine gates state transitions                                                                                        |
+| DB           | ohrm_user, ohrm_login, ohrm_oauth2_*                                | ohrm_user_role, ohrm_data_group, ohrm_user_role_data_group, ohrm_api_permission, ohrm_user_role_screen, ohrm_workflow_state_machine |
+
+### 7.1 Live UI → API → authorization → backend → DB trace
+
+Scenario: ESS user requests the employee list.
 
 UI: ESS user visits /web/index.php/pim/viewEmployeeList. The Vue SPA issues:
 
-http
+```http
 GET /web/index.php/api/v2/pim/employees?limit=50&offset=0
 Cookie: _orangehrm=<ess_session>
+```
+
 API entry: Route resolves to GenericRestController::handle with _api = OrangeHRM\Pim\Api\EmployeeAPI.
 
 Authorization: ApiAuthorizationSubscriber::onControllerEvent:
@@ -769,46 +845,54 @@ Workflow level: AccessFlowStateMachineService::isActionAllowed inside endpoint m
 
 Screen level: ScreenAuthorizationSubscriber for HTML routes.
 
-8. Testing Implications
-   8.1 Authentication scenarios
+## 8. Testing Implications
 
-# Scenario Expected
+### 8.1 Authentication scenarios
 
-A1 Valid login (UI) 302 to /dashboard/index, Set-Cookie: _orangehrm=...
-A2 Invalid password (UI) 302 to /auth/login, page shows "Invalid credentials"
-A3 Missing auth on API 401 {"error":{"status":401,"message":"Session expired"}}
-A4 Invalid Bearer on API 302 to /auth/login, HTML body (quirk)
-A5 OAuth2 PKCE flow authorize → consent → code → token returns {access_token, refresh_token, expires_in: 1800}
-A6 Consent screen Button with accessible name "Allow Access" must be clicked
-A7 Token expiry (not verified live) — check response on expired token
-A8 Refresh rotation (not verified live) — two-request test
-A9 Logout (UI) Cookie changes; old cookie returns 401 on API
-A10 Session idle > 1800s (not verified live) — expect redirect or 401
-A11 Password policy enforcement Post {"password":"weak"} to /api/v2/admin/users → 422 (expected, not verified)
-A12 Login audit Each successful login inserts a row into ohrm_login
-8.2 Authorization scenarios
+| Scenario | Expected |
+| -------- | -------- |
 
-# Scenario Expected
+| A1 | Valid login (UI) — 302 to /dashboard/index, Set-Cookie: _orangehrm=... |
+| A2 | Invalid password (UI) — 302 to /auth/login, page shows "Invalid credentials" |
+| A3 | Missing auth on API — 401 `{"error":{"status":401,"message":"Session expired"}}` |
+| A4 | Invalid Bearer on API — 302 to /auth/login, HTML body (quirk) |
+| A5 | OAuth2 PKCE flow authorize → consent → code → token returns `{access_token, refresh_token, expires_in: 1800}` |
+| A6 | Consent screen button with accessible name "Allow Access" must be clicked |
+| A7 | Token expiry (not verified live) — check response on expired token |
+| A8 | Refresh rotation (not verified live) — two-request test |
+| A9 | Logout (UI) — cookie changes; old cookie returns 401 on API |
+| A10 | Session idle > 1800s (not verified live) — expect redirect or 401 |
+| A11 | Password policy enforcement — POST `{"password":"weak"}` to /api/v2/admin/users → 422 (expected, not verified) |
+| A12 | Login audit — each successful login inserts a row into ohrm_login |
 
-Z1 Admin GET /api/v2/pim/employees 200, all accessible employees
-Z2 Admin POST /api/v2/admin/users 200, user created
-Z3 Admin DELETE /api/v2/admin/users 200, {data:[id]}
-Z4 ESS POST /api/v2/admin/users 403 {"error":{"status":403,"message":"Unauthorized"}}
-Z5 ESS POST /api/v2/pim/employees 403 same
-Z6 ESS DELETE /api/v2/pim/employees 403 same
-Z7 ESS GET /api/v2/pim/employees/{ownEmpNumber} 200; GET for another employee returns 422. In the current live instance, an unfiltered ESS employee collection request returns zero rows, so collection self-scoping is not assumed by the integration test.
-Z8 ESS direct URL /admin/viewSystemUsers 403 HTML with <auth-forbidden>
-Z9 Row-level: ESS GET another empNumber 422 (blocked by IN_ACCESSIBLE_EMP_NUMBERS)
-Z10 Workflow: Admin DELETE active employee Allowed via FLOW_EMPLOYEE / ACTIVE / action 2
-Z11 Workflow: invalid transition BadRequestException / rejected
-Z12 Uniqueness: POST employee with existing employeeId 422 (ENTITY_UNIQUE_PROPERTY)
-Z13 Uniqueness: purged employee's employeeId reused Allowed (matchValues: ['purgedAt' => null])
-8.3 Where to test what
+### 8.2 Authorization scenarios
+
+| Scenario | Expected |
+| -------- | -------- |
+
+| Z1 | Admin GET /api/v2/pim/employees — 200, all accessible employees |
+| Z2 | Admin POST /api/v2/admin/users — 200, user created |
+| Z3 | Admin DELETE /api/v2/admin/users — 200, `{data:[id]}` |
+| Z4 | ESS POST /api/v2/admin/users — 403 `{"error":{"status":403,"message":"Unauthorized"}}` |
+| Z5 | ESS POST /api/v2/pim/employees — 403, same |
+| Z6 | ESS DELETE /api/v2/pim/employees — 403, same |
+| Z7 | ESS GET /api/v2/pim/employees/{ownEmpNumber} — 200; GET for another employee returns 422. In the current live instance, an unfiltered ESS employee collection request returns zero rows, so collection self-scoping is not assumed by the integration test. |
+| Z8 | ESS direct URL /admin/viewSystemUsers — 403 HTML with `<auth-forbidden>` |
+| Z9 | Row-level: ESS GET another empNumber — 422 (blocked by IN_ACCESSIBLE_EMP_NUMBERS) |
+| Z10 | Workflow: Admin DELETE active employee — allowed via FLOW_EMPLOYEE / ACTIVE / action 2 |
+| Z11 | Workflow: invalid transition — BadRequestException / rejected |
+| Z12 | Uniqueness: POST employee with existing employeeId — 422 (ENTITY_UNIQUE_PROPERTY) |
+| Z13 | Uniqueness: purged employee's employeeId reused — allowed (matchValues: ['purgedAt' => null]) |
+
+### 8.3 Where to test what
+
 Layer Tool What to verify
 UI Playwright Login, logout, 403 page, consent button, hidden nav
 API Axios / Bruno 401, 403, 422, 200, token flows, row-level self scoping
 DB mysql2 ohrm_login audit, ohrm_user.deleted, permission tables unchanged
-8.4 Recommendations
+
+### 8.4 Recommendations
+
 RECOMMENDATION: Do not assume all 403s are the same. Admin POST → 403. ESS POST → 403. But invalid Bearer → 302. Distinguish in tests.
 
 RECOMMENDATION: Test self=1 explicitly with a non-admin user. The framework does not enforce row scoping automatically; the endpoint must.
@@ -821,9 +905,9 @@ RECOMMENDATION: Do not log or persist oauth.encryption_key or oauth.token_encryp
 
 The live integration target (`npm run test:live`) verifies real Admin and ESS browser login, API authentication, and ESS own-record versus other-record access. It uses the configured token stores and live database; it does not mock the OrangeHRM server.
 
-9. Known Quirks / Gotchas
+## 9. Known Quirks / Gotchas
 
-# Quirk Evidence
+### Quirk Evidence
 
 Q1 Invalid Bearer token → 302 redirect, not 401 JSON Live
 Q2 ohrm_login has no FK to ohrm_user; audit rows outlive users SHOW CREATE TABLE
@@ -839,7 +923,10 @@ Q11 ohrm_user_role_data_group has 717+ rows — do not modify them in tests Live
 Q12 Password hashes are bcrypt $2y$12$ — cost 12, not default 10 Live DB
 Q13 oauth.access_token_ttl is stored as ISO 8601 duration (PT30M), not seconds Live DB
 Q14 OAuth2 tokens are opaque (def50200...), not JWT Live
-Q15 All three OAuth2 clients are public (is_confidential=0) Live DB 10. Version-Specific Notes
+Q15 All three OAuth2 clients are public (is_confidential=0) Live DB
+
+## 10. Version-Specific Notes
+
 OrangeHRM version: 5.9.0 (hs_hr_config.instance.version = 5.9.0).
 
 Migration history: ohrm_migration_log contains rows for 5.4.0, 5.5.0, 5.6.0, 5.7.0, 5.8.0, 5.8.1, 5.9.0.
@@ -858,7 +945,8 @@ Doctrine ORM: 2.20.7, annotations only.
 
 Config::PRODUCT_MODE = self::MODE_DEV in lib/config/Config.php:57. No hs_hr_config entry. Demo-mode-only behavior (e.g. default admin undeletable) depends on this constant.
 
-11. Facts vs Inferences vs Assumptions
+## 11. Facts vs Inferences vs Assumptions
+
     FACT (traceable to a specific file, DB row, or HTTP response)
     Authentication:
 
@@ -956,7 +1044,8 @@ Exact logout HTTP request/response.
 
 Live behavior of derived roles (Supervisor, ProjectAdmin, etc.) on a user account with those relationships.
 
-12. Sources
+## 12. Sources
+
     Source files (cloned 5.9 tree):
 
 src/lib/config/Config.php — DEFAULT_MAX_SESSION_IDLE_TIME = 1800, PRODUCT_MODE, PRODUCT_VERSION = '5.9'.

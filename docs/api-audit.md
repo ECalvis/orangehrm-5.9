@@ -3,7 +3,6 @@
 **Date:** 2026-10-07
 **Spec under audit:** `swagger/orangehrm-v2.json` (OpenAPI 3.1.0, spec version 2.8.0, as shipped in the 5.9 release)
 **Runtime under audit:** the local dev container (`orangehrm_5.9_app`, image built from `orangehrm-5.9.zip`)
-**Auditor:** Emari Joyce (QA automation)
 
 ## What we set out to do
 
@@ -41,17 +40,17 @@ Stack traces are in the audit artifacts.
 
 All audit outputs live in the `swagger/analysis/` directory:
 
-| File                                    | Contents                                                    |
-| --------------------------------------- | ----------------------------------------------------------- |
-| `swagger/analysis/swagger-analysis.txt`                  | Static analysis report (prose)                              |
-| `swagger/analysis/swagger-findings.csv` / `swagger/analysis/swagger-findings.txt`         | Static findings worklist                                    |
-| `swagger/analysis/swagger-findings.snapshot.json`        | Static baseline for diffing                                 |
+| File                                                                                              | Contents                                                    |
+| ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `swagger/analysis/swagger-analysis.txt`                                                           | Static analysis report (prose)                              |
+| `swagger/analysis/swagger-findings.csv` / `swagger/analysis/swagger-findings.txt`                 | Static findings worklist                                    |
+| `swagger/analysis/swagger-findings.snapshot.json`                                                 | Static baseline for diffing                                 |
 | `swagger/analysis/swagger-runtime-findings.csv` / `swagger/analysis/swagger-runtime-findings.txt` | Runtime findings worklist (213 rows)                        |
-| `swagger/analysis/swagger-runtime-observed.json`         | Per-request observed status/content-type/top-level-keys log |
-| `swagger/analysis/swagger-runtime.snapshot.json`         | Runtime baseline for diffing                                |
-| `swagger/analysis/swagger-summary.txt`                   | High-level spec statistics                                  |
-| `swagger/analysis/swagger-schemas.txt`                   | Full schema inventory                                       |
-| `swagger/analysis/swagger-endpoints.txt`                 | Per-operation endpoint inventory                            |
+| `swagger/analysis/swagger-runtime-observed.json`                                                  | Per-request observed status/content-type/top-level-keys log |
+| `swagger/analysis/swagger-runtime.snapshot.json`                                                  | Runtime baseline for diffing                                |
+| `swagger/analysis/swagger-summary.txt`                                                            | High-level spec statistics                                  |
+| `swagger/analysis/swagger-schemas.txt`                                                            | Full schema inventory                                       |
+| `swagger/analysis/swagger-endpoints.txt`                                                          | Per-operation endpoint inventory                            |
 
 Re-run instructions for each tool are in the docstrings at the top of the corresponding `.js` file.
 

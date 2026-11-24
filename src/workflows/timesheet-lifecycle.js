@@ -160,6 +160,7 @@ async function createTimesheetLifecycle({
           record.empNumber = persistedEmployee.emp_number;
         }
       } catch (recoveryError) {
+        // eslint-disable-next-line preserve-caught-error
         throw new AggregateError(
           [createError, recoveryError],
           'Employee creation failed and ownership recovery also failed',
